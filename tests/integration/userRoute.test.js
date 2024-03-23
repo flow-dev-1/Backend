@@ -236,9 +236,6 @@ describe("/api/users", () => {
             expect(user).toBeTruthy();
             // Check the response status code
             expect(response.statusCode).toBe(StatusCodes.OK);
-
-
-
             // Check if an OTP is generated and saved
             otp = await OTP.findOne({ user: user._id, type: "RegisterUser" });
             expect(otp).toBeNull();
