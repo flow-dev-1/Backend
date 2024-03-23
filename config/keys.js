@@ -1,0 +1,19 @@
+module.exports = {
+    MONGOURI: process.env.MOGOURI,
+    JWT_SECRET: process.env.JWT,
+    SENDGRID_API: process.env.SENDGRID_API,
+    EMAIL: process.env.EMAIL,
+    accountSid: process.env.TWILIO_SID,
+    authToken: process.env.AUTH_TOKEN,
+    serviceID: process.env.SERVICE_ID,
+    GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
+    GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
+    PAYSTACK_SECRET_KEY: process.env.PAYSTACK_SECRET_KEY,
+    TERMII_API_KEY: process.env.TERMII_API_KEY,
+    TERMII_SENDER_ID: process.env.TERMII_SENDER_ID,
+    EMAIL: process.env.EMAIL,
+    EMAIL_USER: process.env.EMAIL_USER,
+    EMAIL_PASS: process.env.EMAIL_PASS,
+    APP_ID: process.env.APP_ID,
+    API_KEY: process.env.API_KEY
+}
