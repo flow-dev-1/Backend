@@ -100,7 +100,7 @@ exports.login = async (req, res) => {
 
     const token = user.generateAuthToken();
 
-    res.status(StatusCodes.OK).json({ token });
+    res.status(StatusCodes.OK).json({ token, message: "Login Successful." });
 }
 
 // Forgot Password Route
@@ -125,10 +125,11 @@ exports.forgotPassword = async (req, res) => {
     });
 
     await otp.save();
-    await Otp_ForgotPassword(user.email, code);
     const token = user.generateAuthToken();
+    await Otp_ForgotPassword(user.first_name, user.email, code, token);
 
-    res.status(StatusCodes.OK).json({ message: "Please enter the code sent to your email.", token });
+
+    res.status(StatusCodes.OK).json({ message: "Please enter the code sent to your email." });
 }
 
 exports.verify_otp_forgotPassword = async (req, res) => {

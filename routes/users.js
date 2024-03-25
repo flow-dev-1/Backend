@@ -15,7 +15,7 @@ router.post('/register', validate(validateUser), userController.registerUser);
 router.patch('/verify-account', auth, userController.verifyAccount);
 router.post('/login', validate(loginValidator), userController.login);
 router.post('/forgot-password', userController.forgotPassword);
-//Verify OTP
+// //Verify OTP
 router.post('/verify-token', auth, userController.verify_otp_forgotPassword)
 
 router.put('/password', auth, userController.resetPassword);

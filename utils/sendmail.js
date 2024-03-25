@@ -38,7 +38,8 @@ exports.Otp_VerifyAccount = async (email, name, otp) => {
 };
 
 
-exports.Otp_ForgotPassword = async (email, otp) => {
+exports.Otp_ForgotPassword = async (name, email, otp, token) => {
+    let link = process.env.ENV === 'staging' ? `https://stately-bienenstitch-72fee7.netlify.app/reset-password?t=${token}&c=${otp}` : `http://localhost:3000/reset-password?t=${token}&c=${otp}`
     try {
         const transporter = nodemailer.createTransport({
             service: EMAIL_USER,
@@ -53,16 +54,18 @@ exports.Otp_ForgotPassword = async (email, otp) => {
             from: EMAIL,
             to: email,
             subject: ' FLOW Reset Password',
-            html: ` <b> Hi, </b></br>
-        <p>We recieved a request to reset the Password on your FLOW Account.</p>
-        </br>
-        <p>Please enter this code to complete password reset.</p>
-        </br>
-        </br>
-        <b>CODE:${otp}</b>
-        </br>
-        </br>
-        <p>Thanks for helping us keep your account secure. </p>`,
+            html: ` <b> Hi ${name} </b></br>
+            <p>We recieved a request to reset the Password on your FLOW Account.</p>
+            </br>
+            <p>Please click or copy this link to complete password reset.</p>
+            </br>
+            </br>
+            <b><a href="${link}">${link}</a></b>
+            </br>
+            </br>
+            <p>Please do not forward this email to others in order to prevent anybody else from accessing your account.</p>   
+            </br>
+            <p>Thanks for helping us keep your account secure. </p>`,
 
         });
         console.log("email sent sucessfully");

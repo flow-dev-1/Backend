@@ -379,14 +379,14 @@ describe("/api/users", () => {
                 .send(userData);
 
             expect(response.statusCode).toBe(StatusCodes.OK);
-            // expect(response.body).toEqual({ message: "Please enter the code sent to your email." });
-            expect(response.body).toHaveProperty("token");
+            expect(response.body).toEqual({ message: "Please enter the code sent to your email." });
+            // expect(response.body).toHaveProperty("token");
             // Check if an OTP is created and saved
             const otp = await OTP.findOne({ user: user._id, type: "ForgotPassword" });
             expect(otp).toBeTruthy();
 
             // Check if the email is sent to the user
-            expect(Otp_ForgotPassword).toHaveBeenCalledWith(userData.email, expect.any(String));
+            expect(Otp_ForgotPassword).toHaveBeenCalledWith(user.first_name, userData.email, expect.any(String), user.generateAuthToken());
         });
     });
 
@@ -536,7 +536,7 @@ describe("/api/users", () => {
                 password: "new_password"
             };
             const response = await request(server)
-                .post('/api/users/verify-token')
+                .put('/api/users/password')
                 .send(data);
 
             expect(response.statusCode).toBe(401);
