@@ -39,6 +39,57 @@ describe("/api/users", () => {
         server.close();
     });
 
+    describe("GET /api/users/me", () => {
+        it("should return logged-in user details without password", async () => {
+            // Create a user for testing
+            const user = new User({
+                first_name: "John",
+                last_name: "Doe",
+                email: "john.doe@example.com",
+                phone: "+234123456789",
+                gender: "male",
+                age: 30,
+                country: "USA",
+                state: "NY",
+                password: "password123",
+            });
+            await user.save();
+
+            // Generate authentication token for the user
+            const token = user.generateAuthToken();
+
+            // Make a request to the endpoint with the authentication token
+            const response = await request(server)
+                .get("/api/users/me")
+                .set("Authorization", `Bearer ${token}`);
+
+            // Check the response status code
+            expect(response.statusCode).toBe(StatusCodes.OK);
+
+            // Check if the response contains the user object
+            expect(response.body).toHaveProperty("user");
+            const returnedUser = response.body.user;
+
+            // Check if the returned user object does not contain the password field
+            expect(returnedUser).not.toHaveProperty("password");
+
+            // Check if the returned user object matches the created user
+            expect(returnedUser.first_name).toBe(user.first_name);
+            expect(returnedUser.last_name).toBe(user.last_name);
+            expect(returnedUser.email).toBe(user.email);
+            // Add assertions for other user fields if necessary
+        });
+
+        it("should return 401 if no authentication token is provided", async () => {
+            // Make a request to the endpoint without providing authentication token
+            const response = await request(server)
+                .get("/api/users/me");
+
+            // Check the response status code
+            expect(response.statusCode).toBe(StatusCodes.UNAUTHORIZED);
+        });
+    });
+
     // CREATE USER 👇👇👇👇👇
 
     describe("POST /register", () => {

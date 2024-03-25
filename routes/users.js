@@ -10,6 +10,7 @@ const auth = require("../middleware/auth")
 router.get('/', async (req, res) => {
     res.json('Hello! welcome to Qwique User');
 })
+router.get('/me', auth, userController.getLoggedUser);
 
 router.post('/register', validate(validateUser), userController.registerUser);
 router.patch('/verify-account', auth, userController.verifyAccount);

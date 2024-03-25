@@ -5,6 +5,14 @@ const bcrypt = require("bcrypt");
 const _ = require("lodash");
 const { Otp_VerifyAccount, Otp_ForgotPassword } = require("../utils/sendmail");
 const otpGenerator = require("otp-generator");
+
+
+exports.getLoggedUser = async (req, res) => {
+    const user = await User.findById(req.user._id)
+        .select("-password -isVerified -isDeleted -resetPassword");
+    res.status(StatusCodes.OK).json({ user });
+}
+
 exports.registerUser = async (req, res) => {
     let user = await User.findOne({ email: req.body.email });
 
