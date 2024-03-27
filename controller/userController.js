@@ -5,6 +5,9 @@ const bcrypt = require("bcrypt");
 const _ = require("lodash");
 const { Otp_VerifyAccount, Otp_ForgotPassword } = require("../utils/sendmail");
 const otpGenerator = require("otp-generator");
+const { initiatePaystackPayment } = require("../utils/paystack");
+const CourseEnrollment = require("../models/courseEnrollment");
+
 
 
 exports.getLoggedUser = async (req, res) => {
@@ -219,6 +222,55 @@ exports.resetPassword = async (req, res) => {
     });
 };
 
+exports.updateProfile = async (req, res) => {
 
+    // Find and update the user's profile
+    const updateProfile = await User.findByIdAndUpdate(req.user._id, req.body, {
+        new: true,
+        select: '-password -isVerified -isDeleted -resetPassword',
+    });
+    // This user is not on the app
+    if (!updateProfile) {
+        return res.status(StatusCodes.BAD_REQUEST).json({
+            status: "failed",
+            error: "Invalid credentials",
+        });
+    }
+
+    res.status(StatusCodes.OK).json({
+        status: 'success',
+        message: 'You have successfully updated your profile',
+        data: updateProfile
+    });
+};
+
+exports.courseEnrollment = async (req, res) => {
+
+    const { first_name, last_name, email, phone, } = req.body;
+    let amount = 10000; //Will fix this later
+    const enrollment = new CourseEnrollment({
+        first_name,
+        last_name,
+        email,
+        phone,
+        amount,
+        user: req.user._id
+    })
+    const { data } = await initiatePaystackPayment(amount, email, `${first_name} ${last_name}`, "course._id");
+
+    // If Paystack doesn't initiate payment stop the payment
+    if (!data) return res.status(StatusCodes.BAD_REQUEST).json({
+        status: 'failed',
+        message: 'Operation Failed',
+    });
+
+    await enrollment.save();
+    return res.status(StatusCodes.CREATED).json({
+        status: 'success',
+        message: 'Opening Payment Window please do not close the page!',
+        data
+
+    })
+}
 
 

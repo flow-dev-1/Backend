@@ -22,3 +22,26 @@ exports.loginValidator = function (req) {
     })
     return schema.validate(req);
 }
+
+exports.courseEnrollmerntValidator = function (req) {
+    const schema = Joi.object({
+        first_name: Joi.string()
+            .min(2)
+            .max(100)
+            .required(),
+        last_name: Joi.string()
+            .min(2)
+            .max(100)
+            .required(),
+        phone: Joi.string()
+            .pattern(new RegExp(/^\+[1-9]\d{1,14}$/))
+            .message('Please enter a valid phone number in international format')
+            .required(),
+        email: Joi.string()
+            .min(5)
+            .max(255)
+            .required()
+            .email(),
+    })
+    return schema.validate(req);
+}

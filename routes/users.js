@@ -3,7 +3,7 @@ const express = require('express');
 const router = express.Router();
 const userController = require("../controller/userController");
 const { loginValidator, validate, } = require("../middleware/validate");
-const { validateUser } = require('../models/user');
+const { validateUser, validateUserUpdate } = require('../models/user');
 const auth = require("../middleware/auth")
 // const upload = require("../utils/multer");
 
@@ -20,5 +20,9 @@ router.post('/forgot-password', userController.forgotPassword);
 router.post('/verify-token', auth, userController.verify_otp_forgotPassword)
 
 router.put('/password', auth, userController.resetPassword);
+
+router.put('/profile', auth, validate(validateUserUpdate), userController.updateProfile);
+
+router.post('/courses/:id/enroll', auth, userController.courseEnrollment);
 
 module.exports = router; 

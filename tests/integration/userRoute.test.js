@@ -652,5 +652,69 @@ describe("/api/users", () => {
         });
     });
 
+    describe("PUT /profile", () => {
+        it('should return response status 401 if client does not have auth token', async () => {
+            const data = {
+
+            };
+            const response = await request(server)
+                .put('/api/users/profile')
+                .send(data);
+
+            expect(response.statusCode).toBe(401);
+        });
+
+        it("Should return an error if any required field is missing or unexpected field added", async () => {
+
+            const userData = {
+                isVerified: true
+            };
+
+            const response = await request(server)
+                .put("/api/users/profile")
+                .set("Authorization", `Bearer ${new User().generateAuthToken()}`)
+                .send(userData);
+
+            expect(response.statusCode).toBe(400);
+        });
+
+
+        it("should update the user's profile if the user is logged in", async () => {
+            // Mock request and response objects
+            const user = await addUser();
+            const token = user.generateAuthToken();
+
+
+            // Mock updated user object
+            const updatedUser = {
+                first_name: "Mike",
+                last_name: "Doe",
+                email: "john.doe@example.com",
+                phone: "+234123456789",
+                gender: "male",
+                age: 30,
+                country: "USA",
+                state: "NY",
+
+            };
+
+            const res = await request(server)
+                .put("/api/users/profile")
+                .set("Authorization", `Bearer ${token}`)
+                .send(updatedUser)
+
+
+            expect(res.statusCode).toBe(StatusCodes.OK);
+
+            // Assert response JSON contains updated user data
+            expect(res.body.status).toBe("success");
+            expect(res.body.message).toBe("You have successfully updated your profile");
+            expect(res.body.data.first_name).toBe(updatedUser.first_name);
+            expect(res.body.data.last_name).toBe(updatedUser.last_name);
+            expect(res.body.data.email).toBe(updatedUser.email);
+
+        });
+    });
+
 
 })

@@ -151,24 +151,46 @@ function validateUser(user) {
 function validateUserUpdate(user) {
 
     const schema = Joi.object({
-        full_name: Joi.string()
+        first_name: Joi.string()
             .min(2)
-            .max(250)
+            .max(100)
+            .required(),
+        age: Joi.number()
+            .min(18)
+            .max(100)
+            .required(),
+        last_name: Joi.string()
+            .min(2)
+            .max(100)
             .required(),
         phone: Joi.string()
             .pattern(new RegExp(/^\+[1-9]\d{1,14}$/))
             .message('Please enter a valid phone number in international format')
-            .required(),
-        isoCode: Joi.string()
-            .pattern(new RegExp(/^\+[1-9]\d{1,14}$/))
-            .message('Please enter a valid iso-code')
             .required(),
         email: Joi.string()
             .min(5)
             .max(255)
             .required()
             .email(),
-
+        // password: Joi.string()
+        //     .min(8)
+        //     .max(1024)
+        //     .required(),
+        age: Joi.number()
+            .min(3)
+            .max(100)
+            .required(),
+        gender: Joi.string()
+            .valid('male', 'female')
+            .required(),
+        country: Joi.string()
+            .min(2)
+            .max(255)
+            .required(),
+        state: Joi.string()
+            .min(2)
+            .max(255)
+            .required()
     })
     return schema.validate(user);
 }
