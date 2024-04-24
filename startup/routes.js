@@ -11,6 +11,7 @@ module.exports = function (app) {
     app.use('/api/schools', admin);
     app.use('/api/users', users);
     app.use("/api", indexRouter)
+    app.use("/", indexRouter)
 
     app.use(error);
 }
