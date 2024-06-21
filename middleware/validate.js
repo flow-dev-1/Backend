@@ -153,4 +153,51 @@ exports.createCourseValidator = function (req) {
     return schema.validate(req);
 }
 
+exports.registerSchoolValidator = function (req) {
+
+    const schema = Joi.object({
+        school_name: Joi.string()
+            .min(2)
+            .max(100)
+            .required(),
+        contact_name: Joi.string()
+            .min(2)
+            .max(100)
+            .required(),
+        phone: Joi.string()
+            .pattern(new RegExp(/^\+[1-9]\d{1,14}$/))
+            .message('Please enter a valid phone number in international format')
+            .required(),
+        email: Joi.string()
+            .min(5)
+            .max(255)
+            .required()
+            .email(),
+        password: Joi.string()
+            .min(8)
+            .max(1024)
+            .required(),
+        grade: Joi.string()
+            .min(2)
+            .max(255)
+            .required(),
+        country: Joi.string()
+            .min(2)
+            .max(255)
+            .required(),
+        state: Joi.string()
+            .min(2)
+            .max(255)
+            .required(),
+
+        lga: Joi.string()
+            .optional(),
+        address: Joi.string()
+            .min(2)
+            .max(2020)
+            .required(),
+    })
+    return schema.validate(req);
+}
+
 

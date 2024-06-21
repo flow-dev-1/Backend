@@ -15,13 +15,13 @@ mongoose.plugin(new SoftDelete({
 
 
 const schoolsSchema = new mongoose.Schema({
-    first_name: {
+    school_name: {
         type: String,
         required: true,
         minlength: 2,
         maxlength: 250
     },
-    last_name: {
+    contact_name: {
         type: String,
         required: true,
         minlength: 2,
@@ -48,23 +48,28 @@ const schoolsSchema = new mongoose.Schema({
         type: String,
         required: false
     },
-    adminType: { type: mongoose.Schema.Types.ObjectId, required: true, ref: 'AdminRole' },
-
+    isSchool: {
+        type: Boolean,
+        default: true
+    },
     isVerified: {
         type: Boolean,
         default: false
     },
     address: {
         type: String,
+        required: true
+
     },
-    gender: {
+    grade: {
         type: String,
-        required: false
+        required: true
     },
 
 
-    country: { type: String },
-    state: { type: String },
+    country: { type: String, required: true },
+    state: { type: String, required: true },
+    lga: { type: String },
     resetPassword: { type: Boolean, default: false },
     isDeleted: { type: Boolean, default: false },
     deletedAt: { type: Date, default: null },
@@ -77,18 +82,17 @@ const schoolsSchema = new mongoose.Schema({
         timestamps: true,
     });
 
-adminSchema.methods.generateAuthToken = async function () {
-    // Populate adminType
-    await this.populate('adminType');
+schoolsSchema.methods.generateAuthToken = async function () {
+
     const token = jwt.sign(
         {
             _id: this._id,
             isVerified: this.isVerified,
-            firstName: this.first_name,
-            lastName: this.last_name,
+            schoolName: this.school_name,
+            contactName: this.contact_name,
             email: this.email,
             phone: this.phone,
-            adminType: this.adminType
+            isSchool: this.isSchool
 
         },
         process.env.JWT,
