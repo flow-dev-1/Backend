@@ -48,6 +48,7 @@ const adminSchema = new mongoose.Schema({
         type: String,
         required: false
     },
+    isAdmin: { type: Boolean, default: true },
     adminType: { type: mongoose.Schema.Types.ObjectId, required: true, ref: 'AdminRole' },
 
     isVerified: {
@@ -68,10 +69,6 @@ const adminSchema = new mongoose.Schema({
     resetPassword: { type: Boolean, default: false },
     isDeleted: { type: Boolean, default: false },
     deletedAt: { type: Date, default: null },
-    deletionProperties: {
-        reason: { type: String },
-        suggestion: { type: String },
-    }
 },
     {
         timestamps: true,
@@ -88,6 +85,7 @@ adminSchema.methods.generateAuthToken = async function () {
             lastName: this.last_name,
             email: this.email,
             phone: this.phone,
+            isAdmin: this.isAdmin,
             adminType: this.adminType
 
         },

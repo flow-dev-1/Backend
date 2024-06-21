@@ -79,17 +79,15 @@ exports.registerAdminValidator = function (req) {
     return schema.validate(req);
 }
 
-function validateAdminUpdate(req) {
+exports.validateAdminUpdate = function validateAdminUpdate(req) {
 
     const schema = Joi.object({
         first_name: Joi.string()
             .min(2)
             .max(100)
             .required(),
-        age: Joi.number()
-            .min(18)
-            .max(100)
-            .required(),
+        // age: Joi.number()
+        //     .required(),
         last_name: Joi.string()
             .min(2)
             .max(100)
@@ -103,14 +101,7 @@ function validateAdminUpdate(req) {
             .max(255)
             .required()
             .email(),
-        // password: Joi.string()
-        //     .min(8)
-        //     .max(1024)
-        //     .required(),
-        age: Joi.number()
-            .min(3)
-            .max(100)
-            .required(),
+
         gender: Joi.string()
             .valid('male', 'female')
             .required(),
@@ -121,9 +112,13 @@ function validateAdminUpdate(req) {
         state: Joi.string()
             .min(2)
             .max(255)
+            .required(),
+        address: Joi.string()
+            .min(2)
+            .max(1024)
             .required()
     })
-    return schema.validate(user);
+    return schema.validate(req);
 }
 
 exports.createCourseValidator = function (req) {

@@ -26,6 +26,21 @@ exports.getAdminRoles = async (req, res) => {
     const adminRoles = await AdminRoles.find({});
     res.status(StatusCodes.OK).json({ adminRoles });
 }
+exports.getCurrentAdmin = async (req, res) => {
+    // Use findOneAndUpdate with upsert: true to either update or create the document
+    const admin = await Admin.findById(req.user._id)
+        .select("-password -resetPassword -isDeleted -deletedAt")
+        .populate("adminType", "type");
+    res.status(StatusCodes.OK).json({ admin });
+}
+
+exports.getAdmins = async (req, res) => {
+    // Use findOneAndUpdate with upsert: true to either update or create the document
+    const admins = await Admin.find({})
+        .select("-password -resetPassword -isDeleted -deletedAt")
+        .populate("adminType", "type");
+    res.status(StatusCodes.OK).json({ admins });
+}
 
 exports.inviteFlowAdmin = async (req, res) => {
     const { first_name, last_name, email, position } = req.body
@@ -229,6 +244,75 @@ exports.resetPassword = async (req, res) => {
         status: 'success',
         message: 'You have successfully reset your password',
 
+    });
+};
+
+exports.changePassword = async (req, res) => {
+    const { oldPassword, newPassword } = req.body
+
+    // Only users with valid OTP can reset password. hence resetPassword=true
+    let admin = await Admin.findOne({ email: req.user.email }).exec();
+
+    // This user is not on the app
+    if (!admin) {
+        return res.status(StatusCodes.BAD_REQUEST).json({
+            status: "failed",
+            error: "Invalid credentials",
+        });
+    }
+
+    const validPassword = await bcrypt.compare(oldPassword, admin.password);
+    if (!validPassword) return res.status(400).send('Your old password is incorrect!');
+    // hash the password
+    const hashed_password = await bcrypt.hash(newPassword, 10);
+
+    admin.password = hashed_password;
+
+    await admin.save();
+    res.status(StatusCodes.OK).json({
+        status: 'success',
+        message: 'You have successfully changed your password!',
+
+    });
+};
+
+exports.updateProfile = async (req, res) => {
+
+    // Find and update the user's profile
+    const updateProfile = await Admin.findByIdAndUpdate(req.user._id, req.body, {
+        new: true,
+        select: '-password -isVerified -isDeleted -resetPassword',
+    });
+    // This user is not on the app
+    if (!updateProfile) {
+        return res.status(StatusCodes.BAD_REQUEST).json({
+            status: "failed",
+            error: "Invalid credentials",
+        });
+    }
+
+    res.status(StatusCodes.OK).json({
+        status: 'success',
+        message: 'You have successfully updated your profile',
+        data: updateProfile
+    });
+};
+
+exports.deleteAdmin = async (req, res) => {
+
+    // Check if course already exist
+    let admin = await Admin.findOne({ _id: req.params.id });
+
+    if (!admin) return res.status(StatusCodes.UNPROCESSABLE_ENTITY).json({
+        message: "Admin does not exist!"
+    })
+
+
+    await Admin.findOneAndDelete({ _id: req.params.id })
+
+    res.status(StatusCodes.OK).json({
+        status: 'success',
+        message: "Admin Deleted successfully!",
     });
 };
 

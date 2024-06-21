@@ -3,7 +3,7 @@ const express = require('express');
 const router = express.Router();
 const isAdmin = require("../middleware/isAdmin")
 const auth = require("../middleware/auth")
-const { inviteAdminValidator, loginValidator, validate, registerAdminValidator, createCourseValidator, } = require("../middleware/validate");
+const { inviteAdminValidator, validate, registerAdminValidator, createCourseValidator, validateAdminUpdate } = require("../middleware/validate");
 const adminController = require("../controller/adminController")
 // const { loginValidator, validate, validateRestaurantOrder, validateUserAddress } = require("../middleware/validation");
 // const { validateUser, validateUserUpdate } = require("../models/user");
@@ -11,14 +11,19 @@ const adminController = require("../controller/adminController")
 // const auth = require("../middleware/auth")
 const upload = require("../utils/multer");
 const optionalUpload = require('../utils/optionalUpload');
+const checkAdminRole = require('../middleware/checkAdminRole');
 
 router.get('/', async (req, res) => {
     res.json('Hello! welcome to FLOW ADMIN');
 })
 
+router.get('/me', auth, isAdmin, adminController.getCurrentAdmin);
+
 router.post('/roles', auth, isAdmin, adminController.createAdminRoles);
 
 router.get('/roles', auth, isAdmin, adminController.getAdminRoles);
+
+router.get('/all', auth, isAdmin, adminController.getAdmins);
 
 router.post('/invitation',
     // auth,
@@ -36,6 +41,12 @@ router.post('/forgot-password', adminController.forgotPassword);
 router.patch('/verify-token', auth, isAdmin, adminController.verify_otp_forgotPassword)
 
 router.put('/password', auth, isAdmin, adminController.resetPassword);
+
+router.patch('/password', auth, isAdmin, adminController.changePassword);
+
+router.put('/profile', auth, isAdmin, validate(validateAdminUpdate), adminController.updateProfile);
+
+router.delete('/:id', [auth, isAdmin, checkAdminRole(["Super-Admin"])], adminController.deleteAdmin);
 
 /********************** Courses Routes *********************/
 router.get('/courses', auth, isAdmin, adminController.getCourses);
