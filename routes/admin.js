@@ -16,9 +16,9 @@ router.get('/', async (req, res) => {
     res.json('Hello! welcome to FLOW ADMIN');
 })
 
-router.post('/roles', adminController.createAdminRoles);
+router.post('/roles', auth, isAdmin, adminController.createAdminRoles);
 
-router.get('/roles', adminController.getAdminRoles);
+router.get('/roles', auth, isAdmin, adminController.getAdminRoles);
 
 router.post('/invitation',
     // auth,
@@ -39,6 +39,16 @@ router.put('/password', auth, isAdmin, adminController.resetPassword);
 
 /********************** Courses Routes *********************/
 router.get('/courses', auth, isAdmin, adminController.getCourses);
+
+router.post('/courses', auth, isAdmin, upload.single('image'), validate(createCourseValidator), adminController.createCourses);
+
+router.put('/courses/:id', auth, isAdmin, optionalUpload.single('image'), validate(createCourseValidator), adminController.updateCourses);
+
+router.delete('/courses/:id', auth, isAdmin, adminController.deleteCourse);
+
+
+/********************** Schools Routes *********************/
+router.get('/schools', auth, isAdmin, adminController.getSchools);
 
 router.post('/courses', auth, isAdmin, upload.single('image'), validate(createCourseValidator), adminController.createCourses);
 

@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const courseEnrollment = require("./courseEnrollment");
 
 const courseSchema = mongoose.Schema({
     createdBy: { type: mongoose.Schema.Types.ObjectId, required: true, ref: 'Admin' },
@@ -10,6 +11,8 @@ const courseSchema = mongoose.Schema({
     access: { type: String, required: true },
     url: { type: String, required: true },
     image: { type: String, required: true },
+    courseEnrollment: [{ type: mongoose.Schema.Types.ObjectId, required: true, ref: 'CourseEnrollment' }],
+    likes: [{ type: mongoose.Schema.Types.ObjectId, required: true, ref: 'User' }]
 
 }, {
     timestamps: true,

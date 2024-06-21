@@ -340,3 +340,12 @@ exports.deleteCourse = async (req, res) => {
         message: "Course Deleted successfully!",
     });
 };
+
+
+exports.getSchools = async (req, res) => {
+
+    res.status(StatusCodes.OK).json({
+        status: 'success',
+
+    });
+};

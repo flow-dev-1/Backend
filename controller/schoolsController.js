@@ -1,0 +1,1 @@
+const Schools = require("../models/school");
