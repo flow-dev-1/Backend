@@ -75,3 +75,41 @@ exports.Otp_ForgotPassword = async (name, email, otp, token) => {
         console.log(error, "email not sent");
     }
 };
+
+exports.admin_invite = async (name, email, token) => {
+    let link = process.env.ENV === 'staging' ? `https://my-flow.netlify.app/reset-password?t=${token}` : `http://localhost:3000/reset-password?t=${token}`
+
+    try {
+        const transporter = nodemailer.createTransport({
+            service: EMAIL_USER,
+            secure: true,
+            auth: {
+                pass: EMAIL_PASS,
+                user: EMAIL
+            },
+        });
+
+        await transporter.sendMail({
+            from: EMAIL,
+            to: email,
+            subject: ' FLOW Reset Password',
+            html: ` <b> Hi ${name} </b></br>
+            <p>You have been invited to Join FLOW as an Administrator.</p>
+            </br>
+            <p>Please click or copy this link to complete your sign up.</p>
+            </br>
+            </br>
+            <b><a href="${link}">${link}</a></b>
+            </br>
+            </br>
+            <p>Please do not forward this email to others in order to prevent anybody else from accessing your account.</p>   
+            </br>
+            <p>Kind Regards! </p>`,
+
+        });
+        console.log("email sent sucessfully");
+
+    } catch (error) {
+        console.log(error, "email not sent");
+    }
+};
