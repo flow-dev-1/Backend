@@ -1,4 +1,5 @@
 const Admin = require("../models/admin");
+const Schools = require("../models/school");
 const AdminRoles = require("../models/adminRole");
 const OTP = require("../models/OTP");
 const StatusCodes = require("../utils/status-codes");
@@ -428,8 +429,10 @@ exports.deleteCourse = async (req, res) => {
 
 exports.getSchools = async (req, res) => {
 
+    const schools = await Schools.find()
+        .select('-password -isVerified -isDeleted -resetPassword');
     res.status(StatusCodes.OK).json({
         status: 'success',
-
+        schools
     });
 };

@@ -25,10 +25,7 @@ router.get('/roles', auth, isAdmin, adminController.getAdminRoles);
 
 router.get('/all', auth, isAdmin, adminController.getAdmins);
 
-router.post('/invitation',
-    // auth,
-    //  isAdmin, validate(inviteAdminValidator), 
-    adminController.inviteFlowAdmin);
+router.post('/invitation', auth, isAdmin, validate(inviteAdminValidator), adminController.inviteFlowAdmin);
 
 router.post('/register', auth, isAdmin, validate(registerAdminValidator), adminController.registerFlowAdmin);
 

@@ -2,6 +2,7 @@ const jwt = require("jsonwebtoken");
 const Joi = require("joi");
 const mongoose = require("mongoose");
 const { SoftDelete } = require("soft-delete-mongoose-plugin");
+const { last } = require("lodash");
 
 // defind soft delete field name
 const IS_DELETED_FIELD = "isDeleted";
@@ -65,8 +66,13 @@ const schoolsSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-
-
+    team: [{ type: mongoose.Schema.Types.ObjectId, required: true, ref: 'User' }],
+    email_notification: [{
+        first_name: { type: String },
+        last_name: { type: String },
+        email: { type: String },
+        position: { type: String }
+    }],
     country: { type: String, required: true },
     state: { type: String, required: true },
     lga: { type: String },

@@ -36,13 +36,13 @@ const userSchema = new mongoose.Schema({
     },
     password: {
         type: String,
-        required: true,
+        required: false,
         minlength: 5,
         maxlength: 1024
     },
     phone: {
         type: String,
-        required: true
+        required: false
     },
     photo: {
         type: String,
@@ -58,13 +58,19 @@ const userSchema = new mongoose.Schema({
     },
     gender: {
         type: String,
-        required: true
+        required: false
     },
     age: {
         type: Number,
-        required: true
+        required: false
     },
-
+    userType: { type: String, enum: ["Educator", "Student", "Individual"], default: "Individual" },
+    school: { type: mongoose.Schema.Types.ObjectId, required: true, ref: 'User' },
+    isSchoolAdmin: { type: Boolean, default: false },
+    schoolAdminStatus: { type: String, enum: ["Pending", "Confirmed"] },
+    schoolAdminPermission: { type: String, enum: ["Admin", "Students", "Teachers"] },
+    schoolAdminDate: { type: Date },
+    newInvite: { type: Object },
     country: { type: String },
     state: { type: String },
     resetPassword: { type: Boolean, default: false },

@@ -3,10 +3,38 @@ const OTP = require("../models/OTP");
 const StatusCodes = require("../utils/status-codes");
 const bcrypt = require("bcrypt");
 const _ = require("lodash");
-const { Otp_VerifyAccount, Otp_ForgotPassword } = require("../utils/sendmail");
+const { Otp_VerifyAccount, Otp_ForgotPassword, school_admin_invite } = require("../utils/sendmail");
 const otpGenerator = require("otp-generator");
 // const { initiatePaystackPayment } = require("../utils/paystack");
 // const CourseEnrollment = require("../models/courseEnrollment");
+const cloudinary = require("../utils/cloudinary");
+const { User } = require("../models/user");
+const school = require("../models/school");
+
+exports.getCurrentSchool = async (req, res) => {
+
+    let school = await Schools.findOne({ _id: req.user._id })
+        .select('-password -isVerified -isDeleted -resetPassword');
+
+
+    res.status(StatusCodes.OK).json({ school });
+}
+
+exports.getSchoolAdminTeam = async (req, res) => {
+
+    let teams = await Schools.findOne({ _id: req.params.id })
+        .select('team')
+        .populate("team", "first_name last_name email school schoolAdminStatus schoolAdminPermission schoolAdminDate newInvite");
+    res.status(StatusCodes.OK).json({ teams });
+}
+
+exports.getSchoolEmailTeam = async (req, res) => {
+
+    let teams = await Schools.findOne({ _id: req.params.id })
+        .select('email_notification')
+    res.status(StatusCodes.OK).json({ teams });
+}
+
 
 exports.registerSchool = async (req, res) => {
     const { email, contact_name, school_name, password, grade, phone, country, state, lga, address } = req.body
@@ -257,11 +285,21 @@ exports.changePassword = async (req, res) => {
 
 exports.updateProfile = async (req, res) => {
 
+    // Check if a file is uploaded
+    if (req.file?.path) {
+        const result = await cloudinary.uploader.upload(req.file.path);
+        req.body.photo = result.secure_url;
+    }
+
+
     // Find and update the user's profile
-    const updateProfile = await School.findByIdAndUpdate(req.user._id, req.body, {
-        new: true,
-        select: '-password -isVerified -isDeleted -resetPassword',
-    });
+    const updateProfile = await Schools.findByIdAndUpdate(req.user._id,
+        req.body,
+
+        {
+            new: true,
+            select: '-password -isVerified -isDeleted -resetPassword',
+        });
     // This user is not on the app
     if (!updateProfile) {
         return res.status(StatusCodes.BAD_REQUEST).json({
@@ -275,4 +313,124 @@ exports.updateProfile = async (req, res) => {
         message: 'You have successfully updated your profile',
         data: updateProfile
     });
+};
+
+exports.inviteSchoolAdmin = async (req, res) => {
+    const { first_name, last_name, email, position } = req.body
+
+    const school = await Schools.findById(req.user._id)
+
+    if (!school) {
+        return res.status(StatusCodes.NOT_FOUND).json({ message: "School not found!" });
+    }
+
+
+
+    let user = await User.findOne({ email })
+    if (user) {
+        //  Send Invitation Link
+        // Check if user is already in the team
+        const existingTeamMember = school.team.some(teamMemberId => teamMemberId.toString() === req.user._id.toString());
+        if (existingTeamMember) {
+            return res.status(StatusCodes.UNPROCESSABLE_ENTITY).json({ message: "User is already in the team" });
+        }
+
+        // Because user already may have admin details store new invite details seperately.
+        user.newInvite = {
+            schoolAdminDate: Date.now(),
+            schoolAdminPermission: position
+        }
+        const token = await user.generateAuthToken();
+        await school_admin_invite("old", first_name, last_name, req.user._id, req.user.schoolName, email, token)
+        // Add the new user to the school's team
+        school.team.push(user._id);
+        await school.save();
+        await user.save();
+        return res.status(StatusCodes.OK).json({ message: "Admin invite sent successfully!" });
+    }
+    // Save Admin record
+    user = new User({
+        first_name,
+        last_name,
+        email,
+        userType: "Educator",
+        school: req.user._id,
+        isSchoolAdmin: true,
+        schoolAdminStatus: "Pending",
+        schoolAdminPermission: position,
+        schoolAdminDate: Date.now()
+    })
+    await user.save()
+    const token = await user.generateAuthToken();
+
+    // Send Invite
+    await school_admin_invite("new", first_name, last_name, req.user._id, req.user.schoolName, email, token)
+    school.team.push(user._id);
+    await school.save();
+    res.status(StatusCodes.OK).json({ message: "Admin invite sent successfully!" });
+};
+
+exports.addEmailNotificationadmin = async (req, res) => {
+    const school = await Schools.findById(req.user._id)
+
+    if (!school) {
+        return res.status(StatusCodes.NOT_FOUND).json({ message: "School not found!" });
+    }
+    // Check if email already exists in the email_notification array
+    const emailExists = school.email_notification.some(user => user.email === req.body.email);
+
+    if (emailExists) {
+        return res.status(StatusCodes.CONFLICT).json({ message: "Email already exists in notifications list!" });
+    }
+
+    // Add email to email_notification array
+    school.email_notification.push(req.body);
+
+    // Save changes
+    await school.save();
+    res.status(StatusCodes.OK).json({ message: "Admin email notification added successfully!" });
+};
+
+exports.removeSchoolAdmin = async (req, res) => {
+
+    // Find the school by ID
+    const school = await Schools.findById(req.user._id);
+    if (!school) {
+        return res.status(StatusCodes.NOT_FOUND).json({ message: "School not found!" });
+    }
+
+    // Find the user by ID
+    const user = await User.findById(req.params.id);
+    if (!user) {
+        return res.status(StatusCodes.UNPROCESSABLE_ENTITY).json({ message: "User not found" });
+    }
+
+    // Remove the user from the school's team
+    const teamMembers = school.team.filter(teamMemberId => teamMemberId.toString() !== user._id.toString());
+    school.team = teamMembers;
+    // Update user's isSchoolAdmin status
+    user.isSchoolAdmin = false;
+
+    // Save changes concurrently
+    await Promise.all([user.save(), school.save()]);
+
+    res.status(StatusCodes.OK).json({ message: "School admin removed successfully!" });
+};
+
+exports.removeEmailAdmin = async (req, res) => {
+
+    // Find the school by ID
+    const school = await Schools.findById(req.user._id);
+    if (!school) {
+        return res.status(StatusCodes.NOT_FOUND).json({ message: "School not found!" });
+    }
+
+    // Remove the user from the school's team
+    const emailMembers = school.email_notification.filter(emailMember => emailMember._id.toString() !== req.params.id.toString());
+    school.email_notification = emailMembers;
+
+    // Save changes concurrently
+    await school.save();
+
+    res.status(StatusCodes.OK).json({ message: "School admin removed successfully!" });
 };
