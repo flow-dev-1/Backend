@@ -65,12 +65,12 @@ const userSchema = new mongoose.Schema({
         required: false
     },
     userType: { type: String, enum: ["Educator", "Student", "Individual"], default: "Individual" },
-    school: { type: mongoose.Schema.Types.ObjectId, required: true, ref: 'User' },
+    school: { type: mongoose.Schema.Types.ObjectId, required: false, ref: 'User' },
     isSchoolAdmin: { type: Boolean, default: false },
     schoolAdminStatus: { type: String, enum: ["Pending", "Confirmed"] },
     schoolAdminPermission: { type: String, enum: ["Admin", "Students", "Teachers"] },
     schoolAdminDate: { type: Date },
-    newInvite: { type: Object },
+    newInvite: { type: Object },//This accounts for invitation dat has not been accepted or rejected
     country: { type: String },
     state: { type: String },
     resetPassword: { type: Boolean, default: false },

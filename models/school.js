@@ -1,19 +1,21 @@
 const jwt = require("jsonwebtoken");
 const Joi = require("joi");
 const mongoose = require("mongoose");
+const { plugin } = require("mongoose");
 const { SoftDelete } = require("soft-delete-mongoose-plugin");
-const { last } = require("lodash");
 
-// defind soft delete field name
+
+// define soft delete field name
 const IS_DELETED_FIELD = "isDeleted";
 const DELETED_AT_FIELD = "deletedAt";
 
 // use soft delete plugin
-mongoose.plugin(new SoftDelete({
-    isDeletedField: IS_DELETED_FIELD,
-    deletedAtField: DELETED_AT_FIELD,
-}).getPlugin());
-
+plugin(
+    new SoftDelete({
+        isDeletedField: IS_DELETED_FIELD,
+        deletedAtField: DELETED_AT_FIELD,
+    }).getPlugin()
+);
 
 const schoolsSchema = new mongoose.Schema({
     school_name: {
@@ -81,7 +83,7 @@ const schoolsSchema = new mongoose.Schema({
     deletedAt: { type: Date, default: null },
     deletionProperties: {
         reason: { type: String },
-        suggestion: { type: String },
+        // suggestion: { type: String },
     }
 },
     {
@@ -108,5 +110,11 @@ schoolsSchema.methods.generateAuthToken = async function () {
     );
     return token;
 };
+
+// schoolsSchema.methods.softDelete = async function () {
+//     this.isDeleted = true;
+//     this.deletedAt = new Date();
+//     await this.save();
+// };
 
 module.exports = mongoose.model("School", schoolsSchema);

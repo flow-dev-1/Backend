@@ -237,3 +237,26 @@ exports.updateSchoolValidator = function (req) {
     return schema.validate(req);
 }
 
+exports.schoolCourseEnrollmentValidator = function (req) {
+    const schema = Joi.object({
+        stdClass: Joi.string()
+            .min(2)
+            .max(100)
+            .required(),
+        dayOfWeek: Joi.string()
+            .min(2)
+            .max(100)
+            .required(),
+        startTime: Joi.string()
+            .required()
+            .pattern(/^([01]\d|2[0-3]):([0-5]\d)$/), // Validate time format "HH:mm"
+        endTime: Joi.string()
+            .required()
+            .pattern(/^([01]\d|2[0-3]):([0-5]\d)$/), // Validate time format "HH:mm"
+        students: Joi.array()
+            .items(Joi.string().email())
+            .required(),
+    });
+
+    return schema.validate(req);
+};

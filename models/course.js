@@ -7,7 +7,7 @@ const courseSchema = mongoose.Schema({
     description: { type: String, required: true },
     cost: { type: Number, required: true },
     currency: { type: String, required: true },
-    status: { type: String, required: true },
+    status: { type: String, required: true, enum: ["draft", "published"] },
     access: { type: String, required: true },
     url: { type: String, required: true },
     image: { type: String, required: true },

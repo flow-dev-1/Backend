@@ -10,6 +10,8 @@ const otpGenerator = require("otp-generator");
 const cloudinary = require("../utils/cloudinary");
 const { User } = require("../models/user");
 const school = require("../models/school");
+const Courses = require("../models/course")
+const SchoolCourses = require("../models/schoolCourseEnrollment")
 
 exports.getCurrentSchool = async (req, res) => {
 
@@ -33,6 +35,21 @@ exports.getSchoolEmailTeam = async (req, res) => {
     let teams = await Schools.findOne({ _id: req.params.id })
         .select('email_notification')
     res.status(StatusCodes.OK).json({ teams });
+}
+
+exports.getCourses = async (req, res) => {
+    let { type } = req.query
+
+    let courses;
+
+    if (type === 'Enrolled') {
+
+        courses = await SchoolCourses.find({ school: req.params.id, status: "Active" })
+            .populate("course")
+    } else {
+        courses = await Courses.find({ status: "published" })
+    }
+    res.status(StatusCodes.OK).json({ courses });
 }
 
 
@@ -324,8 +341,6 @@ exports.inviteSchoolAdmin = async (req, res) => {
         return res.status(StatusCodes.NOT_FOUND).json({ message: "School not found!" });
     }
 
-
-
     let user = await User.findOne({ email })
     if (user) {
         //  Send Invitation Link
@@ -354,11 +369,13 @@ exports.inviteSchoolAdmin = async (req, res) => {
         last_name,
         email,
         userType: "Educator",
-        school: req.user._id,
-        isSchoolAdmin: true,
-        schoolAdminStatus: "Pending",
-        schoolAdminPermission: position,
-        schoolAdminDate: Date.now()
+        newInvite: {
+            school: req.user._id,
+            isSchoolAdmin: true,
+            schoolAdminStatus: "Pending",
+            schoolAdminPermission: position,
+            schoolAdminDate: Date.now(),
+        }
     })
     await user.save()
     const token = await user.generateAuthToken();
@@ -391,6 +408,59 @@ exports.addEmailNotificationadmin = async (req, res) => {
     res.status(StatusCodes.OK).json({ message: "Admin email notification added successfully!" });
 };
 
+exports.courseEnrollment = async (req, res) => {
+    const { stdClass, dayOfWeek, startTime, endTime, students } = req.body
+    const { id, courseId } = req.params
+
+    const existingEnrollment = await SchoolCourses.findOne({
+        course: courseId, // Assuming you have some course ID here
+        school: id,
+        status: "Active"
+    });
+
+    if (existingEnrollment) {
+        return res.status(StatusCodes.UNPROCESSABLE_ENTITY).json({ message: "You are already enrolled in this course!" })
+    }
+
+    const newEnrollment = new SchoolCourses({
+        course: courseId, // Assuming you have some course ID here
+        school: id,
+        status: "Active",
+        stdClass,
+        dayOfWeek,
+        startTime,
+        endTime,
+        students: []
+    })
+
+    const uniqueEmails = new Set(students);
+    Array.from(uniqueEmails).map(async (email) => {
+        let user = await User.findOne({ email });
+
+        if (!user) {
+            user = new User({
+                first_name: "N/A",
+                last_name: "N/A",
+                email,
+                userType: stdClass === "Educator" ? "Educator" : "Student",
+                newInvite: {
+                    school: id,
+                }
+            });
+            await user.save();
+        } else {
+            user.newInvite = { school: id };
+            await user.save();
+        }
+
+        newEnrollment.students.push(user._id);
+    });
+
+    await newEnrollment.save();
+
+
+    res.status(StatusCodes.OK).json({ message: "Course enrolled successfully!" });
+};
 exports.removeSchoolAdmin = async (req, res) => {
 
     // Find the school by ID
@@ -433,4 +503,23 @@ exports.removeEmailAdmin = async (req, res) => {
     await school.save();
 
     res.status(StatusCodes.OK).json({ message: "School admin removed successfully!" });
+};
+
+exports.deactivateAccount = async (req, res) => {
+
+    const { reason } = req.body
+    if (!reason || reason.length < 2) return res.status(StatusCodes.NOT_FOUND).json({ message: "Deactivation reason is required!" });
+
+    // Find the school by ID
+    let school = await Schools.findById(req.user._id);
+
+    if (!school) {
+        return res.status(StatusCodes.NOT_FOUND).json({ message: "School not found!" });
+    }
+    school.deletionProperties.reason = reason
+    await school.save()
+    // Soft delete the account using the plugin method
+    await Schools.softDeleteOne({ _id: req.user._id }).exec();;
+
+    res.status(StatusCodes.OK).json({ message: "Account deactivated successfully!" });
 };

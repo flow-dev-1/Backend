@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 const express = require('express');
 const router = express.Router();
 const auth = require("../middleware/auth")
-const { loginValidator, validate, registerSchoolValidator, updateSchoolValidator, inviteAdminValidator, } = require("../middleware/validate");
+const { loginValidator, validate, registerSchoolValidator, updateSchoolValidator, inviteAdminValidator, schoolCourseEnrollmentValidator, } = require("../middleware/validate");
 const schoolsController = require("../controller/schoolsController")
 const upload = require("../utils/multer");
 const optionalUpload = require('../utils/optionalUpload');
@@ -17,6 +17,8 @@ router.get('/me', auth, schoolAccess, schoolsController.getCurrentSchool);
 router.get('/:id/team', auth, schoolAccess, schoolsController.getSchoolAdminTeam);
 
 router.get('/:id/email-list', auth, schoolAccess, schoolsController.getSchoolEmailTeam);
+
+router.get('/:id/courses', auth, schoolAccess, schoolsController.getCourses);
 
 router.post('/', validate(registerSchoolValidator), schoolsController.registerSchool);
 
@@ -39,9 +41,13 @@ router.post('/invitation', auth, validate(inviteAdminValidator), schoolsControll
 
 router.post('/email-notification', auth, validate(inviteAdminValidator), schoolsController.addEmailNotificationadmin);
 
+router.post('/:id/courses/:courseId/enroll', auth, schoolAccess, validate(schoolCourseEnrollmentValidator), schoolsController.courseEnrollment);
+
 router.delete('/teams/:id', auth, schoolAccess, schoolsController.removeSchoolAdmin);
 
 router.delete('/email-list/:id', auth, schoolAccess, schoolsController.removeEmailAdmin);
+
+router.delete('/', auth, schoolAccess, schoolsController.deactivateAccount);
 
 
 // router.delete('/:id', [auth, schoolAccess], schoolsController.deleteAdmin);
