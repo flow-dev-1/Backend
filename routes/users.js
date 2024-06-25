@@ -12,7 +12,10 @@ router.get('/', async (req, res) => {
 })
 router.get('/me', auth, userController.getLoggedUser);
 
+router.get('/courses', auth, userController.getCourses);
+
 router.post('/register', validate(validateUser), userController.registerUser);
+
 router.patch('/verify-account', auth, userController.verifyAccount);
 router.post('/login', validate(loginValidator), userController.login);
 router.post('/forgot-password', userController.forgotPassword);

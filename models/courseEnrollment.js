@@ -1,37 +1,41 @@
 const mongoose = require("mongoose");
 
 const courseEnrollmentSchema = new mongoose.Schema({
-    first_name: {
-        type: String,
-        required: true
-    },
-    last_name: {
-        type: String,
-        required: true
+    _id: {
+        type: mongoose.Schema.Types.ObjectId,
+        auto: true
     },
     course: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Course",
         // required: true
     },
-    amount: { type: String },
-    email: {
-        type: String,
-        required: true
+    school: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "School",
+        // required: true
     },
-    phone: {
-        type: String
+    schoolCourseEnrollment: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "SchoolCourseEnrollment",
+        // required: true
     },
     status: {
         type: String,
-        enum: ['Pending', 'Confirmed'],
+        enum: ['Pending', 'Confirmed', "Deactivated"],
         default: 'Pending'
+    },
+    progress: {
+        type: Number,
+        default: 0
     },
     user: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
         required: true
     }
+}, {
+    timestamps: true
 });
 
 module.exports = mongoose.model("CourseEnrollment", courseEnrollmentSchema);

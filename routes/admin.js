@@ -3,8 +3,9 @@ const express = require('express');
 const router = express.Router();
 const isAdmin = require("../middleware/isAdmin")
 const auth = require("../middleware/auth")
-const { inviteAdminValidator, validate, registerAdminValidator, createCourseValidator, validateAdminUpdate } = require("../middleware/validate");
+const { inviteAdminValidator, validate, registerAdminValidator, createCourseValidator, validateAdminUpdate, schoolCourseEnrollmentValidator, schoolCourseAddStudentsValidator } = require("../middleware/validate");
 const adminController = require("../controller/adminController")
+const schoolsController = require("../controller/schoolsController")
 // const { loginValidator, validate, validateRestaurantOrder, validateUserAddress } = require("../middleware/validation");
 // const { validateUser, validateUserUpdate } = require("../models/user");
 // const { validateDispatchOrder } = require("../models/dispatchOrder");
@@ -58,14 +59,37 @@ router.put('/courses/:id', auth, isAdmin, optionalUpload.single('image'), valida
 router.delete('/courses/:id', auth, isAdmin, adminController.deleteCourse);
 
 
+/********************** Individual Routes *********************/
+router.get('/users', auth, isAdmin, adminController.getUsers);
+
+router.get('/users/:userId', auth, isAdmin, schoolsController.getSingleUser);
+
+// router.post('/courses', auth, isAdmin, upload.single('image'), validate(createCourseValidator), adminController.createCourses);
+
+// router.put('/courses/:id', auth, isAdmin, optionalUpload.single('image'), validate(createCourseValidator), adminController.updateCourses);
+
+// router.delete('/courses/:id', auth, isAdmin, adminController.deleteCourse);
+
+
 /********************** Schools Routes *********************/
 router.get('/schools', auth, isAdmin, adminController.getSchools);
 
-router.post('/courses', auth, isAdmin, upload.single('image'), validate(createCourseValidator), adminController.createCourses);
+router.get('/schools/:id', auth, isAdmin, adminController.getSingleSchool);
 
-router.put('/courses/:id', auth, isAdmin, optionalUpload.single('image'), validate(createCourseValidator), adminController.updateCourses);
+router.get('/schools/:id/courses', auth, isAdmin, adminController.getSchoolEnrolledCourses);
 
-router.delete('/courses/:id', auth, isAdmin, adminController.deleteCourse);
+router.get('/schools/:id/courses/enrolled/:enrolledCourseId', auth, isAdmin, schoolsController.getSingleEnrolledCourse);
 
+router.get('/schools/:id/users/:userId', auth, isAdmin, schoolsController.getSingleUser);
+
+router.post('/schools/:id/courses/:courseId/enroll', auth, isAdmin, validate(schoolCourseEnrollmentValidator), schoolsController.courseEnrollment);
+
+router.put('/schools/:id/courses/:enrolledCourseId/users', auth, isAdmin, validate(schoolCourseAddStudentsValidator), schoolsController.addStudentsToCourseEnrollment);
+
+router.delete('/schools/:id/teams/:userId', auth, isAdmin, adminController.deleteAdminFromSchool);
+
+router.delete('/schools/:id/emails/:emailId', auth, isAdmin, adminController.deleteEmailFromSchool);
+
+router.delete('/schools/:enrolledCourseId/users/:userId/enrollment/:userEnrollmentId', auth, isAdmin, schoolsController.deleteStudentFromCourseEnrollment);
 
 module.exports = router; 

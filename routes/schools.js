@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 const express = require('express');
 const router = express.Router();
 const auth = require("../middleware/auth")
-const { loginValidator, validate, registerSchoolValidator, updateSchoolValidator, inviteAdminValidator, schoolCourseEnrollmentValidator, } = require("../middleware/validate");
+const { loginValidator, validate, registerSchoolValidator, updateSchoolValidator, inviteAdminValidator, schoolCourseEnrollmentValidator, schoolCourseAddStudentsValidator, } = require("../middleware/validate");
 const schoolsController = require("../controller/schoolsController")
 const upload = require("../utils/multer");
 const optionalUpload = require('../utils/optionalUpload');
@@ -19,6 +19,10 @@ router.get('/:id/team', auth, schoolAccess, schoolsController.getSchoolAdminTeam
 router.get('/:id/email-list', auth, schoolAccess, schoolsController.getSchoolEmailTeam);
 
 router.get('/:id/courses', auth, schoolAccess, schoolsController.getCourses);
+
+router.get('/:id/courses/enrolled/:enrolledCourseId', auth, schoolAccess, schoolsController.getSingleEnrolledCourse);
+
+router.get('/:id/users/:userId', auth, schoolAccess, schoolsController.getSingleUser);
 
 router.post('/', validate(registerSchoolValidator), schoolsController.registerSchool);
 
@@ -43,12 +47,15 @@ router.post('/email-notification', auth, validate(inviteAdminValidator), schools
 
 router.post('/:id/courses/:courseId/enroll', auth, schoolAccess, validate(schoolCourseEnrollmentValidator), schoolsController.courseEnrollment);
 
+router.put('/:id/courses/:enrolledCourseId/users', auth, schoolAccess, validate(schoolCourseAddStudentsValidator), schoolsController.addStudentsToCourseEnrollment);
+
 router.delete('/teams/:id', auth, schoolAccess, schoolsController.removeSchoolAdmin);
 
 router.delete('/email-list/:id', auth, schoolAccess, schoolsController.removeEmailAdmin);
 
 router.delete('/', auth, schoolAccess, schoolsController.deactivateAccount);
 
+router.delete('/:enrolledCourseId/users/:userId/enrollment/:userEnrollmentId', auth, schoolAccess, schoolsController.deleteStudentFromCourseEnrollment);
 
 // router.delete('/:id', [auth, schoolAccess], schoolsController.deleteAdmin);
 

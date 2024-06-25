@@ -1,13 +1,25 @@
 const mongoose = require("mongoose");
 
 const schoolCourseEnrollmentSchema = new mongoose.Schema({
-
+    _id: {
+        type: mongoose.Schema.Types.ObjectId,
+        auto: true
+    },
+    enrolledBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        refPath: 'docModel',
+        required: true,
+    },
+    docModel: {
+        type: String,
+        required: true,
+        enum: ['User', 'Admin', "School"] // Add the possible model names here
+    },
     course: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Course",
         // required: true
     },
-
     school: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "School",
@@ -33,9 +45,9 @@ const schoolCourseEnrollmentSchema = new mongoose.Schema({
         type: String, // Store time as string in "HH:mm" format
         required: true
     },
-    students: [{
+    studentEnrollments: [{
         type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
+        ref: "CourseEnrollment",
     }]
 });
 

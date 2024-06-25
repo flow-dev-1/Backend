@@ -15,6 +15,10 @@ mongoose.plugin(new SoftDelete({
 
 
 const userSchema = new mongoose.Schema({
+    _id: {
+        type: mongoose.Schema.Types.ObjectId,
+        auto: true
+    },
     first_name: {
         type: String,
         required: true,
@@ -139,6 +143,8 @@ function validateUser(user) {
             .min(3)
             .max(100)
             .required(),
+        grade: Joi.string()
+            .optional(),
         gender: Joi.string()
             .valid('male', 'female')
             .required(),

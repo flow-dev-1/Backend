@@ -10,6 +10,9 @@ const otpGenerator = require("otp-generator");
 const CourseEnrollment = require("../models/courseEnrollment");
 const cloudinary = require("../utils/cloudinary");
 const Courses = require("../models/course");
+const SchoolCourses = require("../models/schoolCourseEnrollment");
+const StudentEnrollments = require("../models/courseEnrollment")
+const { User } = require("../models/user");
 
 exports.createAdminRoles = async (req, res) => {
     const { type } = req.body
@@ -426,6 +429,18 @@ exports.deleteCourse = async (req, res) => {
     });
 };
 
+exports.getUsers = async (req, res) => {
+
+    const users = await User.find({
+        userType: "Individual"
+    })
+        .select('-password -isVerified -isDeleted -resetPassword');
+    res.status(StatusCodes.OK).json({
+        status: 'success',
+        users
+    });
+};
+
 
 exports.getSchools = async (req, res) => {
 
@@ -434,5 +449,79 @@ exports.getSchools = async (req, res) => {
     res.status(StatusCodes.OK).json({
         status: 'success',
         schools
+    });
+};
+
+exports.getSingleSchool = async (req, res) => {
+
+    const school = await Schools.findById(req.params.id)
+        .select('-password -isVerified -isDeleted -resetPassword')
+        .populate("team", "first_name last_name email school schoolAdminStatus schoolAdminPermission schoolAdminDate newInvite");
+    res.status(StatusCodes.OK).json({
+        status: 'success',
+        school
+    });
+};
+
+exports.getSchoolEnrolledCourses = async (req, res) => {
+
+    const courses = await SchoolCourses.find({ school: req.params.id, status: "Active" })
+        .populate("course")
+
+    res.status(StatusCodes.OK).json({ courses });
+};
+
+
+exports.deleteAdminFromSchool = async (req, res) => {
+
+    const { id, userId } = req.params
+
+    const school = await Schools.findById(id)
+        .select('-password -isVerified -isDeleted -resetPassword')
+
+    // Check if the student is enrolled in the course
+    const userIndex = school.team.findIndex(user => user.toString() === userId);
+
+    if (userIndex === -1) {
+        return res.status(StatusCodes.NOT_FOUND).json({ message: "Email not found in this list!" });
+    }
+
+    // Remove the student from the enrollment
+    school.team.splice(userIndex, 1);
+
+    // Save the updated enrollment
+    await school.save();
+
+
+    res.status(StatusCodes.OK).json({
+        status: 'success',
+        message: "You have successfully deleted this email from the team."
+    });
+};
+
+exports.deleteEmailFromSchool = async (req, res) => {
+
+    const { id, emailId } = req.params
+
+    const school = await Schools.findById(id)
+        .select('-password -isVerified -isDeleted -resetPassword')
+
+    // Check if the student is enrolled in the course
+    const emailIndex = school.email_notification.findIndex(email => email._id.toString() === emailId);
+
+    if (emailIndex === -1) {
+        return res.status(StatusCodes.NOT_FOUND).json({ message: "Email not found in this list!" });
+    }
+
+    // Remove the student from the enrollment
+    school.email_notification.splice(emailIndex, 1);
+
+    // Save the updated enrollment
+    await school.save();
+
+
+    res.status(StatusCodes.OK).json({
+        status: 'success',
+        message: "You have successfully deleted this email from receiving notification."
     });
 };

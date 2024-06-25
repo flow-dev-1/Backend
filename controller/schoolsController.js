@@ -1,9 +1,10 @@
+const mongoose = require("mongoose");
 const Schools = require("../models/school");
 const OTP = require("../models/OTP");
 const StatusCodes = require("../utils/status-codes");
 const bcrypt = require("bcrypt");
 const _ = require("lodash");
-const { Otp_VerifyAccount, Otp_ForgotPassword, school_admin_invite } = require("../utils/sendmail");
+const { Otp_VerifyAccount, Otp_ForgotPassword, school_admin_invite, school_course_invite } = require("../utils/sendmail");
 const otpGenerator = require("otp-generator");
 // const { initiatePaystackPayment } = require("../utils/paystack");
 // const CourseEnrollment = require("../models/courseEnrollment");
@@ -12,6 +13,7 @@ const { User } = require("../models/user");
 const school = require("../models/school");
 const Courses = require("../models/course")
 const SchoolCourses = require("../models/schoolCourseEnrollment")
+const StudentEnrollments = require("../models/courseEnrollment")
 
 exports.getCurrentSchool = async (req, res) => {
 
@@ -52,6 +54,30 @@ exports.getCourses = async (req, res) => {
     res.status(StatusCodes.OK).json({ courses });
 }
 
+exports.getSingleEnrolledCourse = async (req, res) => {
+    let { enrolledCourseId } = req.params
+
+    const courses = await SchoolCourses.find({ _id: enrolledCourseId })
+        .populate("course", "title image")
+        .populate({
+            path: "studentEnrollments",
+            populate: {
+                path: "user",
+                select: "first_name last_name email phone gender age"
+            }
+        });
+
+    res.status(StatusCodes.OK).json({ courses });
+}
+
+exports.getSingleUser = async (req, res) => {
+    let { userId } = req.params
+
+    const user = await User.findById(userId)
+        .select("-password -isVerified -isDeleted -resetPassword");
+    res.status(StatusCodes.OK).json({ user });
+
+}
 
 exports.registerSchool = async (req, res) => {
     const { email, contact_name, school_name, password, grade, phone, country, state, lga, address } = req.body
@@ -419,10 +445,23 @@ exports.courseEnrollment = async (req, res) => {
     });
 
     if (existingEnrollment) {
-        return res.status(StatusCodes.UNPROCESSABLE_ENTITY).json({ message: "You are already enrolled in this course!" })
+        return res.status(StatusCodes.UNPROCESSABLE_ENTITY).json({ message: "School is already enrolled in this course!" })
+    }
+
+    // Use Promise.all to fetch course and school simultaneously
+    const [course, school] = await Promise.all([
+        Courses.findById(courseId),
+        Schools.findById(id),
+    ]);
+
+    if (!course || !school) {
+        return res.status(StatusCodes.NOT_FOUND).json({ message: "School or course not found!" });
     }
 
     const newEnrollment = new SchoolCourses({
+        _id: new mongoose.Types.ObjectId(),
+        enrolledBy: req.user._id,
+        docModel: req.user.isSchool ? "School" : req.user.isAdmin ? "Admin" : "User",
         course: courseId, // Assuming you have some course ID here
         school: id,
         status: "Active",
@@ -430,37 +469,178 @@ exports.courseEnrollment = async (req, res) => {
         dayOfWeek,
         startTime,
         endTime,
-        students: []
+        studentEnrollments: []
     })
 
     const uniqueEmails = new Set(students);
-    Array.from(uniqueEmails).map(async (email) => {
+    for (const email of uniqueEmails) {
         let user = await User.findOne({ email });
 
         if (!user) {
+
+            // Create a new user
             user = new User({
+                _id: new mongoose.Types.ObjectId(),
                 first_name: "N/A",
                 last_name: "N/A",
                 email,
                 userType: stdClass === "Educator" ? "Educator" : "Student",
                 newInvite: {
                     school: id,
-                }
+                },
             });
-            await user.save();
-        } else {
-            user.newInvite = { school: id };
-            await user.save();
-        }
 
-        newEnrollment.students.push(user._id);
-    });
+            // Create a new enrollment
+            const newStudentEnrollment = new StudentEnrollments({
+                _id: new mongoose.Types.ObjectId(),
+                course: courseId, // Assuming you have some course ID here
+                school: id,
+                schoolCourseEnrollment: newEnrollment._id,
+                user: user._id
+            })
+
+            newEnrollment.studentEnrollments.push(newStudentEnrollment._id);
+            const token = user.generateAuthToken();
+
+            await Promise.all([
+                newStudentEnrollment.save(),
+                user.save()
+            ]);
+
+            // Send email to student
+            await school_course_invite(newStudentEnrollment._id, school.school_name, course.title, email, token);
+
+        } else {
+
+            // Check if the user is already enrolled in this course
+            const studentEnrollment = await StudentEnrollments.findOne({
+
+                course: courseId, // Assuming you have some course ID here
+                school: id,
+                schoolCourseEnrollment: newEnrollment._id,
+                user: user._id
+            })
+
+            if (!studentEnrollment) {
+                // Create a new enrollment
+                const newStudentEnrollment = new StudentEnrollments({
+                    _id: new mongoose.Types.ObjectId(),
+                    course: courseId, // Assuming you have some course ID here
+                    school: id,
+                    schoolCourseEnrollment: newEnrollment._id,
+                    user: user._id
+                })
+
+                newEnrollment.studentEnrollments.push(newStudentEnrollment._id);
+                const token = user.generateAuthToken();
+
+                user.newInvite = { school: id };
+                await Promise.all([
+                    newStudentEnrollment.save(),
+                    user.save()
+                ]);
+
+                // Send email to student
+                await school_course_invite(newStudentEnrollment._id, school.school_name, course.title, email, token);
+            }
+
+        }
+    }
 
     await newEnrollment.save();
 
-
     res.status(StatusCodes.OK).json({ message: "Course enrolled successfully!" });
 };
+
+exports.addStudentsToCourseEnrollment = async (req, res) => {
+    const { stdClass, students } = req.body
+    const { id, enrolledCourseId } = req.params
+
+    const existingEnrollment = await SchoolCourses.findOne({ _id: enrolledCourseId })
+        .populate("course", "title")
+        .populate("school", "school_name");
+
+
+    if (!existingEnrollment) {
+        return res.status(StatusCodes.UNPROCESSABLE_ENTITY).json({ message: "You are not enrolled in this course!" })
+    }
+
+    const uniqueEmails = new Set(students);
+    for (const email of uniqueEmails) {
+        let user = await User.findOne({ email });
+
+        if (!user) {
+            // Create a new user
+            user = new User({
+                _id: new mongoose.Types.ObjectId(),
+                first_name: "N/A",
+                last_name: "N/A",
+                email,
+                userType: stdClass === "Educator" ? "Educator" : "Student",
+                newInvite: {
+                    school: id,
+                },
+            });
+            // Create a new enrollment
+            const newStudentEnrollment = new StudentEnrollments({
+                _id: new mongoose.Types.ObjectId(),
+                course: existingEnrollment.course._id, // Assuming you have some course ID here
+                school: id,
+                schoolCourseEnrollment: newEnrollment._id,
+                user: user._id
+            })
+
+            existingEnrollment.studentEnrollments.push(newStudentEnrollment._id);
+            const token = user.generateAuthToken();
+
+            await Promise.all([
+                newStudentEnrollment.save(),
+                user.save()
+            ]);
+
+            // Send email to student
+            await school_course_invite(newStudentEnrollment._id, school.school_name, existingEnrollment.course.title, email, token);
+
+        } else {
+            // Check if the user is already enrolled in this course
+            const studentEnrollment = await StudentEnrollments.findOne({
+
+                course: existingEnrollment.course._id, // Assuming you have some course ID here
+                school: id,
+                schoolCourseEnrollment: existingEnrollment._id,
+                user: user._id
+            })
+
+            if (!studentEnrollment) {
+                // Create a new enrollment
+                const newStudentEnrollment = new StudentEnrollments({
+                    _id: new mongoose.Types.ObjectId(),
+                    course: existingEnrollment.course._id, // Assuming you have some course ID here
+                    school: id,
+                    schoolCourseEnrollment: existingEnrollment._id,
+                    user: user._id
+                })
+
+                existingEnrollment.studentEnrollments.push(newStudentEnrollment._id);
+                const token = user.generateAuthToken();
+
+                user.newInvite = { school: id };
+                await Promise.all([
+                    newStudentEnrollment.save(),
+                    user.save()
+                ]);
+
+                // Send email to student
+                await school_course_invite(newStudentEnrollment._id, school.school_name, existingEnrollment.course.title, email, token);
+            }
+
+        }
+    }
+    await existingEnrollment.save();
+
+    res.status(StatusCodes.OK).json({ message: "Students invited to course successfully!" });
+};
+
 exports.removeSchoolAdmin = async (req, res) => {
 
     // Find the school by ID
@@ -522,4 +702,43 @@ exports.deactivateAccount = async (req, res) => {
     await Schools.softDeleteOne({ _id: req.user._id }).exec();;
 
     res.status(StatusCodes.OK).json({ message: "Account deactivated successfully!" });
+};
+
+exports.deleteStudentFromCourseEnrollment = async (req, res) => {
+    const { enrolledCourseId, userId, userEnrollmentId } = req.params
+
+    // ToDo: Must not delete student already active on course
+
+    const existingEnrollment = await SchoolCourses.findOne({ _id: enrolledCourseId })
+        .populate("course", "title")
+        .populate("school", "school_name");
+
+
+    if (!existingEnrollment) {
+        return res.status(StatusCodes.UNPROCESSABLE_ENTITY).json({ message: "You are not enrolled in this course!" })
+    }
+
+
+    // Check if the student is enrolled in the course
+    const studentIndex = existingEnrollment.studentEnrollments.findIndex(enrollment => enrollment.toString() === userEnrollmentId);
+
+    if (studentIndex === -1) {
+        return res.status(StatusCodes.NOT_FOUND).json({ message: "Student not found in this enrollment!" });
+    }
+
+    // Remove the student from the enrollment
+    existingEnrollment.studentEnrollments.splice(studentIndex, 1);
+
+    // Save the updated enrollment
+    await existingEnrollment.save();
+
+    // Find the user and remove the newInvite related to the course
+    let user = await User.findById(userId);
+
+    if (user) {
+        user.newInvite = null
+        await user.save();
+    }
+
+    res.status(StatusCodes.OK).json({ message: "User deleted successfully!" });
 };

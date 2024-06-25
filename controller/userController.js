@@ -7,7 +7,7 @@ const { Otp_VerifyAccount, Otp_ForgotPassword } = require("../utils/sendmail");
 const otpGenerator = require("otp-generator");
 const { initiatePaystackPayment } = require("../utils/paystack");
 const CourseEnrollment = require("../models/courseEnrollment");
-
+const Courses = require("../models/course")
 
 
 exports.getLoggedUser = async (req, res) => {
@@ -16,14 +16,75 @@ exports.getLoggedUser = async (req, res) => {
     res.status(StatusCodes.OK).json({ user });
 }
 
+exports.getCourses = async (req, res) => {
+    let { type } = req.query
+
+    let courses;
+
+    if (type === 'Enrolled') {
+
+        // courses = await SchoolCourses.find({ school: req.params.id, status: "Active" })
+        // .populate("course")
+    } else {
+        courses = await Courses.find({ status: "published" })
+    }
+    res.status(StatusCodes.OK).json({ courses });
+}
+
+
 exports.registerUser = async (req, res) => {
+
+    const { type } = req.query
+    if (!type) return res.status(StatusCodes.BAD_REQUEST).json({ message: "User type is required!" });
     let user = await User.findOne({ email: req.body.email });
 
     if (user && user.isVerified) {
         return res.status(StatusCodes.BAD_REQUEST).json({ message: "User already registered." });
     }
 
+    // Check if user has incomplete data
+
+    if (user && !user.password) {
+        user.first_name = req.body.first_name
+        user.last_name = req.body.last_name
+        user.phone = req.body.phone
+        user.email = req.body.email
+        user.gender = req.body.gender
+        user.age = req.body.age
+        user.country = req.body.country
+        user.state = req.body.state
+        user.userType = type
+
+        const salt = await bcrypt.genSalt(10);
+        user.password = await bcrypt.hash(req.body.password, salt);
+        await user.save();
+
+        const code = otpGenerator.generate(6, {
+            lowerCaseAlphabets: true,
+            upperCaseAlphabets: false,
+            specialChars: false,
+        });
+
+        const otp = new OTP({
+            user: user._id,
+            checkModel: "User",
+            code,
+            type: "RegisterUser",
+            expiresIn: Date.now() + 3600000,
+        });
+
+        await otp.save();
+        await Otp_VerifyAccount(user.email, user.first_name, code);
+
+        const token = user.generateAuthToken();
+
+        return res.status(StatusCodes.OK).json({ token });
+
+    }
+
     if (user && !user.isVerified) {
+
+
         const code = otpGenerator.generate(6, {
             lowerCaseAlphabets: true,
             upperCaseAlphabets: false,
@@ -52,6 +113,7 @@ exports.registerUser = async (req, res) => {
     const newUser = new User(_.pick(req.body, ["first_name", "last_name", "phone", "email", "gender", "age", "country", "state", "password"]));
     const salt = await bcrypt.genSalt(10);
     newUser.password = await bcrypt.hash(newUser.password, salt);
+    newUser.userType = type
     await newUser.save();
 
     const code = otpGenerator.generate(6, {
