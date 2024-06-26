@@ -345,10 +345,10 @@ exports.createCourses = async (req, res) => {
 
     // Upload course image to cloudinary
 
-    const { title, description, cost, currency, status, access, url } = req.body
+    const { title, description, cost, currency, status, grade, access, url } = req.body
 
     // Check if course already exist
-    let course = await Courses.findOne({ title, access });
+    let course = await Courses.findOne({ title, grade, access });
 
     if (course) return res.status(StatusCodes.UNPROCESSABLE_ENTITY).json({
         message: "Course already exist!"
@@ -362,6 +362,7 @@ exports.createCourses = async (req, res) => {
         cost,
         currency,
         status,
+        grade,
         access,
         url,
         image: result.secure_url
@@ -379,7 +380,7 @@ exports.updateCourses = async (req, res) => {
 
     // Upload course image to cloudinary
 
-    const { title, description, cost, currency, status, access, url } = req.body
+    const { title, description, cost, currency, status, grade, access, url } = req.body
 
     // Check if course already exist
     let course = await Courses.findOne({ _id: req.params.id });
@@ -388,12 +389,12 @@ exports.updateCourses = async (req, res) => {
         message: "Course does not exist!"
     })
 
-
     course.title = title
     course.description = description
     course.cost = cost
     course.currency = currency
     course.status = status
+    course.grade = grade
     course.access = access
     course.url = url
 

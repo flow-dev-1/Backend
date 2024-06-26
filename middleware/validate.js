@@ -149,6 +149,10 @@ exports.createCourseValidator = function (req) {
             .min(3)
             .max(255)
             .required(),
+        grade: Joi.string()
+            .min(3)
+            .max(255)
+            .required(),
         access: Joi.string()
             .min(3)
             .max(255)
