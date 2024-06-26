@@ -73,7 +73,8 @@ const schoolsSchema = new mongoose.Schema({
         first_name: { type: String },
         last_name: { type: String },
         email: { type: String },
-        position: { type: String }
+        position: { type: String },
+        dateAdded: { type: Date, default: Date.now }
     }],
     country: { type: String, required: true },
     state: { type: String, required: true },
