@@ -1,4 +1,20 @@
 const mongoose = require("mongoose");
+const { plugin } = require("mongoose");
+const { SoftDelete } = require("soft-delete-mongoose-plugin");
+
+
+// define soft delete field name
+const IS_DELETED_FIELD = "isDeleted";
+const DELETED_AT_FIELD = "deletedAt";
+
+// use soft delete plugin
+plugin(
+    new SoftDelete({
+        isDeletedField: IS_DELETED_FIELD,
+        deletedAtField: DELETED_AT_FIELD,
+    }).getPlugin()
+);
+
 const courseEnrollment = require("./courseEnrollment");
 
 const courseSchema = mongoose.Schema({
@@ -13,7 +29,9 @@ const courseSchema = mongoose.Schema({
     url: { type: String, required: true },
     image: { type: String, required: true },
     courseEnrollment: [{ type: mongoose.Schema.Types.ObjectId, required: true, ref: 'CourseEnrollment' }],
-    likes: [{ type: mongoose.Schema.Types.ObjectId, required: true, ref: 'User' }]
+    likes: [{ type: mongoose.Schema.Types.ObjectId, required: true, ref: 'User' }],
+    isDeleted: { type: Boolean, default: false },
+    deletedAt: { type: Date, default: null },
 
 }, {
     timestamps: true,

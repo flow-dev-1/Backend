@@ -422,7 +422,7 @@ exports.deleteCourse = async (req, res) => {
     })
 
 
-    await Courses.findOneAndDelete({ _id: req.params.id })
+    await Courses.softDeleteOne({ _id: req.params.id })
 
     res.status(StatusCodes.OK).json({
         status: 'success',
