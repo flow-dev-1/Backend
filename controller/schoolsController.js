@@ -16,13 +16,21 @@ const SchoolCourses = require("../models/schoolCourseEnrollment")
 const StudentEnrollments = require("../models/courseEnrollment")
 
 exports.getCurrentSchool = async (req, res) => {
-
     let school = await Schools.findOne({ _id: req.user._id })
         .select('-password -isVerified -isDeleted -resetPassword');
-
-
     res.status(StatusCodes.OK).json({ school });
 }
+
+exports.getSingleSchool = async (req, res) => {
+
+    const school = await Schools.findById(req.params.id)
+        .select('-password -isVerified -isDeleted -resetPassword')
+    // .populate("team", "first_name last_name email school schoolAdminStatus schoolAdminPermission schoolAdminDate newInvite");
+    res.status(StatusCodes.OK).json({
+        status: 'success',
+        school
+    });
+};
 
 exports.getSchoolAdminTeam = async (req, res) => {
 
@@ -57,7 +65,7 @@ exports.getCourses = async (req, res) => {
 exports.getSingleEnrolledCourse = async (req, res) => {
     let { enrolledCourseId } = req.params
 
-    const courses = await SchoolCourses.find({ _id: enrolledCourseId })
+    const course = await SchoolCourses.findOne({ _id: enrolledCourseId })
         .populate("course", "title image")
         .populate({
             path: "studentEnrollments",
@@ -67,7 +75,7 @@ exports.getSingleEnrolledCourse = async (req, res) => {
             }
         });
 
-    res.status(StatusCodes.OK).json({ courses });
+    res.status(StatusCodes.OK).json({ course });
 }
 
 exports.getSingleUser = async (req, res) => {
@@ -175,6 +183,7 @@ exports.loginFlowSchool = async (req, res) => {
     const { email, password } = req.body
 
     let school = await Schools.findOne({ email, isVerified: true })
+        .select("-isVerified -isDeleted -resetPassword");
     if (!school) {
         return res.status(StatusCodes.BAD_REQUEST).json({ message: "School Account not found! Please contact FLOW support." })
     }
@@ -185,7 +194,10 @@ exports.loginFlowSchool = async (req, res) => {
 
     const token = await school.generateAuthToken();
 
-    res.status(StatusCodes.OK).json({ message: "School Login successful!", token });
+    // Remove password from the school object before sending the response
+    const { password: _, ...schoolData } = school.toObject();
+
+    res.status(StatusCodes.OK).json({ message: "School Login successful!", token, user: schoolData });
 }
 
 
@@ -371,7 +383,9 @@ exports.inviteSchoolAdmin = async (req, res) => {
     if (user) {
         //  Send Invitation Link
         // Check if user is already in the team
-        const existingTeamMember = school.team.some(teamMemberId => teamMemberId.toString() === req.user._id.toString());
+        const existingTeamMember = school.team.some(teamMemberId => {
+            return teamMemberId.toString() === user._id.toString();
+        });
         if (existingTeamMember) {
             return res.status(StatusCodes.UNPROCESSABLE_ENTITY).json({ message: "User is already in the team" });
         }

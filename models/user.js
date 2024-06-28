@@ -74,7 +74,8 @@ const userSchema = new mongoose.Schema({
     schoolAdminStatus: { type: String, enum: ["Pending", "Confirmed"] },
     schoolAdminPermission: { type: String, enum: ["Admin", "Students", "Teachers"] },
     schoolAdminDate: { type: Date },
-    newInvite: { type: Object },//This accounts for invitation dat has not been accepted or rejected
+    newCourseInvite: { type: Object },
+    newInvite: { type: Object },//This accounts for admin invitation dat has not been accepted or rejected
     country: { type: String },
     state: { type: String },
     resetPassword: { type: Boolean, default: false },

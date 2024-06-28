@@ -49,6 +49,8 @@ const schoolCourseEnrollmentSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: "CourseEnrollment",
     }]
+}, {
+    timestamps: true
 });
 
 module.exports = mongoose.model("SchoolCourseEnrollment", schoolCourseEnrollmentSchema);
