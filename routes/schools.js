@@ -55,7 +55,7 @@ router.delete('/teams/:id', auth, schoolAccess, schoolsController.removeSchoolAd
 
 router.delete('/email-list/:id', auth, schoolAccess, schoolsController.removeEmailAdmin);
 
-router.delete('/', auth, schoolAccess, schoolsController.deactivateAccount);
+router.put('/', auth, schoolAccess, schoolsController.deactivateAccount);
 
 router.delete('/:enrolledCourseId/users/:userId/enrollment/:userEnrollmentId', auth, schoolAccess, schoolsController.deleteStudentFromCourseEnrollment);
 
