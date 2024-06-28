@@ -702,7 +702,8 @@ exports.removeEmailAdmin = async (req, res) => {
 exports.deactivateAccount = async (req, res) => {
 
     const { reason } = req.body
-    if (!reason || reason.length < 2) return res.status(StatusCodes.NOT_FOUND).json({ message: "Deactivation reason is required!" });
+
+    if (!reason || reason.length < 2) return res.status(StatusCodes.UNPROCESSABLE_ENTITY).json({ message: "Deactivation reason is required!" });
 
     // Find the school by ID
     let school = await Schools.findById(req.user._id);

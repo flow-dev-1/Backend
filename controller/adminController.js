@@ -476,6 +476,7 @@ exports.getSchoolEnrolledCourses = async (req, res) => {
 exports.deleteAdminFromSchool = async (req, res) => {
 
     const { id, userId } = req.params
+    console.log(id, userId)
 
     const school = await Schools.findById(id)
         .select('-password -isVerified -isDeleted -resetPassword')
