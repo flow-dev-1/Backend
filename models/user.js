@@ -79,6 +79,7 @@ const userSchema = new mongoose.Schema({
     newInvite: { type: Object },//This accounts for admin invitation dat has not been accepted or rejected
     country: { type: String },
     state: { type: String },
+    lga: { type: String },
     resetPassword: { type: Boolean, default: false },
     isDeleted: { type: Boolean, default: false },
     deletedAt: { type: Date, default: null },
@@ -106,6 +107,26 @@ userSchema.methods.generateAuthToken = function () {
         process.env.JWT,
         {
             expiresIn: "7d",
+        }
+    );
+    return token;
+};
+
+userSchema.methods.generateInviteToken = function () {
+    const token = jwt.sign(
+        {
+            _id: this._id,
+            isVerified: this.isVerified,
+            firstName: this.first_name,
+            lastName: this.last_name,
+            email: this.email,
+            phone: this.phone,
+            gender: this.gender
+
+        },
+        process.env.JWT,
+        {
+            expiresIn: "30d",
         }
     );
     return token;
@@ -139,6 +160,52 @@ function validateUser(user) {
             .min(8)
             .max(1024)
             .required(),
+        grade: Joi.string()
+            .optional(),
+        gender: Joi.string()
+            .valid('male', 'female')
+            .required(),
+        country: Joi.string()
+            .min(2)
+            .max(255)
+            .required(),
+        state: Joi.string()
+            .min(2)
+            .max(255)
+            .required(),
+        lga: Joi.string()
+            .min(2)
+            .max(255)
+            .required()
+    })
+    return schema.validate(user);
+}
+
+function validateInvitedUser(user) {
+
+    const schema = Joi.object({
+        first_name: Joi.string()
+            .min(2)
+            .max(100)
+            .required(),
+        DOB: Joi.date()
+            .required(),
+        last_name: Joi.string()
+            .min(2)
+            .max(100)
+            .required(),
+        phone: Joi.string()
+            .pattern(new RegExp(/^\+[1-9]\d{1,14}$/))
+            .message('Please enter a valid phone number in international format')
+            .required(),
+        email: Joi.string()
+            .min(5)
+            .max(255)
+            .required()
+            .email(),
+        password: Joi.string()
+            .allow(null)
+            .optional(),
         grade: Joi.string()
             .optional(),
         gender: Joi.string()
@@ -206,4 +273,5 @@ function validateUserUpdate(user) {
 }
 exports.User = User;
 exports.validateUser = validateUser;
+exports.validateInvitedUser = validateInvitedUser;
 exports.validateUserUpdate = validateUserUpdate

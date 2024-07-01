@@ -3,7 +3,7 @@ const express = require('express');
 const router = express.Router();
 const userController = require("../controller/userController");
 const { loginValidator, validate, } = require("../middleware/validate");
-const { validateUser, validateUserUpdate } = require('../models/user');
+const { validateUser, validateUserUpdate, validateInvitedUser } = require('../models/user');
 const auth = require("../middleware/auth")
 // const upload = require("../utils/multer");
 
@@ -15,6 +15,8 @@ router.get('/me', auth, userController.getLoggedUser);
 router.get('/courses', auth, userController.getCourses);
 
 router.post('/register', validate(validateUser), userController.registerUser);
+
+router.post('/invited-user', auth, validate(validateInvitedUser), userController.registerInvitedUser);
 
 router.patch('/verify-account', auth, userController.verifyAccount);
 router.post('/login', validate(loginValidator), userController.login);

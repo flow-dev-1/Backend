@@ -75,6 +75,8 @@ exports.getSingleEnrolledCourse = async (req, res) => {
             }
         });
 
+    console.log(course)
+
     res.status(StatusCodes.OK).json({ course });
 }
 
@@ -608,7 +610,7 @@ exports.addStudentsToCourseEnrollment = async (req, res) => {
             })
 
             existingEnrollment.studentEnrollments.push(newStudentEnrollment._id);
-            const token = user.generateAuthToken();
+            const token = user.generateInviteToken();
 
             await Promise.all([
                 newStudentEnrollment.save(),
@@ -616,7 +618,7 @@ exports.addStudentsToCourseEnrollment = async (req, res) => {
             ]);
             let stdGrade = stdClass.substring(0, 3) === "Pri" ? "Primary" : stdClass.substring(0, 3) === "Sec" ? "Secondary" : "Educator"
             // Send email to student
-            console.log("new", stdGrade, newStudentEnrollment._id, existingEnrollment.school.school_name, existingEnrollment.course.title)
+
             await school_course_invite("new", stdGrade, newStudentEnrollment._id, existingEnrollment.school.school_name, existingEnrollment.course.title, email, token);
 
         } else {
@@ -641,7 +643,7 @@ exports.addStudentsToCourseEnrollment = async (req, res) => {
                 })
 
                 existingEnrollment.studentEnrollments.push(newStudentEnrollment._id);
-                const token = user.generateAuthToken();
+                const token = user.generateInviteToken();
 
                 user.newCourseInvite = { school: id };
                 await Promise.all([

@@ -8,11 +8,11 @@ const otpGenerator = require("otp-generator");
 const { initiatePaystackPayment } = require("../utils/paystack");
 const CourseEnrollment = require("../models/courseEnrollment");
 const Courses = require("../models/course")
-
+const StudentEnrollments = require("../models/courseEnrollment")
 
 exports.getLoggedUser = async (req, res) => {
     const user = await User.findById(req.user._id)
-        .select("-password -isVerified -isDeleted -resetPassword");
+        .select("-password -isDeleted -resetPassword");
     res.status(StatusCodes.OK).json({ user });
 }
 
@@ -35,7 +35,7 @@ exports.getCourses = async (req, res) => {
 exports.registerUser = async (req, res) => {
 
     const { type } = req.query
-    const { first_name, last_name, phone, email, gender, DOB, country, state, password, grade } = req.body;
+    const { first_name, last_name, phone, email, gender, DOB, country, state, lga, password, grade } = req.body;
     if (!type) return res.status(StatusCodes.BAD_REQUEST).json({ message: "User type is required!" });
     let user = await User.findOne({ email: req.body.email });
 
@@ -121,6 +121,7 @@ exports.registerUser = async (req, res) => {
         DOB,
         country,
         state,
+        lga,
         grade
     });
     const salt = await bcrypt.genSalt(10);
@@ -148,6 +149,78 @@ exports.registerUser = async (req, res) => {
     const token = newUser.generateAuthToken();
 
     res.status(StatusCodes.OK).json({ token });
+}
+
+exports.registerInvitedUser = async (req, res) => {
+
+    const { first_name, last_name, phone, email, gender, DOB, country, state, lga, password, grade } = req.body;
+
+    let user = await User.findOne({ _id: req.user._id });
+
+    if (!user) return res.status(StatusCodes.BAD_REQUEST).json({ message: "Un-Authorized Action!" });
+
+    if (user && !user.newCourseInvite) {
+        return res.status(StatusCodes.BAD_REQUEST).json({ message: "Expired or Invalid invite link!" });
+    }
+
+
+
+    if (!user.password && !password) {
+        return res.status(StatusCodes.UNPROCESSABLE_ENTITY).json({ message: "Password is required!" });
+    }
+
+    // Check for course enrollment
+    const studentEnrollment = await StudentEnrollments.findOne({
+        school: user?.newCourseInvite.school,
+        user: user._id,
+        status: "Pending"
+    })
+
+    if (!studentEnrollment) {
+        return res.status(StatusCodes.BAD_REQUEST).json({ message: "Expired or Invalid invite link!" });
+    }
+
+
+    user.first_name = first_name
+    user.last_name = last_name
+    user.phone = phone
+    user.email = email
+    user.gender = gender
+    user.DOB = DOB
+    user.country = country
+    user.state = state
+    user.lga = lga
+    user.userType = "School"
+    user.grade = grade
+    user.school = user.newCourseInvite.school
+    user.newCourseInvite = null
+
+    if (!user.isVerified) {
+        user.isVerified = true
+    }
+
+
+    if (password) {
+        const salt = await bcrypt.genSalt(10);
+        user.password = await bcrypt.hash(password, salt);
+    }
+    studentEnrollment.status = "Confirmed"
+
+    await Courses.findByIdAndUpdate(studentEnrollment.course, {
+        $push: {
+            courseEnrollment: studentEnrollment._id
+        }
+    })
+
+    await studentEnrollment.save()
+    await user.save();
+
+
+
+
+    const token = user.generateAuthToken();
+
+    res.status(StatusCodes.OK).json({ message: "Account created successfully!", token });
 }
 
 // Verify Account route
