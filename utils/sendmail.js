@@ -77,7 +77,7 @@ exports.Otp_ForgotPassword = async (name, email, otp, token) => {
 };
 
 exports.admin_invite = async (name, email, token) => {
-    let link = process.env.ENV === 'staging' ? `https://my-flow.netlify.app/register?t=${token}&email=${email}` : `http://localhost:3000/register?t=${token}&email=${email}`
+    let link = process.env.ENV === 'staging' ? `https://my-flow.netlify.app/register?t=${token}&email=${email}` : ` http://localhost:5173/register?t=${token}&email=${email}`
 
     try {
         const transporter = nodemailer.createTransport({
@@ -163,8 +163,8 @@ exports.school_admin_invite = async (status, first_name, last_name, school_id, s
     }
 };
 
-exports.school_course_invite = async (enrollment_id, school_name, course_name, email, token) => {
-    let query = `t=${token}&s=${enrollment_id}&email=${email}`
+exports.school_course_invite = async (status, grade, enrollment_id, school_name, course_name, email, token) => {
+    let query = `t=${token}&s=${enrollment_id}&email=${email}&status=${status}&grade=${grade}&schoolName=${school_name}&coursName=${course_name}`
     let link;
     // if (status === "new") {
     //     // This is a new user
@@ -173,7 +173,7 @@ exports.school_course_invite = async (enrollment_id, school_name, course_name, e
     // } else {
     // This is for users that are already registered.
     // They just need to accept and confirm the invitation
-    link = process.env.ENV === 'staging' ? `https://my-flow.netlify.app/register?${query}` : `http://localhost:3000/register?${query}`
+    link = process.env.ENV === 'staging' ? `https://my-flow.netlify.app/invited-user?${query}` : `http://localhost:3000/invited-user?${query}`
     // }
 
 

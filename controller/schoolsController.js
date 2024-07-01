@@ -71,7 +71,7 @@ exports.getSingleEnrolledCourse = async (req, res) => {
             path: "studentEnrollments",
             populate: {
                 path: "user",
-                select: "first_name last_name email phone gender age"
+                select: "first_name last_name email phone gender DOB"
             }
         });
 
@@ -97,7 +97,7 @@ exports.registerSchool = async (req, res) => {
 
     if (school && !school.isVerified) {
         const code = otpGenerator.generate(6, {
-            lowerCaseAlphabets: true,
+            lowerCaseAlphabets: false,
             upperCaseAlphabets: false,
             specialChars: false,
         });
@@ -138,7 +138,7 @@ exports.registerSchool = async (req, res) => {
     await school.save();
 
     const code = otpGenerator.generate(6, {
-        lowerCaseAlphabets: true,
+        lowerCaseAlphabets: false,
         upperCaseAlphabets: false,
         specialChars: false,
     });
@@ -209,7 +209,7 @@ exports.forgotPassword = async (req, res) => {
     if (!school) return res.status(StatusCodes.BAD_REQUEST).json({ message: "School not found." });
 
     const code = otpGenerator.generate(6, {
-        lowerCaseAlphabets: true,
+        lowerCaseAlphabets: false,
         upperCaseAlphabets: false,
         specialChars: false,
     });
@@ -498,8 +498,9 @@ exports.courseEnrollment = async (req, res) => {
                 first_name: "N/A",
                 last_name: "N/A",
                 email,
-                userType: stdClass === "Educator" ? "Educator" : "Student",
-                newInvite: {
+                userType: "School",
+                grade: stdClass.substring(0, 3) === "Pri" ? "Primary" : stdClass.substring(0, 3) === "Sec" ? "Secondary" : "Educator",
+                newCourseInvite: {
                     school: id,
                 },
             });
@@ -520,9 +521,10 @@ exports.courseEnrollment = async (req, res) => {
                 newStudentEnrollment.save(),
                 user.save()
             ]);
-
+            let stdGrade = stdClass.substring(0, 3) === "Pri" ? "Primary" : stdClass.substring(0, 3) === "Sec" ? "Secondary" : "Educator"
             // Send email to student
-            await school_course_invite(newStudentEnrollment._id, school.school_name, course.title, email, token);
+            console.log("new", stdGrade, newStudentEnrollment._id, school.school_name, course.title, email, token)
+            await school_course_invite("new", stdGrade, newStudentEnrollment._id, school.school_name, course.title, email, token);
 
         } else {
 
@@ -548,7 +550,7 @@ exports.courseEnrollment = async (req, res) => {
                 newEnrollment.studentEnrollments.push(newStudentEnrollment._id);
                 const token = user.generateAuthToken();
 
-                user.newInvite = { school: id };
+                user.newCourseInvite = { school: id };
                 await Promise.all([
                     newStudentEnrollment.save(),
                     user.save()
@@ -590,8 +592,9 @@ exports.addStudentsToCourseEnrollment = async (req, res) => {
                 first_name: "N/A",
                 last_name: "N/A",
                 email,
-                userType: stdClass === "Educator" ? "Educator" : "Student",
-                newInvite: {
+                userType: "School",
+                grade: stdClass.substring(0, 3) === "Pri" ? "Primary" : stdClass.substring(0, 3) === "Sec" ? "Secondary" : "Educator",
+                newCourseInvite: {
                     school: id,
                 },
             });
@@ -600,7 +603,7 @@ exports.addStudentsToCourseEnrollment = async (req, res) => {
                 _id: new mongoose.Types.ObjectId(),
                 course: existingEnrollment.course._id, // Assuming you have some course ID here
                 school: id,
-                schoolCourseEnrollment: newEnrollment._id,
+                schoolCourseEnrollment: existingEnrollment._id,
                 user: user._id
             })
 
@@ -611,9 +614,10 @@ exports.addStudentsToCourseEnrollment = async (req, res) => {
                 newStudentEnrollment.save(),
                 user.save()
             ]);
-
+            let stdGrade = stdClass.substring(0, 3) === "Pri" ? "Primary" : stdClass.substring(0, 3) === "Sec" ? "Secondary" : "Educator"
             // Send email to student
-            await school_course_invite(newStudentEnrollment._id, school.school_name, existingEnrollment.course.title, email, token);
+            console.log("new", stdGrade, newStudentEnrollment._id, existingEnrollment.school.school_name, existingEnrollment.course.title)
+            await school_course_invite("new", stdGrade, newStudentEnrollment._id, existingEnrollment.school.school_name, existingEnrollment.course.title, email, token);
 
         } else {
             // Check if the user is already enrolled in this course
@@ -624,6 +628,7 @@ exports.addStudentsToCourseEnrollment = async (req, res) => {
                 schoolCourseEnrollment: existingEnrollment._id,
                 user: user._id
             })
+
 
             if (!studentEnrollment) {
                 // Create a new enrollment
@@ -638,14 +643,14 @@ exports.addStudentsToCourseEnrollment = async (req, res) => {
                 existingEnrollment.studentEnrollments.push(newStudentEnrollment._id);
                 const token = user.generateAuthToken();
 
-                user.newInvite = { school: id };
+                user.newCourseInvite = { school: id };
                 await Promise.all([
                     newStudentEnrollment.save(),
                     user.save()
                 ]);
-
+                let stdGrade = stdClass.substring(0, 3) === "Pri" ? "Primary" : stdClass.substring(0, 3) === "Sec" ? "Secondary" : "Educator"
                 // Send email to student
-                await school_course_invite(newStudentEnrollment._id, school.school_name, existingEnrollment.course.title, email, token);
+                await school_course_invite("new", stdGrade, newStudentEnrollment._id, existingEnrollment.school.school_name, existingEnrollment.course.title, email, token);
             }
 
         }
@@ -737,10 +742,10 @@ exports.deleteStudentFromCourseEnrollment = async (req, res) => {
     // Check if the student is enrolled in the course
     const studentIndex = existingEnrollment.studentEnrollments.findIndex(enrollment => enrollment.toString() === userEnrollmentId);
 
+
     if (studentIndex === -1) {
         return res.status(StatusCodes.NOT_FOUND).json({ message: "Student not found in this enrollment!" });
     }
-
     // Remove the student from the enrollment
     existingEnrollment.studentEnrollments.splice(studentIndex, 1);
 
@@ -751,7 +756,7 @@ exports.deleteStudentFromCourseEnrollment = async (req, res) => {
     let user = await User.findById(userId);
 
     if (user) {
-        user.newInvite = null
+        user.newCourseInvite = null
         await user.save();
     }
 

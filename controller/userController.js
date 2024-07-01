@@ -35,6 +35,7 @@ exports.getCourses = async (req, res) => {
 exports.registerUser = async (req, res) => {
 
     const { type } = req.query
+    const { first_name, last_name, phone, email, gender, DOB, country, state, password, grade } = req.body;
     if (!type) return res.status(StatusCodes.BAD_REQUEST).json({ message: "User type is required!" });
     let user = await User.findOne({ email: req.body.email });
 
@@ -42,51 +43,52 @@ exports.registerUser = async (req, res) => {
         return res.status(StatusCodes.BAD_REQUEST).json({ message: "User already registered." });
     }
 
-    // Check if user has incomplete data
+    // Check if user has incomplete data. i.e a user was invited but didnt use link
 
-    if (user && !user.password) {
-        user.first_name = req.body.first_name
-        user.last_name = req.body.last_name
-        user.phone = req.body.phone
-        user.email = req.body.email
-        user.gender = req.body.gender
-        user.age = req.body.age
-        user.country = req.body.country
-        user.state = req.body.state
-        user.userType = type
+    // if (user && !user.password) {
+    //     user.first_name = first_name
+    //     user.last_name = last_name
+    //     user.phone = phone
+    //     user.email = email
+    //     user.gender = gender
+    //     user.age = age
+    //     user.country = country
+    //     user.state = state
+    //     user.userType = type
+    //     user.grade = grade
 
-        const salt = await bcrypt.genSalt(10);
-        user.password = await bcrypt.hash(req.body.password, salt);
-        await user.save();
+    //     const salt = await bcrypt.genSalt(10);
+    //     user.password = await bcrypt.hash(password, salt);
+    //     await user.save();
 
-        const code = otpGenerator.generate(6, {
-            lowerCaseAlphabets: true,
-            upperCaseAlphabets: false,
-            specialChars: false,
-        });
+    //     const code = otpGenerator.generate(6, {
+    //         lowerCaseAlphabets: true,
+    //         upperCaseAlphabets: false,
+    //         specialChars: false,
+    //     });
 
-        const otp = new OTP({
-            user: user._id,
-            checkModel: "User",
-            code,
-            type: "RegisterUser",
-            expiresIn: Date.now() + 3600000,
-        });
+    //     const otp = new OTP({
+    //         user: user._id,
+    //         checkModel: "User",
+    //         code,
+    //         type: "RegisterUser",
+    //         expiresIn: Date.now() + 3600000,
+    //     });
 
-        await otp.save();
-        await Otp_VerifyAccount(user.email, user.first_name, code);
+    //     await otp.save();
+    //     await Otp_VerifyAccount(user.email, user.first_name, code);
 
-        const token = user.generateAuthToken();
+    //     const token = user.generateAuthToken();
 
-        return res.status(StatusCodes.OK).json({ token });
+    //     return res.status(StatusCodes.OK).json({ token });
 
-    }
+    // }
 
     if (user && !user.isVerified) {
 
 
         const code = otpGenerator.generate(6, {
-            lowerCaseAlphabets: true,
+            lowerCaseAlphabets: false,
             upperCaseAlphabets: false,
             specialChars: false,
         });
@@ -110,14 +112,24 @@ exports.registerUser = async (req, res) => {
     }
 
     // Handle user registration if not already registered
-    const newUser = new User(_.pick(req.body, ["first_name", "last_name", "phone", "email", "gender", "age", "country", "state", "password"]));
+    const newUser = new User({
+        first_name,
+        last_name,
+        phone,
+        email,
+        gender,
+        DOB,
+        country,
+        state,
+        grade
+    });
     const salt = await bcrypt.genSalt(10);
-    newUser.password = await bcrypt.hash(newUser.password, salt);
+    newUser.password = await bcrypt.hash(password, salt);
     newUser.userType = type
     await newUser.save();
 
     const code = otpGenerator.generate(6, {
-        lowerCaseAlphabets: true,
+        lowerCaseAlphabets: false,
         upperCaseAlphabets: false,
         specialChars: false,
     });
@@ -184,7 +196,7 @@ exports.forgotPassword = async (req, res) => {
     if (!user) return res.status(StatusCodes.BAD_REQUEST).json({ message: "User not found." });
 
     const code = otpGenerator.generate(6, {
-        lowerCaseAlphabets: true,
+        lowerCaseAlphabets: false,
         upperCaseAlphabets: false,
         specialChars: false,
     });

@@ -64,12 +64,13 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: false
     },
-    age: {
-        type: Number,
+    DOB: {
+        type: Date,
         required: false
     },
-    userType: { type: String, enum: ["Educator", "Student", "Individual"], default: "Individual" },
-    school: { type: mongoose.Schema.Types.ObjectId, required: false, ref: 'User' },
+    userType: { type: String, enum: ["School", "Individual"] },//users with schools
+    grade: { type: String, enum: ["Primary", "Secondary", "Educator"] },
+    school: { type: mongoose.Schema.Types.ObjectId, required: false, ref: 'School' },
     isSchoolAdmin: { type: Boolean, default: false },
     schoolAdminStatus: { type: String, enum: ["Pending", "Confirmed"] },
     schoolAdminPermission: { type: String, enum: ["Admin", "Students", "Teachers"] },
@@ -119,9 +120,7 @@ function validateUser(user) {
             .min(2)
             .max(100)
             .required(),
-        age: Joi.number()
-            .min(18)
-            .max(100)
+        DOB: Joi.date()
             .required(),
         last_name: Joi.string()
             .min(2)
@@ -140,10 +139,6 @@ function validateUser(user) {
             .min(8)
             .max(1024)
             .required(),
-        age: Joi.number()
-            .min(3)
-            .max(100)
-            .required(),
         grade: Joi.string()
             .optional(),
         gender: Joi.string()
@@ -154,6 +149,10 @@ function validateUser(user) {
             .max(255)
             .required(),
         state: Joi.string()
+            .min(2)
+            .max(255)
+            .required(),
+        lga: Joi.string()
             .min(2)
             .max(255)
             .required()
@@ -168,9 +167,7 @@ function validateUserUpdate(user) {
             .min(2)
             .max(100)
             .required(),
-        age: Joi.number()
-            .min(18)
-            .max(100)
+        DOB: Joi.date()
             .required(),
         last_name: Joi.string()
             .min(2)
@@ -189,10 +186,6 @@ function validateUserUpdate(user) {
         //     .min(8)
         //     .max(1024)
         //     .required(),
-        age: Joi.number()
-            .min(3)
-            .max(100)
-            .required(),
         gender: Joi.string()
             .valid('male', 'female')
             .required(),
@@ -201,6 +194,10 @@ function validateUserUpdate(user) {
             .max(255)
             .required(),
         state: Joi.string()
+            .min(2)
+            .max(255)
+            .required(),
+        lga: Joi.string()
             .min(2)
             .max(255)
             .required()
