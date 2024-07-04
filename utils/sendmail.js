@@ -117,15 +117,15 @@ exports.admin_invite = async (name, email, token) => {
 exports.school_admin_invite = async (status, first_name, last_name, school_id, school_name, email, token) => {
     let query = `t=${token}&s=${school_id}&email=${email}&first_name=${first_name}&last_name=${last_name}`
     let link;
-    if (status === "new") {
-        // This is a new user
-        link = process.env.ENV === 'staging' ? `https://my-flow.netlify.app/register?${query}` : `http://localhost:3000/register?${query}`
+    // if (status === "new") {
+    // This is a new user
+    link = process.env.ENV === 'staging' ? `https://my-flow.netlify.app/invited-admin?${query}` : `http://localhost:3000/invited-admin?${query}`
 
-    } else {
-        // This is for users that are already registered.
-        // They just need to accept and confirm the invitation
-        link = process.env.ENV === 'staging' ? `https://my-flow.netlify.app/register?${query}` : `http://localhost:3000/register?${query}`
-    }
+    // } else {
+    //     // This is for users that are already registered.
+    //     // They just need to accept and confirm the invitation
+    //     link = process.env.ENV === 'staging' ? `https://my-flow.netlify.app/invited-admin?${query}` : `http://localhost:3000/invited-admin?${query}`
+    // }
 
 
     try {

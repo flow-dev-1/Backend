@@ -223,6 +223,58 @@ exports.registerInvitedUser = async (req, res) => {
     res.status(StatusCodes.OK).json({ message: "Account created successfully!", token });
 }
 
+
+exports.registerSchoolInvitedAdmin = async (req, res) => {
+
+    const { first_name, last_name, phone, email, gender, DOB, country, state, lga, password, grade } = req.body;
+
+    let user = await User.findOne({ _id: req.user._id });
+
+    if (!user) return res.status(StatusCodes.BAD_REQUEST).json({ message: "Un-Authorized Action!" });
+
+    if (user && !user.newInvite) {
+        return res.status(StatusCodes.BAD_REQUEST).json({ message: "Expired or Invalid invite link!" });
+    }
+
+
+    if (!user.password && !password) {
+        return res.status(StatusCodes.UNPROCESSABLE_ENTITY).json({ message: "Password is required!" });
+    }
+
+    user.first_name = first_name
+    user.last_name = last_name
+    user.phone = phone
+    user.email = email
+    user.gender = gender
+    user.DOB = DOB
+    user.country = country
+    user.state = state
+    user.lga = lga
+    user.userType = "School"
+    user.grade = grade
+    user.school = user.newInvite.school
+    user.isSchoolAdmin = true
+    user.schoolAdminStatus = "Confirmed"
+    user.schoolAdminDate = user.newInvite.schoolAdminDate
+    user.schoolAdminPermission = user.newInvite.schoolAdminPermission
+    user.newInvite = null
+
+    if (!user.isVerified) {
+        user.isVerified = true
+    }
+
+
+    if (password) {
+        const salt = await bcrypt.genSalt(10);
+        user.password = await bcrypt.hash(password, salt);
+    }
+
+    await user.save();
+
+    const token = user.generateAuthToken();
+
+    res.status(StatusCodes.OK).json({ message: "Account created successfully!", token });
+}
 // Verify Account route
 exports.verifyAccount = async (req, res) => {
     const { code } = req.body;

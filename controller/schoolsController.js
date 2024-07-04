@@ -75,7 +75,7 @@ exports.getSingleEnrolledCourse = async (req, res) => {
             }
         });
 
-    console.log(course)
+    // console.log(course.studentEnrollments)
 
     res.status(StatusCodes.OK).json({ course });
 }
@@ -394,6 +394,7 @@ exports.inviteSchoolAdmin = async (req, res) => {
 
         // Because user already may have admin details store new invite details seperately.
         user.newInvite = {
+            school: school._id,
             schoolAdminDate: Date.now(),
             schoolAdminPermission: position
         }

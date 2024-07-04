@@ -18,6 +18,8 @@ router.post('/register', validate(validateUser), userController.registerUser);
 
 router.post('/invited-user', auth, validate(validateInvitedUser), userController.registerInvitedUser);
 
+router.post('/invited-school-admin', auth, validate(validateInvitedUser), userController.registerSchoolInvitedAdmin);
+
 router.patch('/verify-account', auth, userController.verifyAccount);
 router.post('/login', validate(loginValidator), userController.login);
 router.post('/forgot-password', userController.forgotPassword);
