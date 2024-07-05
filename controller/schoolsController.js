@@ -490,6 +490,7 @@ exports.courseEnrollment = async (req, res) => {
     })
 
     const uniqueEmails = new Set(students);
+
     for (const email of uniqueEmails) {
         let user = await User.findOne({ email });
 
@@ -526,7 +527,7 @@ exports.courseEnrollment = async (req, res) => {
             ]);
             let stdGrade = stdClass.substring(0, 3) === "Pri" ? "Primary" : stdClass.substring(0, 3) === "Sec" ? "Secondary" : "Educator"
             // Send email to student
-            console.log("new", stdGrade, newStudentEnrollment._id, school.school_name, course.title, email, token)
+            // console.log("new", stdGrade, newStudentEnrollment._id, school.school_name, course.title, email, token)
             await school_course_invite("new", stdGrade, newStudentEnrollment._id, school.school_name, course.title, email, token);
 
         } else {
@@ -558,9 +559,10 @@ exports.courseEnrollment = async (req, res) => {
                     newStudentEnrollment.save(),
                     user.save()
                 ]);
-
+                // await school_course_invite("new", stdGrade, newStudentEnrollment._id, school.school_name, course.title, email, token);
+                let stdGrade = stdClass.substring(0, 3) === "Pri" ? "Primary" : stdClass.substring(0, 3) === "Sec" ? "Secondary" : "Educator"
                 // Send email to student
-                await school_course_invite(newStudentEnrollment._id, school.school_name, course.title, email, token);
+                await school_course_invite("old", stdGrade, newStudentEnrollment._id, school.school_name, course.title, email, token);
             }
 
         }
