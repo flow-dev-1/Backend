@@ -77,7 +77,7 @@ exports.Otp_ForgotPassword = async (name, email, otp, token) => {
 };
 
 exports.admin_invite = async (name, email, token) => {
-    let link = process.env.ENV === 'staging' ? `https://admin-flow.netlify.app/register?t=${token}&email=${email}` : ` http://localhost:5173/register?t=${token}&email=${email}`
+    let link = process.env.ENV === 'staging' ? `https://admin-flow.netlify.app/sign-up?t=${token}&email=${email}` : ` http://localhost:5173/sign-up?t=${token}&email=${email}`
 
     try {
         const transporter = nodemailer.createTransport({
