@@ -242,6 +242,7 @@ exports.updateSchoolValidator = function (req) {
 }
 
 exports.schoolCourseEnrollmentValidator = function (req) {
+    console.log(req)
     const schema = Joi.object({
         stdClass: Joi.string()
             .min(2)
