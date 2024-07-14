@@ -77,7 +77,7 @@ exports.Otp_ForgotPassword = async (name, email, otp, token) => {
 };
 
 exports.admin_invite = async (name, email, token) => {
-    let link = process.env.ENV === 'staging' ? `https://admin-flow.netlify.app/register?t=${token}&email=${email}` : ` http://localhost:5173/register?t=${token}&email=${email}`
+    let link = process.env.ENV === 'staging' ? `https://admin-flow.netlify.app/sign-up?t=${token}&email=${email}` : ` http://localhost:5173/sign-up?t=${token}&email=${email}`
 
     try {
         const transporter = nodemailer.createTransport({
@@ -92,7 +92,7 @@ exports.admin_invite = async (name, email, token) => {
         await transporter.sendMail({
             from: EMAIL,
             to: email,
-            subject: ' FLOW Reset Password',
+            subject: ' FLOW Admin Invite',
             html: ` <b> Hi ${name} </b></br>
             <p>You have been invited to Join FLOW as an Administrator.</p>
             </br>
@@ -141,7 +141,7 @@ exports.school_admin_invite = async (status, first_name, last_name, school_id, s
         await transporter.sendMail({
             from: EMAIL,
             to: email,
-            subject: 'FLOW For Schools Invitation',
+            subject: 'FLOW For Schools Admin Invitation',
             html: ` <b> Hi ${first_name} </b></br>
             <p>You have been invited to Join ${school_name} as an Administrator.</p>
             </br>
@@ -190,7 +190,7 @@ exports.school_course_invite = async (status, grade, enrollment_id, school_name,
         await transporter.sendMail({
             from: EMAIL,
             to: email,
-            subject: 'FLOW For Schools Invitation',
+            subject: 'FLOW For Schools Course Invitation',
             html: ` <b> Hello! </b></br>
               <p>You have been invited to enroll in the <b style="color: #2a9d8f;">${course_name}</b> course on FLOW by <b style="color: #264653;">${school_name}</b>.</p><br>
             </br>
