@@ -26,18 +26,18 @@ router.get('/:id/courses/enrolled/:enrolledCourseId', auth, schoolAccess, school
 
 router.get('/:id/users/:userId', auth, schoolAccess, schoolsController.getSingleUser);
 
-router.post('/', validate(registerSchoolValidator), schoolsController.registerSchool);
+router.post('/', upload.single('image'), validate(registerSchoolValidator), schoolsController.registerSchool);
 
 router.patch('/verify-account', auth, schoolAccess, schoolsController.verifyAccount);
 
-router.post('/login', validate(loginValidator), schoolsController.loginFlowSchool);
+// router.post('/login', validate(loginValidator), schoolsController.loginFlowSchool);
 
-router.post('/forgot-password', schoolsController.forgotPassword);
+// router.post('/forgot-password', schoolsController.forgotPassword);
 
-// //Verify OTP
-router.patch('/verify-token', auth, schoolAccess, schoolsController.verify_otp_forgotPassword)
+// // //Verify OTP
+// router.patch('/verify-token', auth, schoolAccess, schoolsController.verify_otp_forgotPassword)
 
-router.put('/password', auth, schoolAccess, schoolsController.resetPassword);
+// router.put('/password', auth, schoolAccess, schoolsController.resetPassword);
 
 router.patch('/password', auth, schoolAccess, schoolsController.changePassword);
 

@@ -75,7 +75,9 @@ exports.getSingleEnrolledCourse = async (req, res) => {
             }
         });
 
-    // console.log(course.studentEnrollments)
+    // console.log(course)
+
+    course.studentEnrollments = course.studentEnrollments.filter(item => item.status === "Confirmed")
 
     res.status(StatusCodes.OK).json({ course });
 }
@@ -90,8 +92,16 @@ exports.getSingleUser = async (req, res) => {
 }
 
 exports.registerSchool = async (req, res) => {
-    const { email, contact_name, school_name, password, grade, phone, country, state, lga, address } = req.body
-    let school = await Schools.findOne({ email, school_name, grade });
+
+    // Check if a file is uploaded
+    if (!req.file?.path) {
+        return res.status(StatusCodes.BAD_REQUEST).json({ message: "School Logo is required!" });
+    }
+
+    const result = await cloudinary.uploader.upload(req.file.path);
+    req.body.photo = result.secure_url;
+    const { email, contact_name, school_name, password, grade, phone, country, state, lga, address, photo } = req.body
+    let school = await Schools.findOne({ email });
 
     if (school && school.isVerified) {
         return res.status(StatusCodes.BAD_REQUEST).json({ message: "School already registered." });
@@ -123,7 +133,7 @@ exports.registerSchool = async (req, res) => {
     }
 
     // Handle School registration if not already registered
-    school = new Schools({
+    const newSchool = new Schools({
         school_name,
         contact_name,
         email,
@@ -132,12 +142,12 @@ exports.registerSchool = async (req, res) => {
         country,
         state,
         lga,
-        address
-
+        address,
+        photo
     });
     const salt = await bcrypt.genSalt(10);
-    school.password = await bcrypt.hash(password, salt);
-    await school.save();
+    newSchool.password = await bcrypt.hash(password, salt);
+    await newSchool.save();
 
     const code = otpGenerator.generate(6, {
         lowerCaseAlphabets: false,
@@ -146,7 +156,7 @@ exports.registerSchool = async (req, res) => {
     });
 
     const otp = new OTP({
-        user: school._id,
+        user: newSchool._id,
         checkModel: "School",
         code,
         type: "RegisterSchool",
@@ -154,9 +164,9 @@ exports.registerSchool = async (req, res) => {
     });
 
     await otp.save();
-    await Otp_VerifyAccount(school.email, school.school_name, code);
+    await Otp_VerifyAccount(newSchool.email, newSchool.school_name, code);
 
-    const token = school.generateAuthToken();
+    const token = await newSchool.generateAuthToken();
 
     res.status(StatusCodes.OK).json({ message: `Enter OTP sent to ${email} to verify your account.`, token });
 }

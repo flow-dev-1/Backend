@@ -21,12 +21,12 @@ router.post('/invited-user', auth, validate(validateInvitedUser), userController
 router.post('/invited-school-admin', auth, validate(validateInvitedUser), userController.registerSchoolInvitedAdmin);
 
 router.patch('/verify-account', auth, userController.verifyAccount);
-router.post('/login', validate(loginValidator), userController.login);
-router.post('/forgot-password', userController.forgotPassword);
-// //Verify OTP
-router.post('/verify-token', auth, userController.verify_otp_forgotPassword)
+// router.post('/login', validate(loginValidator), userController.login);
+// router.post('/forgot-password', userController.forgotPassword);
+// // //Verify OTP
+// router.post('/verify-token', auth, userController.verify_otp_forgotPassword)
 
-router.put('/password', auth, userController.resetPassword);
+// router.put('/password', auth, userController.resetPassword);
 
 router.put('/profile', auth, validate(validateUserUpdate), userController.updateProfile);
 

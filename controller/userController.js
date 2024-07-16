@@ -9,6 +9,7 @@ const { initiatePaystackPayment } = require("../utils/paystack");
 const CourseEnrollment = require("../models/courseEnrollment");
 const Courses = require("../models/course")
 const StudentEnrollments = require("../models/courseEnrollment")
+const Schools = require("../models/school");
 
 exports.getLoggedUser = async (req, res) => {
     const user = await User.findById(req.user._id)
@@ -300,6 +301,24 @@ exports.verifyAccount = async (req, res) => {
 exports.login = async (req, res) => {
     const { email, password } = req.body;
 
+
+    // Check if this is a school account
+    let school = await Schools.findOne({ email, isVerified: true })
+        .select("-isVerified -isDeleted -resetPassword");
+
+    if (school) {
+        const validPassword = await bcrypt.compare(password, school.password);
+        if (!validPassword) return res.status(400).send('Invalid email or password.');
+
+
+        const token = await school.generateAuthToken();
+
+        // Remove password from the school object before sending the response
+        const { password: _, ...schoolData } = school.toObject();
+
+        return res.status(StatusCodes.OK).json({ accountType: "School", message: "School Login successful!", token, user: schoolData });
+    }
+
     const user = await User.findOne({ email, isVerified: true });
 
     if (!user) return res.status(StatusCodes.BAD_REQUEST).json({ message: "Invalid credentials." });
@@ -309,8 +328,10 @@ exports.login = async (req, res) => {
     if (!validPassword) return res.status(StatusCodes.BAD_REQUEST).json({ message: "Invalid credentials." });
 
     const token = user.generateAuthToken();
+    // Remove password from the school object before sending the response
+    const { password: _, ...userData } = user.toObject();
 
-    res.status(StatusCodes.OK).json({ token, message: "Login Successful." });
+    res.status(StatusCodes.OK).json({ accountType: "Individual", token, message: "Login Successful.", user: userData });
 }
 
 // Forgot Password Route
