@@ -10,6 +10,7 @@ const CourseEnrollment = require("../models/courseEnrollment");
 const Courses = require("../models/course");
 const StudentEnrollments = require("../models/courseEnrollment");
 const Schools = require("../models/school");
+const Counter = require("../models/counter");
 
 exports.getLoggedUser = async (req, res) => {
   const user = await User.findById(req.user._id).select(
@@ -123,6 +124,16 @@ exports.registerUser = async (req, res) => {
       token,
     });
   }
+const counter = await Counter.findOneAndUpdate(
+  { name: "userId" },
+  { $inc: { seq: 1 } },
+  { new: true, upsert: true, strict: true } 
+);
+
+
+const userId = `FLS${counter.seq
+  .toString()
+  .padStart(Math.max(3, counter.seq.toString().length), "0")}`;
 
   // Handle user registration if not already registered
   const newUser = new User({
@@ -135,6 +146,7 @@ exports.registerUser = async (req, res) => {
     state,
     lga,
     grade,
+    userId,
   });
   const salt = await bcrypt.genSalt(10);
   newUser.password = await bcrypt.hash(password, salt);
@@ -208,6 +220,15 @@ exports.registerInvitedUser = async (req, res) => {
       .status(StatusCodes.BAD_REQUEST)
       .json({ message: "Expired or Invalid invite link!" });
   }
+  const counter = await Counter.findOneAndUpdate(
+    { name: "userId" },
+    { $inc: { seq: 1 } },
+    { new: true, upsert: true, strict: true }
+  );
+
+  const userId = `FLS${counter.seq
+    .toString()
+    .padStart(Math.max(3, counter.seq.toString().length), "0")}`;
 
   user.fullName = fullName;
   user.phone = phone;
@@ -221,6 +242,7 @@ exports.registerInvitedUser = async (req, res) => {
   user.grade = grade;
   user.school = user.newCourseInvite.school;
   user.newCourseInvite = null;
+  user.userId = userId
 
   if (!user.isVerified) {
     user.isVerified = true;
@@ -347,17 +369,17 @@ exports.verifyAccount = async (req, res) => {
 
 // Login Route
 exports.login = async (req, res) => {
-  const { email, password } = req.body;
+  const { userId, password } = req.body;
 
   // Check if this is a school account
-  let school = await Schools.findOne({ email, isVerified: true }).select(
+  let school = await Schools.findOne({ userId, isVerified: true }).select(
     "-isVerified -isDeleted -resetPassword"
   );
 
   if (school) {
     const validPassword = await bcrypt.compare(password, school.password);
     if (!validPassword)
-      return res.status(400).send("Invalid email or password.");
+      return res.status(400).send("Invalid ID or password.");
 
     const token = await school.generateAuthToken();
 
@@ -374,7 +396,7 @@ exports.login = async (req, res) => {
       });
   }
 
-  const user = await User.findOne({ email, isVerified: true });
+  const user = await User.findOne({ userId, isVerified: true });
 
   if (!user)
     return res
@@ -547,7 +569,6 @@ exports.courseEnrollment = async (req, res) => {
   let amount = 10000; //Will fix this later
   const enrollment = new CourseEnrollment({
     fullName,
-
     email,
     phone,
     amount,

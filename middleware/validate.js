@@ -10,11 +10,10 @@ exports.validate = (validator) => {
 
 exports.loginValidator = function (req) {
     const schema = Joi.object({
-        email: Joi.string()
+        userId: Joi.string()
             .min(5)
             .max(255)
-            .required()
-            .email(),
+            .required(),
         password: Joi.string()
             .min(5)
             .max(255)
