@@ -25,47 +25,36 @@ exports.loginValidator = function (req) {
 
 exports.courseEnrollmerntValidator = function (req) {
     const schema = Joi.object({
-        first_name: Joi.string()
-            .min(2)
-            .max(100)
-            .required(),
-        last_name: Joi.string()
-            .min(2)
-            .max(100)
-            .required(),
-        phone: Joi.string()
-            .pattern(new RegExp(/^\+[1-9]\d{1,14}$/))
-            .message('Please enter a valid phone number in international format')
-            .required(),
-        email: Joi.string()
-            .min(5)
-            .max(255)
-            .required()
-            .email(),
-    })
+      fullName: Joi.string()
+        .min(2)
+        .max(300)
+        .required()
+        .pattern(/^[a-zA-Z]+ [a-zA-Z]+$/)
+        .message(
+          "Full name must contain at least a first name and a last name separated by a space."
+        ),
+      phone: Joi.string()
+        .pattern(new RegExp(/^\+[1-9]\d{1,14}$/))
+        .message("Please enter a valid phone number in international format")
+        .required(),
+      email: Joi.string().min(5).max(255).required().email(),
+    });
     return schema.validate(req);
 }
 
 exports.inviteAdminValidator = function (req) {
     const schema = Joi.object({
-        first_name: Joi.string()
-            .min(2)
-            .max(100)
-            .required(),
-        // age: Joi.number()
-        //     .required(),
-        last_name: Joi.string()
-            .min(2)
-            .max(100)
-            .required(),
-        position: Joi.string()
-            .required(),
-        email: Joi.string()
-            .min(5)
-            .max(255)
-            .required()
-            .email(),
-    })
+      fullName: Joi.string()
+        .min(2)
+        .max(300)
+        .required()
+        .pattern(/^[a-zA-Z]+ [a-zA-Z]+$/)
+        .message(
+          "Full name must contain at least a first name and a last name separated by a space."
+        ),
+      position: Joi.string().required(),
+      email: Joi.string().min(5).max(255).required().email(),
+    });
     return schema.validate(req);
 }
 
@@ -90,42 +79,25 @@ exports.registerAdminValidator = function (req) {
 exports.validateAdminUpdate = function validateAdminUpdate(req) {
 
     const schema = Joi.object({
-        first_name: Joi.string()
-            .min(2)
-            .max(100)
-            .required(),
-        // age: Joi.number()
-        //     .required(),
-        last_name: Joi.string()
-            .min(2)
-            .max(100)
-            .required(),
-        phone: Joi.string()
-            .pattern(new RegExp(/^\+[1-9]\d{1,14}$/))
-            .message('Please enter a valid phone number in international format')
-            .required(),
-        email: Joi.string()
-            .min(5)
-            .max(255)
-            .required()
-            .email(),
+      fullName: Joi.string()
+        .min(2)
+        .max(300)
+        .required()
+        .pattern(/^[a-zA-Z]+ [a-zA-Z]+$/)
+        .message(
+          "Full name must contain at least a first name and a last name separated by a space."
+        ),
+      phone: Joi.string()
+        .pattern(new RegExp(/^\+[1-9]\d{1,14}$/))
+        .message("Please enter a valid phone number in international format")
+        .required(),
+      email: Joi.string().min(5).max(255).required().email(),
 
-        gender: Joi.string()
-            .valid('male', 'female')
-            .required(),
-        country: Joi.string()
-            .min(2)
-            .max(255)
-            .required(),
-        state: Joi.string()
-            .min(2)
-            .max(255)
-            .required(),
-        address: Joi.string()
-            .min(2)
-            .max(1024)
-            .required()
-    })
+      gender: Joi.string().valid("male", "female").required(),
+      country: Joi.string().min(2).max(255).required(),
+      state: Joi.string().min(2).max(255).required(),
+      address: Joi.string().min(2).max(1024).required(),
+    });
     return schema.validate(req);
 }
 

@@ -19,13 +19,7 @@ const userSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         auto: true
     },
-    first_name: {
-        type: String,
-        required: true,
-        minlength: 2,
-        maxlength: 250
-    },
-    last_name: {
+    fullName: {
         type: String,
         required: true,
         minlength: 2,
@@ -97,8 +91,7 @@ userSchema.methods.generateAuthToken = function () {
         {
             _id: this._id,
             isVerified: this.isVerified,
-            firstName: this.first_name,
-            lastName: this.last_name,
+            fullName: this.fullName,
             email: this.email,
             phone: this.phone,
             gender: this.gender
@@ -114,20 +107,18 @@ userSchema.methods.generateAuthToken = function () {
 
 userSchema.methods.generateInviteToken = function () {
     const token = jwt.sign(
-        {
-            _id: this._id,
-            isVerified: this.isVerified,
-            firstName: this.first_name,
-            lastName: this.last_name,
-            email: this.email,
-            phone: this.phone,
-            gender: this.gender
-
-        },
-        process.env.JWT,
-        {
-            expiresIn: "30d",
-        }
+      {
+        _id: this._id,
+        isVerified: this.isVerified,
+        fullName: this.fullName,
+        email: this.email,
+        phone: this.phone,
+        gender: this.gender,
+      },
+      process.env.JWT,
+      {
+        expiresIn: "30d",
+      }
     );
     return token;
 };

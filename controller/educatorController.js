@@ -9,30 +9,17 @@ const { initiatePaystackPayment } = require("../utils/paystack");
 const CourseEnrollment = require("../models/courseEnrollment");
 const Courses = require("../models/course");
 const StudentEnrollments = require("../models/courseEnrollment");
-const Schools = require("../models/school");
+const { Educator } = require("../models/educators");
 
-exports.getLoggedUser = async (req, res) => {
+exports.getLoggedEducator = async (req, res) => {
   const user = await User.findById(req.user._id).select(
     "-password -isDeleted -resetPassword"
   );
   res.status(StatusCodes.OK).json({ user });
 };
 
-exports.getCourses = async (req, res) => {
-  let { type } = req.query;
 
-  let courses;
-
-  if (type === "Enrolled") {
-    // courses = await SchoolCourses.find({ school: req.params.id, status: "Active" })
-    // .populate("course")
-  } else {
-    courses = await Courses.find({ status: "published" });
-  }
-  res.status(StatusCodes.OK).json({ courses });
-};
-
-exports.registerUser = async (req, res) => {
+exports.registerEducator = async (req, res) => {
   const { type } = req.query;
   const {
     fullName,
@@ -49,57 +36,16 @@ exports.registerUser = async (req, res) => {
   if (!type)
     return res
       .status(StatusCodes.BAD_REQUEST)
-      .json({ message: "User type is required!" });
-  let user = await User.findOne({ email: req.body.email });
+      .json({ message: "Educator type is required!" });
+  let educator = await Educator.findOne({ email: req.body.email });
 
-  if (user && user.isVerified) {
+  if (educator && educator.isVerified) {
     return res
       .status(StatusCodes.BAD_REQUEST)
-      .json({ message: "User already registered." });
+      .json({ message: "Educator already registered." });
   }
 
-  // Check if user has incomplete data. i.e a user was invited but didnt use link
-
-  // if (user && !user.password) {
-  //     user.fullName = fullName
-  //     user.last_name = last_name
-  //     user.phone = phone
-  //     user.email = email
-  //     user.gender = gender
-  //     user.age = age
-  //     user.country = country
-  //     user.state = state
-  //     user.userType = type
-  //     user.grade = grade
-
-  //     const salt = await bcrypt.genSalt(10);
-  //     user.password = await bcrypt.hash(password, salt);
-  //     await user.save();
-
-  //     const code = otpGenerator.generate(6, {
-  //         lowerCaseAlphabets: true,
-  //         upperCaseAlphabets: false,
-  //         specialChars: false,
-  //     });
-
-  //     const otp = new OTP({
-  //         user: user._id,
-  //         checkModel: "User",
-  //         code,
-  //         type: "RegisterUser",
-  //         expiresIn: Date.now() + 3600000,
-  //     });
-
-  //     await otp.save();
-  //     await Otp_VerifyAccount(user.email, user.fullName, code);
-
-  //     const token = user.generateAuthToken();
-
-  //     return res.status(StatusCodes.OK).json({ token });
-
-  // }
-
-  if (user && !user.isVerified) {
+  if (educator && !educator.isVerified) {
     const code = otpGenerator.generate(6, {
       lowerCaseAlphabets: false,
       upperCaseAlphabets: false,
@@ -107,16 +53,16 @@ exports.registerUser = async (req, res) => {
     });
 
     const otp = new OTP({
-      user: user._id,
-      checkModel: "User",
+      user: educator._id,
+      checkModel: "Educator",
       code,
-      type: "RegisterUser",
+      type: "RegisterEducator",
       expiresIn: Date.now() + 3600000,
     });
 
-    const token = user.generateAuthToken();
+    const token = educator.generateAuthToken();
     await otp.save();
-    await Otp_VerifyAccount(user.email, user.fullName, code);
+    await Otp_VerifyAccount(educator.email, educator.fullName, code);
 
     return res.status(StatusCodes.OK).json({
       message: "Please enter the code sent to your email.",
@@ -124,8 +70,8 @@ exports.registerUser = async (req, res) => {
     });
   }
 
-  // Handle user registration if not already registered
-  const newUser = new User({
+  // Handle educator registration if not already registered
+  const newEducator = new Educator({
     fullName,
     phone,
     email,
@@ -137,9 +83,9 @@ exports.registerUser = async (req, res) => {
     grade,
   });
   const salt = await bcrypt.genSalt(10);
-  newUser.password = await bcrypt.hash(password, salt);
-  newUser.userType = type;
-  await newUser.save();
+  newEducator.password = await bcrypt.hash(password, salt);
+  newEducator.userType = type;
+  await newEducator.save();
 
   const code = otpGenerator.generate(6, {
     lowerCaseAlphabets: false,
@@ -148,22 +94,22 @@ exports.registerUser = async (req, res) => {
   });
 
   const otp = new OTP({
-    user: newUser._id,
-    checkModel: "User",
+    user: newEducator._id,
+    checkModel: "Educator",
     code,
-    type: "RegisterUser",
+    type: "RegisterEducator",
     expiresIn: Date.now() + 3600000,
   });
 
   await otp.save();
-  await Otp_VerifyAccount(newUser.email, newUser.fullName, code);
+  await Otp_VerifyAccount(newEducator.email, newEducator.fullName, code);
 
-  const token = newUser.generateAuthToken();
+  const token = newEducator.generateAuthToken();
 
   res.status(StatusCodes.OK).json({ token });
 };
 
-exports.registerInvitedUser = async (req, res) => {
+exports.registerInvitedEducator = async (req, res) => {
   const {
     fullName,
     phone,
@@ -177,20 +123,20 @@ exports.registerInvitedUser = async (req, res) => {
     grade,
   } = req.body;
 
-  let user = await User.findOne({ _id: req.user._id });
+  let educator = await Educator.findOne({ _id: req.user._id });
 
-  if (!user)
+  if (!educator)
     return res
       .status(StatusCodes.BAD_REQUEST)
       .json({ message: "Un-Authorized Action!" });
 
-  if (user && !user.newCourseInvite) {
+  if (educator && !educator.newCourseInvite) {
     return res
       .status(StatusCodes.BAD_REQUEST)
       .json({ message: "Expired or Invalid invite link!" });
   }
 
-  if (!user.password && !password) {
+  if (!educator.password && !password) {
     return res
       .status(StatusCodes.UNPROCESSABLE_ENTITY)
       .json({ message: "Password is required!" });
@@ -198,8 +144,8 @@ exports.registerInvitedUser = async (req, res) => {
 
   // Check for course enrollment
   const studentEnrollment = await StudentEnrollments.findOne({
-    school: user?.newCourseInvite.school,
-    user: user._id,
+    school: educator?.newCourseInvite.school,
+    user: educator._id,
     status: "Pending",
   });
 
@@ -209,26 +155,26 @@ exports.registerInvitedUser = async (req, res) => {
       .json({ message: "Expired or Invalid invite link!" });
   }
 
-  user.fullName = fullName;
-  user.phone = phone;
-  user.email = email;
-  user.gender = gender;
-  user.DOB = DOB;
-  user.country = country;
-  user.state = state;
-  user.lga = lga;
-  user.userType = "School";
-  user.grade = grade;
-  user.school = user.newCourseInvite.school;
-  user.newCourseInvite = null;
+  educator.fullName = fullName;
+  educator.phone = phone;
+  educator.email = email;
+  educator.gender = gender;
+  educator.DOB = DOB;
+  educator.country = country;
+  educator.state = state;
+  educator.lga = lga;
+  educator.educatorType = "School";
+  educator.grade = grade;
+  educator.school = educator.newCourseInvite.school;
+  educator.newCourseInvite = null;
 
-  if (!user.isVerified) {
-    user.isVerified = true;
+  if (!educator.isVerified) {
+    educator.isVerified = true;
   }
 
   if (password) {
     const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(password, salt);
+    educator.password = await bcrypt.hash(password, salt);
   }
   studentEnrollment.status = "Confirmed";
 
@@ -239,82 +185,15 @@ exports.registerInvitedUser = async (req, res) => {
   });
 
   await studentEnrollment.save();
-  await user.save();
+  await educator.save();
 
-  const token = user.generateAuthToken();
-
-  res
-    .status(StatusCodes.OK)
-    .json({ message: "Account created successfully!", token });
-};
-
-exports.registerSchoolInvitedAdmin = async (req, res) => {
-  const {
-    fullName,
-    phone,
-    email,
-    gender,
-    DOB,
-    country,
-    state,
-    lga,
-    password,
-    grade,
-  } = req.body;
-
-  let user = await User.findOne({ _id: req.user._id });
-
-  if (!user)
-    return res
-      .status(StatusCodes.BAD_REQUEST)
-      .json({ message: "Un-Authorized Action!" });
-
-  if (user && !user.newInvite) {
-    return res
-      .status(StatusCodes.BAD_REQUEST)
-      .json({ message: "Expired or Invalid invite link!" });
-  }
-
-  if (!user.password && !password) {
-    return res
-      .status(StatusCodes.UNPROCESSABLE_ENTITY)
-      .json({ message: "Password is required!" });
-  }
-
-  user.fullName = fullName;
-  user.phone = phone;
-  user.email = email;
-  user.gender = gender;
-  user.DOB = DOB;
-  user.country = country;
-  user.state = state;
-  user.lga = lga;
-  user.userType = "School";
-  user.grade = grade;
-  user.school = user.newInvite.school;
-  user.isSchoolAdmin = true;
-  user.schoolAdminStatus = "Confirmed";
-  user.schoolAdminDate = user.newInvite.schoolAdminDate;
-  user.schoolAdminPermission = user.newInvite.schoolAdminPermission;
-  user.newInvite = null;
-
-  if (!user.isVerified) {
-    user.isVerified = true;
-  }
-
-  if (password) {
-    const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(password, salt);
-  }
-
-  await user.save();
-
-  const token = user.generateAuthToken();
+  const token = educator.generateAuthToken();
 
   res
     .status(StatusCodes.OK)
     .json({ message: "Account created successfully!", token });
 };
+
 // Verify Account route
 exports.verifyAccount = async (req, res) => {
   const { code } = req.body;
@@ -328,7 +207,7 @@ exports.verifyAccount = async (req, res) => {
   const otp = await OTP.findOne({
     user: _id,
     code,
-    type: "RegisterUser",
+    type: "RegisterEducator",
   }).populate("user");
 
   if (!otp) {
@@ -339,7 +218,7 @@ exports.verifyAccount = async (req, res) => {
       });
   }
 
-  await User.findByIdAndUpdate(_id, { isVerified: true });
+  await Educator.findByIdAndUpdate(_id, { isVerified: true });
   await OTP.deleteMany({ user: otp.user }).exec();
 
   res.status(StatusCodes.OK).json({ message: "Your account is now verified" });
@@ -350,7 +229,7 @@ exports.login = async (req, res) => {
   const { email, password } = req.body;
 
   // Check if this is a school account
-  let school = await Schools.findOne({ email, isVerified: true }).select(
+  let school = await Educator.findOne({ email, isVerified: true }).select(
     "-isVerified -isDeleted -resetPassword"
   );
 
@@ -364,33 +243,31 @@ exports.login = async (req, res) => {
     // Remove password from the school object before sending the response
     const { password: _, ...schoolData } = school.toObject();
 
-    return res
-      .status(StatusCodes.OK)
-      .json({
-        accountType: "School",
-        message: "School Login successful!",
-        token,
-        user: schoolData,
-      });
+    return res.status(StatusCodes.OK).json({
+      accountType: "Educator",
+      message: "Educator Login successful!",
+      token,
+      user: schoolData,
+    });
   }
 
-  const user = await User.findOne({ email, isVerified: true });
+  const educator = await Educator.findOne({ email, isVerified: true });
 
-  if (!user)
+  if (!educator)
     return res
       .status(StatusCodes.BAD_REQUEST)
       .json({ message: "Invalid credentials." });
 
-  const validPassword = await bcrypt.compare(password, user.password);
+  const validPassword = await bcrypt.compare(password, educator.password);
 
   if (!validPassword)
     return res
       .status(StatusCodes.BAD_REQUEST)
       .json({ message: "Invalid credentials." });
 
-  const token = user.generateAuthToken();
+  const token = educator.generateAuthToken();
   // Remove password from the school object before sending the response
-  const { password: _, ...userData } = user.toObject();
+  const { password: _, ...educatorData } = educator.toObject();
 
   res
     .status(StatusCodes.OK)
@@ -398,19 +275,19 @@ exports.login = async (req, res) => {
       accountType: "Individual",
       token,
       message: "Login Successful.",
-      user: userData,
+      user: educatorData,
     });
 };
 
 // Forgot Password Route
 exports.forgotPassword = async (req, res) => {
   const { email } = req.body;
-  const user = await User.findOne({ email, isVerified: true });
+  const educator = await Educator.findOne({ email, isVerified: true });
 
-  if (!user)
+  if (!educator)
     return res
       .status(StatusCodes.BAD_REQUEST)
-      .json({ message: "User not found." });
+      .json({ message: "Educator not found." });
 
   const code = otpGenerator.generate(6, {
     lowerCaseAlphabets: false,
@@ -419,16 +296,16 @@ exports.forgotPassword = async (req, res) => {
   });
 
   const otp = new OTP({
-    user: user._id,
-    checkModel: "User",
+    user: educator._id,
+    checkModel: "Educator",
     code,
     type: "ForgotPassword",
     expiresIn: Date.now() + 3600000,
   });
 
   await otp.save();
-  const token = user.generateAuthToken();
-  await Otp_ForgotPassword(user.fullName, user.email, code, token);
+  const token = educator.generateAuthToken();
+  await Otp_ForgotPassword(educator.fullName, educator.email, code, token);
 
   res
     .status(StatusCodes.OK)
@@ -453,10 +330,10 @@ exports.verify_otp_forgotPassword = async (req, res) => {
     });
   }
 
-  if (otp.user.toString() !== req.user._id) {
+  if (otp.educator.toString() !== req.user._id) {
     return res.status(StatusCodes.BAD_REQUEST).json({
       status: "failed",
-      message: "Invalid User Credentials",
+      message: "Invalid educator Credentials",
     });
   }
 
@@ -475,7 +352,7 @@ exports.verify_otp_forgotPassword = async (req, res) => {
   // delete otp code
   await OTP.deleteMany({ user: otp.user }).exec();
 
-  await User.findByIdAndUpdate(
+  await Educator.findByIdAndUpdate(
     otp.user._id,
     {
       resetPassword: true,
@@ -495,13 +372,13 @@ exports.resetPassword = async (req, res) => {
   const { password } = req.body;
 
   // Only users with valid OTP can reset password. hence resetPassword=true
-  let user = await User.findOne({
+  let educator = await Educator.findOne({
     email: req.user.email,
     resetPassword: true,
   }).exec();
 
-  // This user is not on the app
-  if (!user) {
+  // This educator is not on the app
+  if (!educator) {
     return res.status(StatusCodes.BAD_REQUEST).json({
       status: "failed",
       error: "Invalid credentials",
@@ -511,10 +388,10 @@ exports.resetPassword = async (req, res) => {
   // hash the password
   const hashed_password = await bcrypt.hash(password, 10);
 
-  user.password = hashed_password;
-  user.resetPassword = false;
+  educator.password = hashed_password;
+  educator.resetPassword = false;
 
-  await user.save();
+  await educator.save();
   res.status(StatusCodes.OK).json({
     status: "success",
     message: "You have successfully reset your password",
@@ -523,7 +400,7 @@ exports.resetPassword = async (req, res) => {
 
 exports.updateProfile = async (req, res) => {
   // Find and update the user's profile
-  const updateProfile = await User.findByIdAndUpdate(req.user._id, req.body, {
+  const updateProfile = await Educator.findByIdAndUpdate(req.user._id, req.body, {
     new: true,
     select: "-password -isVerified -isDeleted -resetPassword",
   });
@@ -542,35 +419,3 @@ exports.updateProfile = async (req, res) => {
   });
 };
 
-exports.courseEnrollment = async (req, res) => {
-  const { fullName, email, phone } = req.body;
-  let amount = 10000; //Will fix this later
-  const enrollment = new CourseEnrollment({
-    fullName,
-
-    email,
-    phone,
-    amount,
-    user: req.user._id,
-  });
-  const { data } = await initiatePaystackPayment(
-    amount,
-    email,
-    `${fullName} ${last_name}`,
-    "course._id"
-  );
-
-  // If Paystack doesn't initiate payment stop the payment
-  if (!data)
-    return res.status(StatusCodes.BAD_REQUEST).json({
-      status: "failed",
-      message: "Operation Failed",
-    });
-
-  await enrollment.save();
-  return res.status(StatusCodes.CREATED).json({
-    status: "success",
-    message: "Opening Payment Window please do not close the page!",
-    data,
-  });
-};
