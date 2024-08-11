@@ -9,18 +9,21 @@ exports.validate = (validator) => {
 }
 
 exports.loginValidator = function (req) {
-    const schema = Joi.object({
-        userId: Joi.string()
-            .min(5)
-            .max(255)
-            .required(),
-        password: Joi.string()
-            .min(5)
-            .max(255)
-            .required(),
-    })
-    return schema.validate(req);
-}
+  const schema = Joi.object({
+    usernameOrEmail: Joi.string().min(5).max(255).required().messages({
+      "string.min": "Username or Email must be at least 5 characters long.",
+      "string.max": "Username or Email cannot exceed 255 characters.",
+      "any.required": "Username or Email is required.",
+    }),
+    password: Joi.string().min(5).max(255).required().messages({
+      "string.min": "Password must be at least 5 characters long.",
+      "string.max": "Password cannot exceed 255 characters.",
+      "any.required": "Password is required.",
+    }),
+  });
+
+  return schema.validate(req);
+};
 
 exports.courseEnrollmerntValidator = function (req) {
     const schema = Joi.object({

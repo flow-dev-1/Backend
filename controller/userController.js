@@ -11,6 +11,8 @@ const Courses = require("../models/course");
 const StudentEnrollments = require("../models/courseEnrollment");
 const Schools = require("../models/school");
 const Counter = require("../models/counter");
+const { Educator } = require("../models/educators");
+const { Admin } = require("../models/admin");
 
 exports.getLoggedUser = async (req, res) => {
   const user = await User.findById(req.user._id).select(
@@ -124,16 +126,15 @@ exports.registerUser = async (req, res) => {
       token,
     });
   }
-const counter = await Counter.findOneAndUpdate(
-  { name: "userId" },
-  { $inc: { seq: 1 } },
-  { new: true, upsert: true, strict: true } 
-);
+  const counter = await Counter.findOneAndUpdate(
+    { name: "userId" },
+    { $inc: { seq: 1 } },
+    { new: true, upsert: true, strict: true }
+  );
 
-
-const userId = `FLS${counter.seq
-  .toString()
-  .padStart(Math.max(3, counter.seq.toString().length), "0")}`;
+  const userId = `FLS${counter.seq
+    .toString()
+    .padStart(Math.max(3, counter.seq.toString().length), "0")}`;
 
   // Handle user registration if not already registered
   const newUser = new User({
@@ -242,7 +243,7 @@ exports.registerInvitedUser = async (req, res) => {
   user.grade = grade;
   user.school = user.newCourseInvite.school;
   user.newCourseInvite = null;
-  user.userId = userId
+  user.userId = userId;
 
   if (!user.isVerified) {
     user.isVerified = true;
@@ -354,193 +355,15 @@ exports.verifyAccount = async (req, res) => {
   }).populate("user");
 
   if (!otp) {
-    return res
-      .status(StatusCodes.BAD_REQUEST)
-      .json({
-        message: "Wrong code or code expired. Please request for a new code.",
-      });
+    return res.status(StatusCodes.BAD_REQUEST).json({
+      message: "Wrong code or code expired. Please request for a new code.",
+    });
   }
 
   await User.findByIdAndUpdate(_id, { isVerified: true });
   await OTP.deleteMany({ user: otp.user }).exec();
 
   res.status(StatusCodes.OK).json({ message: "Your account is now verified" });
-};
-
-// Login Route
-exports.login = async (req, res) => {
-  const { userId, password } = req.body;
-
-  // Check if this is a school account
-  let school = await Schools.findOne({ userId, isVerified: true }).select(
-    "-isVerified -isDeleted -resetPassword"
-  );
-
-  if (school) {
-    const validPassword = await bcrypt.compare(password, school.password);
-    if (!validPassword)
-      return res.status(400).send("Invalid ID or password.");
-
-    const token = await school.generateAuthToken();
-
-    // Remove password from the school object before sending the response
-    const { password: _, ...schoolData } = school.toObject();
-
-    return res
-      .status(StatusCodes.OK)
-      .json({
-        accountType: "School",
-        message: "School Login successful!",
-        token,
-        user: schoolData,
-      });
-  }
-
-  const user = await User.findOne({ userId, isVerified: true });
-
-  if (!user)
-    return res
-      .status(StatusCodes.BAD_REQUEST)
-      .json({ message: "Invalid credentials." });
-
-  const validPassword = await bcrypt.compare(password, user.password);
-
-  if (!validPassword)
-    return res
-      .status(StatusCodes.BAD_REQUEST)
-      .json({ message: "Invalid credentials." });
-
-  const token = user.generateAuthToken();
-  // Remove password from the school object before sending the response
-  const { password: _, ...userData } = user.toObject();
-
-  res
-    .status(StatusCodes.OK)
-    .json({
-      accountType: "Individual",
-      token,
-      message: "Login Successful.",
-      user: userData,
-    });
-};
-
-// Forgot Password Route
-exports.forgotPassword = async (req, res) => {
-  const { email } = req.body;
-  const user = await User.findOne({ email, isVerified: true });
-
-  if (!user)
-    return res
-      .status(StatusCodes.BAD_REQUEST)
-      .json({ message: "User not found." });
-
-  const code = otpGenerator.generate(6, {
-    lowerCaseAlphabets: false,
-    upperCaseAlphabets: false,
-    specialChars: false,
-  });
-
-  const otp = new OTP({
-    user: user._id,
-    checkModel: "User",
-    code,
-    type: "ForgotPassword",
-    expiresIn: Date.now() + 3600000,
-  });
-
-  await otp.save();
-  const token = user.generateAuthToken();
-  await Otp_ForgotPassword(user.fullName, user.email, code, token);
-
-  res
-    .status(StatusCodes.OK)
-    .json({ message: "Please enter the code sent to your email." });
-};
-
-exports.verify_otp_forgotPassword = async (req, res) => {
-  const { code } = req.body;
-
-  if (!code)
-    return res
-      .status(StatusCodes.BAD_REQUEST)
-      .json({ message: "Code is required." });
-
-  //check otp code
-  const otp = await OTP.findOne({ code }).exec();
-
-  if (otp === null) {
-    return res.status(StatusCodes.BAD_REQUEST).json({
-      status: "failed",
-      error: "Invalid OTP Token",
-    });
-  }
-
-  if (otp.user.toString() !== req.user._id) {
-    return res.status(StatusCodes.BAD_REQUEST).json({
-      status: "failed",
-      message: "Invalid User Credentials",
-    });
-  }
-
-  // Check if the otp has expired
-  const otp_valid = otp.expiresIn > Date.now();
-  //  < Date.now();
-  if (!otp_valid) {
-    // delete otp code
-    await OTP.findOneAndDelete({ code }).exec();
-    return res.status(StatusCodes.BAD_REQUEST).json({
-      status: "failed",
-      message: "Invalid or Expired Token.",
-    });
-  }
-
-  // delete otp code
-  await OTP.deleteMany({ user: otp.user }).exec();
-
-  await User.findByIdAndUpdate(
-    otp.user._id,
-    {
-      resetPassword: true,
-    },
-    {
-      new: true,
-    }
-  );
-
-  return res.status(StatusCodes.OK).json({
-    status: "success",
-    message: "OTP verified, You can now reset Password",
-  });
-};
-
-exports.resetPassword = async (req, res) => {
-  const { password } = req.body;
-
-  // Only users with valid OTP can reset password. hence resetPassword=true
-  let user = await User.findOne({
-    email: req.user.email,
-    resetPassword: true,
-  }).exec();
-
-  // This user is not on the app
-  if (!user) {
-    return res.status(StatusCodes.BAD_REQUEST).json({
-      status: "failed",
-      error: "Invalid credentials",
-    });
-  }
-
-  // hash the password
-  const hashed_password = await bcrypt.hash(password, 10);
-
-  user.password = hashed_password;
-  user.resetPassword = false;
-
-  await user.save();
-  res.status(StatusCodes.OK).json({
-    status: "success",
-    message: "You have successfully reset your password",
-  });
 };
 
 exports.updateProfile = async (req, res) => {

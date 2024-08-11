@@ -20,15 +20,10 @@ router.post(
   validate(validateInvitedEducator),
   educatorController.registerInvitedEducator
 );
-router.post('/login', validate(loginValidator), educatorController.login);
-// router.post(
-//   "/invited-school-admin",
-//   auth,
-//   validate(validateInvitedEducator),
-//   educatorController.registerSchoolInvitedAdmin
-// );
+
 router.post('/forgot-password', educatorController.forgotPassword);
 // //Verify OTP
+
 router.post('/verify-token', auth, educatorController.verify_otp_forgotPassword)
 
 router.put("/password", auth, educatorController.resetPassword);
