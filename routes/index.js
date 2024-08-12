@@ -18,4 +18,7 @@ router.patch('/verify-token', auth, indexController.verify_otp_forgotPassword)
 
 router.put('/password', auth, indexController.resetPassword);
 
+router.get("/id", indexController.generateUserId);
+
+
 module.exports = router; 

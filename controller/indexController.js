@@ -239,3 +239,20 @@ exports.resetPassword = async (req, res) => {
   });
 };
 
+exports.generateUserId = async (req, res) => {
+  const generateId = () => {
+    const randomNum = Math.floor(Math.random() * 9999) + 1;
+    const paddedNum = randomNum.toString().padStart(3, '0');
+
+    return `FLS${paddedNum}`;
+  };
+
+  const userId = generateId();
+
+  res.status(StatusCodes.OK).json({
+    status: "success",
+    message: "successfully created the id",
+    userId,
+  });
+};
+
