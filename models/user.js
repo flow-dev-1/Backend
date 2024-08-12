@@ -26,17 +26,11 @@ const userSchema = new mongoose.Schema(
       minlength: 2,
       maxlength: 250,
     },
-    userId: {
-      type: String,
-      required: true,
-      unique:true
-    },
     email: {
       type: String,
       required: true,
       minlength: 5,
       maxlength: 255,
-      unique: true,
     },
     password: {
       type: String,
@@ -60,16 +54,39 @@ const userSchema = new mongoose.Schema(
     address: {
       type: String,
     },
-    gender: {
-      type: String,
-      required: false,
-    },
-    DOB: {
-      type: Date,
-      required: false,
-    },
+    student: [
+      {
+        userId: {
+          type: String,
+          required: true,
+          unique: true,
+        },
+        fullName: {
+          type: String,
+          required: true,
+        },
+        grade: {
+          type: String,
+          required: true,
+        },
+        gender: {
+          type: String,
+          required: false,
+        },
+        DOB: {
+          type: Date,
+          required: true,
+        },
+        password: {
+          type: String,
+          required: false,
+          minlength: 5,
+          maxlength: 1024,
+        },
+        grade: { type: String, enum: ["Primary", "Secondary", "Educator"] },
+      },
+    ],
     userType: { type: String, enum: ["School", "Individual"] }, //users with schools
-    grade: { type: String, enum: ["Primary", "Secondary", "Educator"] },
     school: {
       type: mongoose.Schema.Types.ObjectId,
       required: false,
@@ -140,31 +157,45 @@ userSchema.methods.generateInviteToken = function () {
 const User = mongoose.model("User", userSchema);
 
 function validateUser(user) {
+  const studentSchema = Joi.object({
+    userId: Joi.string().required(),
+    fullName: Joi.string()
+      .min(2)
+      .max(300)
+      .required()
+      .pattern(/^[a-zA-Z]+ [a-zA-Z]+$/)
+      .message(
+        "Full name must contain at least a first name and a last name separated by a space."
+      ),
+    grade: Joi.string().optional(),
+    gender: Joi.string().valid("male", "female").required(),
+    DOB: Joi.date().required(),
+    password: Joi.string().min(8).max(1024).required(),
+  });
 
-    const schema = Joi.object({
-      fullName: Joi.string()
-        .min(2)
-        .max(300)
-        .required()
-        .pattern(/^[a-zA-Z]+ [a-zA-Z]+$/)
-        .message(
-          "Full name must contain at least a first name and a last name separated by a space."
-        ),
-      DOB: Joi.date().required(),
-      phone: Joi.string()
+  const schema = Joi.object({
+    fullName: Joi.string()
+      .min(2)
+      .max(300)
+      .required()
+      .pattern(/^[a-zA-Z]+ [a-zA-Z]+$/)
+      .message(
+        "Full name must contain at least a first name and a last name separated by a space."
+      ),
+    phone: Joi.string()
         .pattern(new RegExp(/^\+[1-9]\d{1,14}$/))
         .message("Please enter a valid phone number in international format")
         .required(),
-      email: Joi.string().min(5).max(255).required().email(),
-      password: Joi.string().min(8).max(1024).required(),
-      grade: Joi.string().optional(),
-      gender: Joi.string().valid("male", "female").required(),
-      country: Joi.string().min(2).max(255).required(),
-      state: Joi.string().min(2).max(255).required(),
-      lga: Joi.string().min(2).max(255).required(),
-    });
-    return schema.validate(user);
+    email: Joi.string().min(5).max(255).required().email(),
+    country: Joi.string().min(2).max(255).required(),
+    state: Joi.string().min(2).max(255).required(),
+    lga: Joi.string().min(2).max(255).required(),
+    student: Joi.array().items(studentSchema).required(),
+  });
+
+  return schema.validate(user);
 }
+
 
 function validateInvitedUser(user) {
 
