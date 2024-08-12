@@ -4,7 +4,7 @@ const OTPSchema = mongoose.Schema({
     user: { type: mongoose.Schema.Types.ObjectId, required: true, refPath: 'checkModel' },
     checkModel: {
         type: String,
-        enum: ['User', "Admin", "School"],
+        enum: ['User', "Admin", "School", "Educator"],
         // required: true,
     },
     code: { type: String },

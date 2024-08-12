@@ -49,7 +49,6 @@ const schoolsSchema = new mongoose.Schema({
     },
     photo: {
         type: String,
-        required: false
     },
     isSchool: {
         type: Boolean,
@@ -70,8 +69,7 @@ const schoolsSchema = new mongoose.Schema({
     },
     team: [{ type: mongoose.Schema.Types.ObjectId, required: true, ref: 'User' }],
     email_notification: [{
-        first_name: { type: String },
-        last_name: { type: String },
+        fullName: { type: String },
         email: { type: String },
         position: { type: String },
         dateAdded: { type: Date, default: Date.now }

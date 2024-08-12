@@ -26,7 +26,12 @@ router.get('/:id/courses/enrolled/:enrolledCourseId', auth, schoolAccess, school
 
 router.get('/:id/users/:userId', auth, schoolAccess, schoolsController.getSingleUser);
 
-router.post('/', upload.single('image'), validate(registerSchoolValidator), schoolsController.registerSchool);
+router.post(
+  "/",
+  optionalUpload.single("image"),
+  validate(registerSchoolValidator),
+  schoolsController.registerSchool
+);
 
 router.patch('/verify-account', auth, schoolAccess, schoolsController.verifyAccount);
 

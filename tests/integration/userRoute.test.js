@@ -11,8 +11,7 @@ require("dotenv").config({ path: "test.env" });
 
 const addUser = async () => {
     let user = new User({
-        first_name: "John",
-        last_name: "Doe",
+        fullName: "John Doe",
         email: "john.doe@example.com",
         phone: "+234123456789",
         gender: "male",
@@ -43,8 +42,7 @@ describe("/api/users", () => {
         it("should return logged-in user details without password", async () => {
             // Create a user for testing
             const user = new User({
-                first_name: "John",
-                last_name: "Doe",
+                fullName: "John Doe",
                 email: "john.doe@example.com",
                 phone: "+234123456789",
                 gender: "male",
@@ -107,8 +105,7 @@ describe("/api/users", () => {
 
         it("should return response status 400 if user already exists and is verified", async () => {
             const user = new User({
-                first_name: "John",
-                last_name: "Doe",
+                fullName: "John Doe",
                 email: "john.doe@example.com",
                 phone: "+234123456789",
                 gender: "male",
@@ -121,8 +118,7 @@ describe("/api/users", () => {
             await user.save();
 
             const userData = {
-                first_name: "John",
-                last_name: "Doe",
+                fullName: "John Doe",
                 email: "john.doe@example.com",
                 phone: "+234123456789",
                 gender: "male",
@@ -143,15 +139,14 @@ describe("/api/users", () => {
             let user = await addUser()
 
             const userData = {
-                first_name: 'John',
-                last_name: 'Doe',
-                email: 'john.doe@example.com',
-                phone: '+12345678901',
-                gender: 'male',
-                age: 30,
-                country: 'USA',
-                state: 'NY',
-                password: 'password123',
+              fullName: "John Doe",
+              email: "john.doe@example.com",
+              phone: "+12345678901",
+              gender: "male",
+              age: 30,
+              country: "USA",
+              state: "NY",
+              password: "password123",
             };
 
             // Mock the email sending function
@@ -177,8 +172,7 @@ describe("/api/users", () => {
             Otp_VerifyAccount.mockResolvedValue();
 
             const userData = {
-                first_name: "John",
-                last_name: "Doe",
+                fullName: "John Doe",
                 email: "john.doe@example.com",
                 phone: "+234123456789",
                 gender: "male",
@@ -255,8 +249,7 @@ describe("/api/users", () => {
 
         it('should return response status 200 if code is correct', async () => {
             let user = new User({
-                first_name: "John",
-                last_name: "Doe",
+                fullName: "John Doe",
                 email: "john.doe@example.com",
                 phone: "+234123456789",
                 gender: "male",
@@ -334,8 +327,7 @@ describe("/api/users", () => {
 
         it("should return response status 400 if user is found but password is incorrect", async () => {
             const user = new User({
-                first_name: "John",
-                last_name: "Doe",
+                fullName: "John Doe",
                 email: "john.doe@example.com",
                 phone: "+234123456789",
                 gender: "male",
@@ -362,8 +354,7 @@ describe("/api/users", () => {
 
         it("should return response status 200 if user is found and password is correct", async () => {
             const user = new User({
-                first_name: "John",
-                last_name: "Doe",
+                fullName: "John Doe",
                 email: "john.doe@example.com",
                 phone: "+234123456789",
                 gender: "male",
@@ -405,8 +396,7 @@ describe("/api/users", () => {
 
         it("should send OTP to user email for password reset if user is found and verified", async () => {
             const user = new User({
-                first_name: "John",
-                last_name: "Doe",
+                fullName: "John Doe",
                 email: "john.doe@example.com",
                 phone: "+234123456789",
                 gender: "male",
@@ -486,8 +476,7 @@ describe("/api/users", () => {
         it('should return response status 400 if user in token is incorrect', async () => {
             let user = await addUser()
             let wrongUser = new User({
-                first_name: "John",
-                last_name: "Doe",
+                fullName: "John Doe",
                 email: "j.doe@example.com",
                 phone: "+234123456789",
                 gender: "male",
@@ -612,8 +601,7 @@ describe("/api/users", () => {
 
         it("should reset user's password and update resetPassword status", async () => {
             let user = new User({
-                first_name: "John",
-                last_name: "Doe",
+                fullName: "John Doe",
                 email: "john.doe@example.com",
                 phone: "+234123456789",
                 gender: "male",
