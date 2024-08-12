@@ -14,69 +14,77 @@ mongoose.plugin(new SoftDelete({
 }).getPlugin());
 
 
-const userSchema = new mongoose.Schema({
+const userSchema = new mongoose.Schema(
+  {
     _id: {
-        type: mongoose.Schema.Types.ObjectId,
-        auto: true
+      type: mongoose.Schema.Types.ObjectId,
+      auto: true,
     },
-    first_name: {
-        type: String,
-        required: true,
-        minlength: 2,
-        maxlength: 250
+    fullName: {
+      type: String,
+      required: true,
+      minlength: 2,
+      maxlength: 250,
     },
-    last_name: {
-        type: String,
-        required: true,
-        minlength: 2,
-        maxlength: 250
+    userId: {
+      type: String,
+      required: true,
+      unique:true
     },
+    seq: { type: Number, default: 0 },
     email: {
-        type: String,
-        required: true,
-        minlength: 5,
-        maxlength: 255,
-        unique: true
+      type: String,
+      required: true,
+      minlength: 5,
+      maxlength: 255,
+      unique: true,
     },
     password: {
-        type: String,
-        required: false,
-        minlength: 5,
-        maxlength: 1024
+      type: String,
+      required: false,
+      minlength: 5,
+      maxlength: 1024,
     },
     phone: {
-        type: String,
-        required: false
+      type: String,
+      required: false,
     },
     photo: {
-        type: String,
-        required: false
+      type: String,
+      required: false,
     },
 
     isVerified: {
-        type: Boolean,
-        default: false
+      type: Boolean,
+      default: false,
     },
     address: {
-        type: String,
+      type: String,
     },
     gender: {
-        type: String,
-        required: false
+      type: String,
+      required: false,
     },
     DOB: {
-        type: Date,
-        required: false
+      type: Date,
+      required: false,
     },
-    userType: { type: String, enum: ["School", "Individual"] },//users with schools
+    userType: { type: String, enum: ["School", "Individual"] }, //users with schools
     grade: { type: String, enum: ["Primary", "Secondary", "Educator"] },
-    school: { type: mongoose.Schema.Types.ObjectId, required: false, ref: 'School' },
+    school: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: false,
+      ref: "School",
+    },
     isSchoolAdmin: { type: Boolean, default: false },
     schoolAdminStatus: { type: String, enum: ["Pending", "Confirmed"] },
-    schoolAdminPermission: { type: String, enum: ["Admin", "Students", "Teachers"] },
+    schoolAdminPermission: {
+      type: String,
+      enum: ["Admin", "Students", "Teachers"],
+    },
     schoolAdminDate: { type: Date },
     newCourseInvite: { type: Object },
-    newInvite: { type: Object },//This accounts for admin invitation dat has not been accepted or rejected
+    newInvite: { type: Object }, //This accounts for admin invitation dat has not been accepted or rejected
     country: { type: String },
     state: { type: String },
     lga: { type: String },
@@ -84,21 +92,21 @@ const userSchema = new mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
     deletedAt: { type: Date, default: null },
     deletionProperties: {
-        reason: { type: String },
-        suggestion: { type: String },
-    }
-},
-    {
-        timestamps: true,
-    });
+      reason: { type: String },
+      suggestion: { type: String },
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
 
 userSchema.methods.generateAuthToken = function () {
     const token = jwt.sign(
         {
             _id: this._id,
             isVerified: this.isVerified,
-            firstName: this.first_name,
-            lastName: this.last_name,
+            fullName: this.fullName,
             email: this.email,
             phone: this.phone,
             gender: this.gender
@@ -114,20 +122,18 @@ userSchema.methods.generateAuthToken = function () {
 
 userSchema.methods.generateInviteToken = function () {
     const token = jwt.sign(
-        {
-            _id: this._id,
-            isVerified: this.isVerified,
-            firstName: this.first_name,
-            lastName: this.last_name,
-            email: this.email,
-            phone: this.phone,
-            gender: this.gender
-
-        },
-        process.env.JWT,
-        {
-            expiresIn: "30d",
-        }
+      {
+        _id: this._id,
+        isVerified: this.isVerified,
+        fullName: this.fullName,
+        email: this.email,
+        phone: this.phone,
+        gender: this.gender,
+      },
+      process.env.JWT,
+      {
+        expiresIn: "30d",
+      }
     );
     return token;
 };
@@ -137,138 +143,82 @@ const User = mongoose.model("User", userSchema);
 function validateUser(user) {
 
     const schema = Joi.object({
-        first_name: Joi.string()
-            .min(2)
-            .max(100)
-            .required(),
-        DOB: Joi.date()
-            .required(),
-        last_name: Joi.string()
-            .min(2)
-            .max(100)
-            .required(),
-        phone: Joi.string()
-            .pattern(new RegExp(/^\+[1-9]\d{1,14}$/))
-            .message('Please enter a valid phone number in international format')
-            .required(),
-        email: Joi.string()
-            .min(5)
-            .max(255)
-            .required()
-            .email(),
-        password: Joi.string()
-            .min(8)
-            .max(1024)
-            .required(),
-        grade: Joi.string()
-            .optional(),
-        gender: Joi.string()
-            .valid('male', 'female')
-            .required(),
-        country: Joi.string()
-            .min(2)
-            .max(255)
-            .required(),
-        state: Joi.string()
-            .min(2)
-            .max(255)
-            .required(),
-        lga: Joi.string()
-            .min(2)
-            .max(255)
-            .required()
-    })
+      fullName: Joi.string()
+        .min(2)
+        .max(300)
+        .required()
+        .pattern(/^[a-zA-Z]+ [a-zA-Z]+$/)
+        .message(
+          "Full name must contain at least a first name and a last name separated by a space."
+        ),
+      DOB: Joi.date().required(),
+      phone: Joi.string()
+        .pattern(new RegExp(/^\+[1-9]\d{1,14}$/))
+        .message("Please enter a valid phone number in international format")
+        .required(),
+      email: Joi.string().min(5).max(255).required().email(),
+      password: Joi.string().min(8).max(1024).required(),
+      grade: Joi.string().optional(),
+      gender: Joi.string().valid("male", "female").required(),
+      country: Joi.string().min(2).max(255).required(),
+      state: Joi.string().min(2).max(255).required(),
+      lga: Joi.string().min(2).max(255).required(),
+    });
     return schema.validate(user);
 }
 
 function validateInvitedUser(user) {
 
     const schema = Joi.object({
-        first_name: Joi.string()
-            .min(2)
-            .max(100)
-            .required(),
-        DOB: Joi.date()
-            .required(),
-        last_name: Joi.string()
-            .min(2)
-            .max(100)
-            .required(),
-        phone: Joi.string()
-            .pattern(new RegExp(/^\+[1-9]\d{1,14}$/))
-            .message('Please enter a valid phone number in international format')
-            .required(),
-        email: Joi.string()
-            .min(5)
-            .max(255)
-            .required()
-            .email(),
-        password: Joi.string()
-            .allow(null)
-            .optional(),
-        grade: Joi.string()
-            .optional(),
-        gender: Joi.string()
-            .valid('male', 'female')
-            .required(),
-        country: Joi.string()
-            .min(2)
-            .max(255)
-            .required(),
-        state: Joi.string()
-            .min(2)
-            .max(255)
-            .required(),
-        lga: Joi.string()
-            .min(2)
-            .max(255)
-            .required()
-    })
+      fullName: Joi.string()
+        .min(2)
+        .max(300)
+        .required()
+        .pattern(/^[a-zA-Z]+ [a-zA-Z]+$/)
+        .message(
+          "Full name must contain at least a first name and a last name separated by a space."
+        ),
+      DOB: Joi.date().required(),
+      phone: Joi.string()
+        .pattern(new RegExp(/^\+[1-9]\d{1,14}$/))
+        .message("Please enter a valid phone number in international format")
+        .required(),
+      email: Joi.string().min(5).max(255).required().email(),
+      password: Joi.string().allow(null).optional(),
+      grade: Joi.string().optional(),
+      gender: Joi.string().valid("male", "female").required(),
+      country: Joi.string().min(2).max(255).required(),
+      state: Joi.string().min(2).max(255).required(),
+      lga: Joi.string().min(2).max(255).required(),
+    });
     return schema.validate(user);
 }
 
 function validateUserUpdate(user) {
 
     const schema = Joi.object({
-        first_name: Joi.string()
-            .min(2)
-            .max(100)
-            .required(),
-        DOB: Joi.date()
-            .required(),
-        last_name: Joi.string()
-            .min(2)
-            .max(100)
-            .required(),
-        phone: Joi.string()
-            .pattern(new RegExp(/^\+[1-9]\d{1,14}$/))
-            .message('Please enter a valid phone number in international format')
-            .required(),
-        email: Joi.string()
-            .min(5)
-            .max(255)
-            .required()
-            .email(),
-        // password: Joi.string()
-        //     .min(8)
-        //     .max(1024)
-        //     .required(),
-        gender: Joi.string()
-            .valid('male', 'female')
-            .required(),
-        country: Joi.string()
-            .min(2)
-            .max(255)
-            .required(),
-        state: Joi.string()
-            .min(2)
-            .max(255)
-            .required(),
-        lga: Joi.string()
-            .min(2)
-            .max(255)
-            .required()
-    })
+      fullName: Joi.string()
+        .min(2)
+        .max(300)
+        .required()
+        .pattern(/^[a-zA-Z]+ [a-zA-Z]+$/)
+        .message(
+          "Full name must contain at least a first name and a last name separated by a space."
+        ),
+      phone: Joi.string()
+        .pattern(new RegExp(/^\+[1-9]\d{1,14}$/))
+        .message("Please enter a valid phone number in international format")
+        .required(),
+      email: Joi.string().min(5).max(255).required().email(),
+      // password: Joi.string()
+      //     .min(8)
+      //     .max(1024)
+      //     .required(),
+      gender: Joi.string().valid("male", "female").required(),
+      country: Joi.string().min(2).max(255).required(),
+      state: Joi.string().min(2).max(255).required(),
+      lga: Joi.string().min(2).max(255).required(),
+    });
     return schema.validate(user);
 }
 exports.User = User;
