@@ -63,8 +63,9 @@ exports.registerUser = async (req, res) => {
     });
 
     const otp = new OTP({
-      email,
+      user: user._id,
       checkModel: "User",
+      email,
       code,
       type: "RegisterUser",
       expiresIn: Date.now() + 3600000, // 1 hour expiration
@@ -87,22 +88,12 @@ exports.registerUser = async (req, res) => {
       specialChars: false,
     });
 
-    const otp = new OTP({
-      email,
-      checkModel: "User",
-      code,
-      type: "RegisterUser",
-      expiresIn: Date.now() + 3600000, // 1 hour expiration
-    });
-
-    await otp.save();
-
-    // Declare a variable to hold the token
-    let token;
+    // Variable to hold the first student's ID
+    let firstStudentId;
 
     await Promise.all(
       student.map(
-        async ({ userId, fullName, grade, gender, DOB, password }) => {
+        async ({ userId, fullName, grade, gender, DOB, password }, index) => {
           const salt = await bcrypt.genSalt(10);
           const hashedPassword = await bcrypt.hash(password, salt);
 
@@ -125,14 +116,31 @@ exports.registerUser = async (req, res) => {
 
           await newStudent.save();
 
-          // Generate the token for the last student (or any one of them)
-          token = newStudent.generateAuthToken();
+          // Store the first student's ID for OTP
+          if (index === 0) {
+            firstStudentId = newStudent._id;
+          }
         }
       )
     );
 
+    // Create OTP using the first student's ID
+    const otp = new OTP({
+      user: firstStudentId,
+      checkModel: "User",
+      code,
+      type: "RegisterUser",
+      expiresIn: Date.now() + 3600000, // 1 hour expiration
+    });
+
+    await otp.save();
+
     // Send OTP email once for the guardian email
     await Otp_VerifyAccount(email, guardianFullName, code);
+
+    // Generate token using the first student's ID
+    const firstStudent = await User.findById(firstStudentId);
+    const token = firstStudent.generateAuthToken();
 
     return res.status(StatusCodes.OK).json({
       message: "Students registered successfully",
@@ -141,10 +149,11 @@ exports.registerUser = async (req, res) => {
   }
 
   // In case no students are passed in the request body
-  res
+  return res
     .status(StatusCodes.BAD_REQUEST)
     .json({ message: "No students provided in the request." });
 };
+
 
 
 exports.registerInvitedUser = async (req, res) => {
@@ -322,6 +331,7 @@ exports.verifyAccount = async (req, res) => {
 
   const otp = await OTP.findOne({
     email,
+    checkModel: "User",
     code,
     type: "RegisterUser",
   }).populate("user");
