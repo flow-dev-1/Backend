@@ -4,7 +4,6 @@ const router = express.Router();
 const auth = require("../middleware/auth")
 const { loginValidator, validate, registerSchoolValidator, updateSchoolValidator, inviteAdminValidator, schoolCourseEnrollmentValidator, schoolCourseAddStudentsValidator, } = require("../middleware/validate");
 const schoolsController = require("../controller/schoolsController")
-const upload = require("../utils/multer");
 const optionalUpload = require('../utils/optionalUpload');
 const schoolAccess = require('../middleware/schoolAccess');//This middleware allows users with access 2 a school
 

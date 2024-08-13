@@ -318,37 +318,7 @@ exports.registerSchoolInvitedAdmin = async (req, res) => {
     .status(StatusCodes.OK)
     .json({ message: "Account created successfully!", token });
 };
-// Verify Account route
-exports.verifyAccount = async (req, res) => {
-  const { code } = req.body;
-  const { email } = req.user;
 
-  if (!code) {
-    return res
-      .status(StatusCodes.BAD_REQUEST)
-      .json({ message: "Code is required." });
-  }
-
-  const otp = await OTP.findOne({
-    email,
-    checkModel: "User",
-    code,
-    type: "RegisterUser",
-  }).populate("user");
-
-  if (!otp) {
-    return res.status(StatusCodes.BAD_REQUEST).json({
-      message: "Wrong code or code expired. Please request a new code.",
-    });
-  }
-
-
-  await User.updateMany({ email }, { isVerified: true });
-
-  await OTP.deleteMany({ email, type: "RegisterUser" }).exec();
-
-  res.status(StatusCodes.OK).json({ message: "Your account is now verified" });
-};
 
 
 exports.updateProfile = async (req, res) => {

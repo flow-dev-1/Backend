@@ -62,15 +62,17 @@ exports.login = async (req, res) => {
 
 // Forgot Password Route
 exports.forgotPassword = async (req, res) => {
-  const { email } = req.body;
+  const { usernameOrEmail } = req.body;
 
-  const findUserByEmail = async (Model) => {
-    return await Model.findOne({ email, isVerified: true });
+  const findUserByUsernameOrEmail = async (Model, field) => {
+    return await Model.findOne({ [field]: usernameOrEmail, isVerified: true });
   };
 
-  let user = await findUserByEmail(User);
-  let educator = await findUserByEmail(Educator);
-  let school = await findUserByEmail(Schools);
+  let user = await findUserByUsernameOrEmail(User, "userId");
+
+  // Check Educator and School by usernameOrEmail as email
+  let educator = await findUserByUsernameOrEmail(Educator, "email");
+  let school = await findUserByUsernameOrEmail(Schools, "email");
 
   let account = user || educator || school;
   let accountType = "";
@@ -98,6 +100,7 @@ exports.forgotPassword = async (req, res) => {
 
   const otp = new OTP({
     user: account._id,
+    email: account.email,
     checkModel: accountType,
     code,
     type: "ForgotPassword",
@@ -114,6 +117,7 @@ exports.forgotPassword = async (req, res) => {
     message: "Please enter the code sent to your email.",
   });
 };
+
 
 exports.verify_otp_forgotPassword = async (req, res) => {
   const { code } = req.body;
@@ -175,21 +179,21 @@ exports.resetPassword = async (req, res) => {
   const { password } = req.body;
 
   // Only users with a valid OTP can reset the password, hence resetPassword=true
-  const findUserByEmailAndResetPassword = async (Model, email) => {
+  const findUserByEmailAndResetPassword = async (Model, id) => {
     return await Model.findOne({
-      email: email,
+      id: id,
       resetPassword: true,
     }).exec();
   };
 
-  let user = await findUserByEmailAndResetPassword(User, req.user.email);
+  let user = await findUserByEmailAndResetPassword(User, req.user._id);
   let educator = await findUserByEmailAndResetPassword(
     Educator,
-    req.user.email
+    req.user._id
   );
   let schoolAdmin = await findUserByEmailAndResetPassword(
     Schools,
-    req.user.email
+    req.user._id
   );
 
   let account = user || educator || schoolAdmin;
@@ -244,4 +248,54 @@ exports.generateUserId = async (req, res) => {
     message: "successfully created the id",
     userId,
   });
+};
+
+// Verify Account route
+exports.verifyAccount = async (req, res) => {
+  const { code } = req.body;
+  const { email } = req.user;
+
+  if (!code) {
+    return res
+      .status(StatusCodes.BAD_REQUEST)
+      .json({ message: "Code is required." });
+  }
+
+  // Find the OTP entry that matches the provided code, email, and type
+const otp = await OTP.findOne({
+  code,
+});
+
+
+  if (!otp) {
+    return res.status(StatusCodes.BAD_REQUEST).json({
+      message: "Wrong code or code expired. Please request a new code.",
+    });
+  }
+
+  // Determine which model the OTP is associated with
+  let model;
+  switch (otp.checkModel) {
+    case "User":
+      model = User;
+      break;
+    case "Educator":
+      model = Educator;
+      break;
+    case "School":
+      model = Schools;
+      break;
+    default:
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        message: "Invalid account type.",
+      });
+  }
+
+  // Update the isVerified status for the account
+  await model.updateMany({ email }, { isVerified: true });
+
+  // Delete the OTP entry once the account is verified
+  await OTP.deleteMany({ email, type: otp.type }).exec();
+
+  res.status(StatusCodes.OK).json({ message: "Your account is now verified" });
 };
