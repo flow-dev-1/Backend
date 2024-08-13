@@ -12,13 +12,11 @@ const Counter = require("../models/counter");
 // Login Route
 exports.login = async (req, res) => {
   const { usernameOrEmail, password } = req.body;
-
   const findUser = async (Model, query) => {
     return await Model.findOne(query).select(
       "-isVerified -isDeleted -resetPassword"
     );
   };
-
   let user = await findUser(User, {
     userId: usernameOrEmail,
     isVerified: true,
@@ -31,10 +29,8 @@ exports.login = async (req, res) => {
     $or: [{ email: usernameOrEmail }, { userId: usernameOrEmail }],
     isVerified: true,
   });
-
   let account = user || educator || school;
   let accountType = "";
-
   if (user) {
     accountType = "Individual";
   } else if (educator) {
@@ -42,24 +38,19 @@ exports.login = async (req, res) => {
   } else if (school) {
     accountType = "School";
   }
-
   if (!account) {
     return res
       .status(StatusCodes.BAD_REQUEST)
       .json({ message: "Invalid credentials." });
   }
-
   const validPassword = await bcrypt.compare(password, account.password);
   if (!validPassword) {
     return res
       .status(StatusCodes.BAD_REQUEST)
       .json({ message: "Invalid credentials." });
   }
-
   const token = await account.generateAuthToken();
-
   const { password: _, ...accountData } = account.toObject();
-
   return res.status(StatusCodes.OK).json({
     accountType,
     message: `${accountType} Login successful!`,
@@ -107,14 +98,13 @@ exports.forgotPassword = async (req, res) => {
 
   const otp = new OTP({
     user: account._id,
-    checkModel: accountType, 
+    checkModel: accountType,
     code,
     type: "ForgotPassword",
-    expiresIn: Date.now() + 3600000, 
+    expiresIn: Date.now() + 3600000,
   });
 
   await otp.save();
-
 
   const token = account.generateAuthToken();
 
@@ -242,7 +232,7 @@ exports.resetPassword = async (req, res) => {
 exports.generateUserId = async (req, res) => {
   const generateId = () => {
     const randomNum = Math.floor(Math.random() * 9999) + 1;
-    const paddedNum = randomNum.toString().padStart(3, '0');
+    const paddedNum = randomNum.toString().padStart(3, "0");
 
     return `FLS${paddedNum}`;
   };
@@ -255,4 +245,3 @@ exports.generateUserId = async (req, res) => {
     userId,
   });
 };
-
