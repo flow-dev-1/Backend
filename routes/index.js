@@ -16,6 +16,9 @@ router.post('/forgot-password', indexController.forgotPassword);
 // //Verify OTP
 router.patch('/verify-token', auth, indexController.verify_otp_forgotPassword)
 
+router.patch("/verify-account", auth, indexController.verifyAccount);
+
+
 router.put('/password', auth, indexController.resetPassword);
 
 router.get("/id", indexController.generateUserId);
