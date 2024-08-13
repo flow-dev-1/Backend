@@ -1,15 +1,20 @@
 const mongoose = require("mongoose");
 
 const OTPSchema = mongoose.Schema({
-    user: { type: mongoose.Schema.Types.ObjectId, required: true, refPath: 'checkModel' },
-    checkModel: {
-        type: String,
-        enum: ['User', "Admin", "School", "Educator"],
-        // required: true,
-    },
-    code: { type: String },
-    type: { type: String },
-    expiresIn: { type: Date }
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    required: true,
+    refPath: "checkModel",
+  },
+  email: { type: String, required: true },
+  checkModel: {
+    type: String,
+    enum: ["User", "Admin", "School", "Educator"],
+    // required: true,
+  },
+  code: { type: String },
+  type: { type: String },
+  expiresIn: { type: Date },
 });
 
 module.exports = mongoose.model('OTP', OTPSchema);

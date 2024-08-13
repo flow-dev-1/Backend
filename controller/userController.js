@@ -34,42 +34,10 @@ exports.getCourses = async (req, res) => {
   }
   res.status(StatusCodes.OK).json({ courses });
 };
-
 exports.registerUser = async (req, res) => {
   const { type } = req.query;
-  const {
-    fullName,
-    phone,
-    email,
-    gender,
-    DOB,
-    country,
-    state,
-    lga,
-    grade,
-    student, 
-  } = req.body;
-
-  // Handle the student data if it exists
-  let students = [];
-  if (student && student.length > 0) {
-    students = await Promise.all(
-      student.map(
-        async ({ userId, fullName, grade, gender, DOB, password }) => {
-          const salt = await bcrypt.genSalt(10);
-          const hashedPassword = await bcrypt.hash(password, salt);
-          return {
-            userId,
-            fullName,
-             grade,
-            gender,
-             DOB,
-            password: hashedPassword,
-          };
-        }
-      )
-    );
-  }
+  const { guardianFullName, phone, email, country, state, lga, student } =
+    req.body;
 
   if (!type) {
     return res
@@ -77,7 +45,8 @@ exports.registerUser = async (req, res) => {
       .json({ message: "User type is required!" });
   }
 
-  let user = await User.findOne({ email: req.body.email });
+  // Check if a user with the given email already exists and is verified
+  let user = await User.findOne({ email });
 
   if (user && user.isVerified) {
     return res
@@ -85,6 +54,7 @@ exports.registerUser = async (req, res) => {
       .json({ message: "User already registered." });
   }
 
+  // Handle the case where the user exists but is not verified
   if (user && !user.isVerified) {
     const code = otpGenerator.generate(6, {
       lowerCaseAlphabets: false,
@@ -93,11 +63,11 @@ exports.registerUser = async (req, res) => {
     });
 
     const otp = new OTP({
-      user: user._id,
+      email,
       checkModel: "User",
       code,
       type: "RegisterUser",
-      expiresIn: Date.now() + 3600000,
+      expiresIn: Date.now() + 3600000, // 1 hour expiration
     });
 
     const token = user.generateAuthToken();
@@ -110,53 +80,70 @@ exports.registerUser = async (req, res) => {
     });
   }
 
-  const counter = await Counter.findOneAndUpdate(
-    { name: "userId" },
-    { $inc: { seq: 1 } },
-    { new: true, upsert: true, strict: true }
-  );
+  if (student && student.length > 0) {
+    const code = otpGenerator.generate(6, {
+      lowerCaseAlphabets: false,
+      upperCaseAlphabets: false,
+      specialChars: false,
+    });
 
-  const userId = `FLS${counter.seq
-    .toString()
-    .padStart(Math.max(3, counter.seq.toString().length), "0")}`;
+    const otp = new OTP({
+      email,
+      checkModel: "User",
+      code,
+      type: "RegisterUser",
+      expiresIn: Date.now() + 3600000, // 1 hour expiration
+    });
 
+    await otp.save();
 
-  const newUser = new User({
-    fullName,
-    phone,
-    email,
-    gender,
-    DOB,
-    country,
-    state,
-    lga,
-    grade,
-    student: students, 
-  });
+    // Declare a variable to hold the token
+    let token;
 
-  newUser.userType = type;
-  await newUser.save();
+    await Promise.all(
+      student.map(
+        async ({ userId, fullName, grade, gender, DOB, password }) => {
+          const salt = await bcrypt.genSalt(10);
+          const hashedPassword = await bcrypt.hash(password, salt);
 
-  const code = otpGenerator.generate(6, {
-    lowerCaseAlphabets: false,
-    upperCaseAlphabets: false,
-    specialChars: false,
-  });
+          // Create the new student account
+          const newStudent = new User({
+            userId,
+            fullName,
+            grade,
+            gender,
+            DOB,
+            password: hashedPassword,
+            guardianFullName,
+            phone,
+            email,
+            country,
+            state,
+            lga,
+            userType: "Individual",
+          });
 
-  const otp = new OTP({
-    user: newUser._id,
-    checkModel: "User",
-    code,
-    type: "RegisterUser",
-    expiresIn: Date.now() + 3600000,
-  });
+          await newStudent.save();
 
-  await otp.save();
-  await Otp_VerifyAccount(newUser.email, newUser.fullName, code);
+          // Generate the token for the last student (or any one of them)
+          token = newStudent.generateAuthToken();
+        }
+      )
+    );
 
-  const token = newUser.generateAuthToken();
+    // Send OTP email once for the guardian email
+    await Otp_VerifyAccount(email, guardianFullName, code);
 
-  res.status(StatusCodes.OK).json({ token });
+    return res.status(StatusCodes.OK).json({
+      message: "Students registered successfully",
+      token,
+    });
+  }
+
+  // In case no students are passed in the request body
+  res
+    .status(StatusCodes.BAD_REQUEST)
+    .json({ message: "No students provided in the request." });
 };
 
 
@@ -325,30 +312,34 @@ exports.registerSchoolInvitedAdmin = async (req, res) => {
 // Verify Account route
 exports.verifyAccount = async (req, res) => {
   const { code } = req.body;
-  const { _id } = req.user;
+  const { email } = req.user;
 
-  if (!code)
+  if (!code) {
     return res
       .status(StatusCodes.BAD_REQUEST)
       .json({ message: "Code is required." });
+  }
 
   const otp = await OTP.findOne({
-    user: _id,
+    email,
     code,
     type: "RegisterUser",
   }).populate("user");
 
   if (!otp) {
     return res.status(StatusCodes.BAD_REQUEST).json({
-      message: "Wrong code or code expired. Please request for a new code.",
+      message: "Wrong code or code expired. Please request a new code.",
     });
   }
 
-  await User.findByIdAndUpdate(_id, { isVerified: true });
-  await OTP.deleteMany({ user: otp.user }).exec();
+
+  await User.updateMany({ email }, { isVerified: true });
+
+  await OTP.deleteMany({ email, type: "RegisterUser" }).exec();
 
   res.status(StatusCodes.OK).json({ message: "Your account is now verified" });
 };
+
 
 exports.updateProfile = async (req, res) => {
   // Find and update the user's profile
