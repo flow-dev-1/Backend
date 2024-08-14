@@ -12,45 +12,56 @@ const Counter = require("../models/counter");
 // Login Route
 exports.login = async (req, res) => {
   const { usernameOrEmail, password } = req.body;
+
   const findUser = async (Model, query) => {
     return await Model.findOne(query).select(
       "-isVerified -isDeleted -resetPassword"
     );
   };
-  let user = await findUser(User, {
-    userId: usernameOrEmail,
-    isVerified: true,
-  });
-  let educator = await findUser(Educator, {
-    $or: [{ email: usernameOrEmail }, { userId: usernameOrEmail }],
-    isVerified: true,
-  });
+
+  // Search for accounts in the desired order: School -> Educator -> Individual
   let school = await findUser(Schools, {
     $or: [{ email: usernameOrEmail }, { userId: usernameOrEmail }],
     isVerified: true,
   });
-  let account = user || educator || school;
+
+  let educator = !school && await findUser(Educator, {
+    $or: [{ email: usernameOrEmail }, { userId: usernameOrEmail }],
+    isVerified: true,
+  });
+
+  let user = !school && !educator && await findUser(User, {
+    userId: usernameOrEmail,
+    isVerified: true,
+  });
+
+  let account = school || educator || user;
   let accountType = "";
-  if (user) {
-    accountType = "Individual";
+
+  if (school) {
+    accountType = "School";
   } else if (educator) {
     accountType = "Educator";
-  } else if (school) {
-    accountType = "School";
+  } else if (user) {
+    accountType = "Individual";
   }
+
   if (!account) {
     return res
       .status(StatusCodes.BAD_REQUEST)
       .json({ message: "Invalid credentials." });
   }
+
   const validPassword = await bcrypt.compare(password, account.password);
   if (!validPassword) {
     return res
       .status(StatusCodes.BAD_REQUEST)
       .json({ message: "Invalid credentials." });
   }
+
   const token = await account.generateAuthToken();
   const { password: _, ...accountData } = account.toObject();
+
   return res.status(StatusCodes.OK).json({
     accountType,
     message: `${accountType} Login successful!`,
@@ -58,6 +69,7 @@ exports.login = async (req, res) => {
     user: accountData,
   });
 };
+
 
 
 // Forgot Password Route
