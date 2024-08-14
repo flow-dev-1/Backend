@@ -95,7 +95,7 @@ const educatorSchema = new mongoose.Schema(
   }
 );
 
-educatorSchema.methods.generateAuthToken = async function () {
+educatorSchema.methods.generateAuthToken =  function () {
   const token = jwt.sign(
     {
       _id: this._id,
