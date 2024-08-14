@@ -140,14 +140,14 @@ exports.forgotPassword = async (req, res) => {
     type: "ForgotPassword",
     expiresIn: Date.now() + 3600000, // 1 hour expiration
   });
-
+//  school_name;
   await otp.save();
 
   // Generate authentication token
   const token = account.generateAuthToken();
 
   // Send OTP email
-  await Otp_ForgotPassword(account.fullName, account.email, code, token);
+  await Otp_ForgotPassword(account.fullName|| account.school_name, account.email, code, token);
 
   // Return success response
   res.status(StatusCodes.OK).json({

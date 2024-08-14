@@ -95,7 +95,7 @@ const educatorSchema = new mongoose.Schema(
   }
 );
 
-educatorSchema.methods.generateAuthToken = function () {
+educatorSchema.methods.generateAuthToken = async function () {
   const token = jwt.sign(
     {
       _id: this._id,
@@ -113,7 +113,7 @@ educatorSchema.methods.generateAuthToken = function () {
   return token;
 };
 
-educatorSchema.methods.generateInviteToken = function () {
+educatorSchema.methods.generateInviteToken = async function () {
   const token = jwt.sign(
     {
       _id: this._id,

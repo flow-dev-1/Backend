@@ -1,5 +1,4 @@
 const mongoose = require("mongoose");
-const Schools = require("../models/school");
 const OTP = require("../models/OTP");
 const StatusCodes = require("../utils/status-codes");
 const bcrypt = require("bcrypt");
@@ -10,7 +9,8 @@ const otpGenerator = require("otp-generator");
 // const CourseEnrollment = require("../models/courseEnrollment");
 const cloudinary = require("../utils/cloudinary");
 const { User } = require("../models/user");
-const school = require("../models/school");
+const { Schools } = require("../models/school");
+
 const Courses = require("../models/course")
 const SchoolCourses = require("../models/schoolCourseEnrollment")
 const StudentEnrollments = require("../models/courseEnrollment")
