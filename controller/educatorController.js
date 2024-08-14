@@ -33,10 +33,13 @@ exports.registerEducator = async (req, res) => {
     password,
     grade,
   } = req.body;
-  if (!type)
+
+  if (!type) {
     return res
       .status(StatusCodes.BAD_REQUEST)
       .json({ message: "Educator type is required!" });
+  }
+
   let educator = await Educator.findOne({ email: req.body.email });
 
   if (educator && educator.isVerified) {
@@ -60,7 +63,7 @@ exports.registerEducator = async (req, res) => {
       expiresIn: Date.now() + 3600000,
     });
 
-    const token = educator.generateAuthToken();
+    const token = await educator.generateAuthToken();
     await otp.save();
     await Otp_VerifyAccount(educator.email, educator.fullName, code);
 
@@ -82,6 +85,7 @@ exports.registerEducator = async (req, res) => {
     lga,
     grade,
   });
+
   const salt = await bcrypt.genSalt(10);
   newEducator.password = await bcrypt.hash(password, salt);
   newEducator.userType = type;
@@ -104,10 +108,15 @@ exports.registerEducator = async (req, res) => {
   await otp.save();
   await Otp_VerifyAccount(newEducator.email, newEducator.fullName, code);
 
-  const token = newEducator.generateAuthToken();
+  const token = await newEducator.generateAuthToken(); // Await the token generation
 
-  res.status(StatusCodes.OK).json({ token });
+  res.status(StatusCodes.OK).json({
+    message:
+      "Registration successful. Please enter the code sent to your email.",
+    token,
+  });
 };
+
 
 exports.registerInvitedEducator = async (req, res) => {
   const {
