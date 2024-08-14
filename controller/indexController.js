@@ -3,12 +3,12 @@ const { Admin } = require("../models/admin");
 const OTP = require("../models/OTP");
 const { User } = require("../models/user");
 const StatusCodes = require("../utils/status-codes");
-const Schools = require("../models/school");
 const bcrypt = require("bcrypt");
 const _ = require("lodash");
 const { Otp_ForgotPassword } = require("../utils/sendmail");
 const otpGenerator = require("otp-generator");
 const Counter = require("../models/counter");
+const { Schools } = require("../models/school");
 // Login Route
 exports.login = async (req, res) => {
   const { usernameOrEmail, password } = req.body;
@@ -84,9 +84,6 @@ exports.login = async (req, res) => {
   });
 };
 
-
-
-
 // Forgot Password Route
 exports.forgotPassword = async (req, res) => {
   const { usernameOrEmail } = req.body;
@@ -158,8 +155,6 @@ exports.forgotPassword = async (req, res) => {
   });
 };
 
-
-
 exports.verify_otp_forgotPassword = async (req, res) => {
   const { code } = req.body;
 
@@ -201,7 +196,7 @@ exports.verify_otp_forgotPassword = async (req, res) => {
   await OTP.deleteMany({ user: otp.user }).exec();
 
   await User.findByIdAndUpdate(
-    otp.user._id,
+    otp.user,
     {
       resetPassword: true,
     },
@@ -263,7 +258,6 @@ exports.resetPassword = async (req, res) => {
   });
 };
 
-
 exports.generateUserId = async (req, res) => {
   const generateId = () => {
     const randomNum = Math.floor(Math.random() * 9999) + 1;
@@ -293,10 +287,9 @@ exports.verifyAccount = async (req, res) => {
   }
 
   // Find the OTP entry that matches the provided code, email, and type
-const otp = await OTP.findOne({
-  code,
-});
-
+  const otp = await OTP.findOne({
+    code,
+  });
 
   if (!otp) {
     return res.status(StatusCodes.BAD_REQUEST).json({
