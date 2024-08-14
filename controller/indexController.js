@@ -220,7 +220,7 @@ exports.resetPassword = async (req, res) => {
   const { password } = req.body;
 
   const findUserByIdAndResetPassword = async (Model, id) => {
-    return await Model.findOne({ _id: id, resetPassword: true });
+    return await Model.findOne({ _id: id });
   };
 
   const user = await findUserByIdAndResetPassword(User, req.user._id);
