@@ -37,8 +37,8 @@ exports.Otp_VerifyAccount = async (email, name, otp) => {
 exports.Otp_ForgotPassword = async (name, email, otp, token) => {
   let link =
     process.env.ENV === "staging"
-      ? `https://my-flow.netlify.app/reset-password?t=${token}&c=${otp}`
-      : `http://localhost:3000/reset-password?t=${token}&c=${otp}`;
+      ? `https://my-flow.netlify.app/forgot-password?t=${token}&c=${otp}`
+      : `http://localhost:3000/forgot-password?t=${token}&c=${otp}`;
 
   try {
     const transporter = nodemailer.createTransport({
