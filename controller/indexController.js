@@ -13,45 +13,57 @@ const Counter = require("../models/counter");
 exports.login = async (req, res) => {
   const { usernameOrEmail, password } = req.body;
 
+  // Helper function to find a user in the specified model
   const findUser = async (Model, query) => {
     return await Model.findOne(query).select(
       "-isVerified -isDeleted -resetPassword"
     );
   };
 
-  // Search for accounts in the desired order: School -> Educator -> Individual
-  let school = await findUser(Schools, {
-    $or: [{ email: usernameOrEmail }, { userId: usernameOrEmail }],
-    isVerified: true,
-  });
-
-  let educator = !school && await findUser(Educator, {
-    $or: [{ email: usernameOrEmail }, { userId: usernameOrEmail }],
-    isVerified: true,
-  });
-
-  let user = !school && !educator && await findUser(User, {
-    userId: usernameOrEmail,
-    isVerified: true,
-  });
-
-  let account = school || educator || user;
+  let account;
   let accountType = "";
 
+  // Search for a School by email
+  const school = await findUser(Schools, {
+    email: usernameOrEmail,
+    isVerified: true,
+  });
+
   if (school) {
+    account = school;
     accountType = "School";
-  } else if (educator) {
-    accountType = "Educator";
-  } else if (user) {
-    accountType = "Individual";
+  } else {
+    // Search for an Educator by email if no School was found
+    const educator = await findUser(Educator, {
+      email: usernameOrEmail,
+      isVerified: true,
+    });
+
+    if (educator) {
+      account = educator;
+      accountType = "Educator";
+    } else {
+      // Search for an Individual user by userId if no School or Educator was found
+      const user = await findUser(User, {
+        userId: usernameOrEmail,
+        isVerified: true,
+      });
+
+      if (user) {
+        account = user;
+        accountType = "Individual";
+      }
+    }
   }
 
+  // If no account is found, return an error response
   if (!account) {
     return res
       .status(StatusCodes.BAD_REQUEST)
       .json({ message: "Invalid credentials." });
   }
 
+  // Verify the password
   const validPassword = await bcrypt.compare(password, account.password);
   if (!validPassword) {
     return res
@@ -59,9 +71,11 @@ exports.login = async (req, res) => {
       .json({ message: "Invalid credentials." });
   }
 
+  // Generate the auth token
   const token = await account.generateAuthToken();
   const { password: _, ...accountData } = account.toObject();
 
+  // Return the success response
   return res.status(StatusCodes.OK).json({
     accountType,
     message: `${accountType} Login successful!`,
@@ -72,31 +86,41 @@ exports.login = async (req, res) => {
 
 
 
+
 // Forgot Password Route
 exports.forgotPassword = async (req, res) => {
   const { usernameOrEmail } = req.body;
 
-  const findUserByUsernameOrEmail = async (Model, field) => {
+  // Helper function to find a user by a specified field in the specified model
+  const findUser = async (Model, field) => {
     return await Model.findOne({ [field]: usernameOrEmail, isVerified: true });
   };
 
-  let user = await findUserByUsernameOrEmail(User, "userId");
-
-  // Check Educator and School by usernameOrEmail as email
-  let educator = await findUserByUsernameOrEmail(Educator, "email");
-  let school = await findUserByUsernameOrEmail(Schools, "email");
-
-  let account = user || educator || school;
+  let account = null;
   let accountType = "";
 
+  // Check Individual User by userId
+  const user = await findUser(User, "userId");
   if (user) {
+    account = user;
     accountType = "User";
-  } else if (educator) {
-    accountType = "Educator";
-  } else if (school) {
-    accountType = "School";
+  } else {
+    // Check Educator by email
+    const educator = await findUser(Educator, "email");
+    if (educator) {
+      account = educator;
+      accountType = "Educator";
+    } else {
+      // Check School by email
+      const school = await findUser(Schools, "email");
+      if (school) {
+        account = school;
+        accountType = "School";
+      }
+    }
   }
 
+  // If no account is found, return an error response
   if (!account) {
     return res
       .status(StatusCodes.BAD_REQUEST)
@@ -110,25 +134,30 @@ exports.forgotPassword = async (req, res) => {
     specialChars: false,
   });
 
+  // Create and save the OTP record
   const otp = new OTP({
     user: account._id,
     email: account.email,
     checkModel: accountType,
     code,
     type: "ForgotPassword",
-    expiresIn: Date.now() + 3600000,
+    expiresIn: Date.now() + 3600000, // 1 hour expiration
   });
 
   await otp.save();
 
+  // Generate authentication token
   const token = account.generateAuthToken();
 
+  // Send OTP email
   await Otp_ForgotPassword(account.fullName, account.email, code, token);
 
+  // Return success response
   res.status(StatusCodes.OK).json({
     message: "Please enter the code sent to your email.",
   });
 };
+
 
 
 exports.verify_otp_forgotPassword = async (req, res) => {
@@ -190,35 +219,24 @@ exports.verify_otp_forgotPassword = async (req, res) => {
 exports.resetPassword = async (req, res) => {
   const { password } = req.body;
 
-  // Only users with a valid OTP can reset the password, hence resetPassword=true
-  const findUserByEmailAndResetPassword = async (Model, id) => {
-    return await Model.findOne({
-      id: id,
-      resetPassword: true,
-    }).exec();
+  const findUserByIdAndResetPassword = async (Model, id) => {
+    return await Model.findOne({ _id: id, resetPassword: true });
   };
 
-  let user = await findUserByEmailAndResetPassword(User, req.user._id);
-  let educator = await findUserByEmailAndResetPassword(
-    Educator,
-    req.user._id
-  );
-  let schoolAdmin = await findUserByEmailAndResetPassword(
-    Schools,
-    req.user._id
-  );
+  const user = await findUserByIdAndResetPassword(User, req.user._id);
+  const educator = await findUserByIdAndResetPassword(Educator, req.user._id);
+  const schoolAdmin = await findUserByIdAndResetPassword(Schools, req.user._id);
 
-  let account = user || educator || schoolAdmin;
+  const account = user || educator || schoolAdmin;
   let accountType = "";
 
   if (!account) {
     return res.status(StatusCodes.BAD_REQUEST).json({
       status: "failed",
-      error: "Invalid credentials",
+      error: "Invalid credentials or reset password token expired.",
     });
   }
 
-  // Determine the type of account
   if (user) {
     accountType = "User";
   } else if (educator) {
@@ -230,20 +248,21 @@ exports.resetPassword = async (req, res) => {
   // Hash the new password
   const hashedPassword = await bcrypt.hash(password, 10);
 
-  // Update the password and resetPassword flag for the account
+  // Update the account's password and reset the resetPassword flag
   account.password = hashedPassword;
   account.resetPassword = false;
 
   // Save the updated account
   await account.save();
 
-  // Return success response
+  // Return a success response
   res.status(StatusCodes.OK).json({
     status: "success",
-    message: "You have successfully reset your password",
+    message: "Your password has been successfully reset.",
     accountType: accountType,
   });
 };
+
 
 exports.generateUserId = async (req, res) => {
   const generateId = () => {
