@@ -34,18 +34,10 @@ router.post(
 
 router.patch('/verify-account', auth, schoolAccess, schoolsController.verifyAccount);
 
-// router.post('/login', validate(loginValidator), schoolsController.loginFlowSchool);
-
-// router.post('/forgot-password', schoolsController.forgotPassword);
-
-// // //Verify OTP
-// router.patch('/verify-token', auth, schoolAccess, schoolsController.verify_otp_forgotPassword)
-
-// router.put('/password', auth, schoolAccess, schoolsController.resetPassword);
 
 router.patch('/password', auth, schoolAccess, schoolsController.changePassword);
 
-router.put('/profile', auth, schoolAccess, optionalUpload.single('image'), validate(updateSchoolValidator), schoolsController.updateProfile);
+router.patch('/profile', auth, schoolAccess, optionalUpload.single('image'), validate(updateSchoolValidator), schoolsController.updateProfile);
 
 router.post('/invitation', auth, validate(inviteAdminValidator), schoolsController.inviteSchoolAdmin);
 
