@@ -35,6 +35,7 @@ exports.getCourses = async (req, res) => {
   res.status(StatusCodes.OK).json({ courses });
 };
 exports.registerUser = async (req, res) => {
+
   const { type } = req.query;
   const { guardianFullName, phone, email, country, state, lga, student } =
     req.body;
@@ -172,18 +173,8 @@ exports.registerUser = async (req, res) => {
 };
 
 exports.registerInvitedUser = async (req, res) => {
-  const {
-    fullName,
-    phone,
-    email,
-    gender,
-    DOB,
-    country,
-    state,
-    lga,
-    password,
-    grade,
-  } = req.body;
+  const { guardianFullName, phone, email, country, state, lga, student } =
+    req.body;
 
   let user = await User.findOne({ _id: req.user._id });
 
