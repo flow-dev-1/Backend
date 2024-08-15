@@ -21,16 +21,8 @@ router.post(
   educatorController.registerInvitedEducator
 );
 
-router.post('/forgot-password', educatorController.forgotPassword);
-// //Verify OTP
 
-router.post('/verify-token', auth, educatorController.verify_otp_forgotPassword)
-
-router.put("/password", auth, educatorController.resetPassword);
-
-router.patch("/verify-account", auth, educatorController.verifyAccount);
-
-router.put(
+router.patch(
   "/profile",
   auth,
   validate(validateEducatorUpdate),

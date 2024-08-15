@@ -193,24 +193,24 @@ exports.updateSchoolValidator = function (req) {
         school_name: Joi.string()
             .min(2)
             .max(100)
-            .required(),
+            .optional(),
         contact_name: Joi.string()
             .min(2)
             .max(100)
-            .required(),
+            .optional(),
         phone: Joi.string()
             .pattern(new RegExp(/^\+[1-9]\d{1,14}$/))
             .message('Please enter a valid phone number in international format')
-            .required(),
+            .optional(),
         email: Joi.string()
             .min(5)
             .max(255)
-            .required()
-            .email(),
+            .email()
+            .optional(),
         address: Joi.string()
             .min(2)
             .max(2020)
-            .required(),
+            .optional(),
     })
     return schema.validate(req);
 }

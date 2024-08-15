@@ -88,31 +88,31 @@ const schoolsSchema = new mongoose.Schema({
         timestamps: true,
     });
 
-schoolsSchema.methods.generateAuthToken = async function () {
+schoolsSchema.methods.generateAuthToken = function () {
+  const payload = {
+    _id: this._id,
+    isVerified: this.isVerified,
+    school_name: this.school_name, 
+    contactName: this.contact_name,
+    email: this.email,
+    phone: this.phone,
+    isSchool: this.isSchool,
+  };
 
-    const token = jwt.sign(
-        {
-            _id: this._id,
-            isVerified: this.isVerified,
-            schoolName: this.school_name,
-            contactName: this.contact_name,
-            email: this.email,
-            phone: this.phone,
-            isSchool: this.isSchool
+  const token = jwt.sign(payload, process.env.JWT, {
+    expiresIn: "7d",
+  });
 
-        },
-        process.env.JWT,
-        {
-            expiresIn: "7d",
-        }
-    );
-    return token;
+  return token;
 };
+
+
 
 // schoolsSchema.methods.softDelete = async function () {
 //     this.isDeleted = true;
 //     this.deletedAt = new Date();
 //     await this.save();
 // };
+const school = mongoose.model("School", schoolsSchema);
 
-module.exports = mongoose.model("School", schoolsSchema);
+exports.Schools = school

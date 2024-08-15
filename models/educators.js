@@ -95,7 +95,7 @@ const educatorSchema = new mongoose.Schema(
   }
 );
 
-educatorSchema.methods.generateAuthToken = function () {
+educatorSchema.methods.generateAuthToken =  function () {
   const token = jwt.sign(
     {
       _id: this._id,
@@ -113,7 +113,7 @@ educatorSchema.methods.generateAuthToken = function () {
   return token;
 };
 
-educatorSchema.methods.generateInviteToken = function () {
+educatorSchema.methods.generateInviteToken = async function () {
   const token = jwt.sign(
     {
       _id: this._id,
@@ -186,29 +186,30 @@ function validateInvitedEducator(Educator) {
 }
 
 function validateEducatorUpdate(Educator) {
-const schema = Joi.object({
-  DOB: Joi.date().required(),
-  fullName: Joi.string()
-    .min(2)
-    .max(300)
-    .required()
-    .pattern(/^[a-zA-Z]+ [a-zA-Z]+$/)
-    .message(
-      "Full name must contain at least a first name and a last name separated by a space."
-    ),
-  phone: Joi.string()
-    .pattern(new RegExp(/^\+[1-9]\d{1,14}$/))
-    .message("Please enter a valid phone number in international format")
-    .required(),
-  email: Joi.string().min(5).max(255).required().email(),
-  gender: Joi.string().valid("male", "female").required(),
-  country: Joi.string().min(2).max(255).required(),
-  state: Joi.string().min(2).max(255).required(),
-  lga: Joi.string().min(2).max(255).required(),
-});
+  const schema = Joi.object({
+    DOB: Joi.date().optional(), 
+    fullName: Joi.string()
+      .min(2)
+      .max(300)
+      .pattern(/^[a-zA-Z]+ [a-zA-Z]+$/)
+      .message(
+        "Full name must contain at least a first name and a last name separated by a space."
+      )
+      .optional(), 
+    phone: Joi.string()
+      .pattern(new RegExp(/^\+[1-9]\d{1,14}$/))
+      .message("Please enter a valid phone number in international format")
+      .optional(), 
+    email: Joi.string().min(5).max(255).email().optional(),
+    gender: Joi.string().valid("male", "female").optional(), 
+    country: Joi.string().min(2).max(255).optional(), 
+    state: Joi.string().min(2).max(255).optional(), 
+    lga: Joi.string().min(2).max(255).optional(), 
+  });
 
   return schema.validate(Educator);
 }
+
 exports.Educator = educator;
 exports.validateEducator = validateEducator;
 exports.validateInvitedEducator = validateInvitedEducator;
