@@ -228,17 +228,28 @@ function validateUserUpdate(user) {
         "Full name must contain at least a first name and a last name separated by a space."
       )
       .optional(),
+    guardianFullName: Joi.string()
+      .min(2)
+      .max(300)
+      .pattern(/^[a-zA-Z]+(?: [a-zA-Z]+)+$/)
+      .message(
+        "Full name must contain at least a first name and a last name separated by a space."
+      )
+      .optional(),
     phone: Joi.string()
-      .pattern(new RegExp(/^\+[1-9]\d{1,14}$/))
-      .message("Please enter a valid phone number in international format"),
+      .pattern(/^\+[1-9]\d{1,14}$/)
+      .message("Please enter a valid phone number in international format")
+      .optional(),
     email: Joi.string().min(5).max(255).email().optional(),
     gender: Joi.string().valid("male", "female").optional(),
     country: Joi.string().min(2).max(255).optional(),
     state: Joi.string().min(2).max(255).optional(),
     lga: Joi.string().min(2).max(255).optional(),
   });
+
   return schema.validate(user);
 }
+
 exports.User = User;
 exports.validateUser = validateUser;
 exports.validateInvitedUser = validateInvitedUser;
