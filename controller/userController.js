@@ -46,8 +46,25 @@ exports.registerUser = async (req, res) => {
       .json({ message: "User type is required!" });
   }
 
-  // Check if a user with the given email already exists and is verified
-  let user = await User.findOne({ email });
+for (const studentItem of student) {
+  if (!studentItem.fullName || !studentItem.userId) {
+    return res
+      .status(StatusCodes.BAD_REQUEST)
+      .json({ message: "Each student must have a full name and userId!" });
+  }
+
+  const nameParts = studentItem.fullName.toLowerCase().split(" ");
+
+  let query = {
+    email: email,
+    "student.userId": studentItem.userId, 
+    $and: nameParts.map((name) => ({
+      "student.fullName": new RegExp(`\\b${name}\\b`, "i"),
+    })),
+  };
+
+
+let user = await User.findOne(query);
 
   if (user && user.isVerified) {
     return res
@@ -155,7 +172,7 @@ exports.registerUser = async (req, res) => {
     .json({ message: "No students provided in the request." });
 };
 
-
+}
 
 exports.registerInvitedUser = async (req, res) => {
   const { guardianFullName, phone, email, country, state, lga, student } =
