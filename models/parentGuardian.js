@@ -13,6 +13,10 @@ const parentSchema = mongoose.Schema({
 
 });
 
-module.exports = mongoose.model('Parent', parentSchema);
+
+
+const parents = mongoose.model('Parent', parentSchema);
+
+exports.Parents = parents
 
 
