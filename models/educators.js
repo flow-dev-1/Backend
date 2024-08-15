@@ -78,7 +78,7 @@ const educatorSchema = new mongoose.Schema(
     },
     schoolAdminDate: { type: Date },
     newCourseInvite: { type: Object },
-    newInvite: { type: Object }, 
+    newInvite: { type: Object },
     country: { type: String },
     state: { type: String },
     lga: { type: String },
@@ -95,7 +95,7 @@ const educatorSchema = new mongoose.Schema(
   }
 );
 
-educatorSchema.methods.generateAuthToken =  function () {
+educatorSchema.methods.generateAuthToken = function () {
   const token = jwt.sign(
     {
       _id: this._id,
@@ -113,7 +113,7 @@ educatorSchema.methods.generateAuthToken =  function () {
   return token;
 };
 
-educatorSchema.methods.generateInviteToken = async function () {
+educatorSchema.methods.generateInviteToken = function () {
   const token = jwt.sign(
     {
       _id: this._id,
@@ -136,14 +136,14 @@ const educator = mongoose.model("Educator", educatorSchema);
 function validateEducator(Educator) {
   const schema = Joi.object({
     DOB: Joi.date().required(),
-   fullName: Joi.string()
-    .min(2)
-    .max(300)
-    .required()
-    .pattern(/^[a-zA-Z]+ [a-zA-Z]+$/)
-    .message(
-      "Full name must contain at least a first name and a last name separated by a space."
-    ),
+    fullName: Joi.string()
+      .min(2)
+      .max(300)
+      .required()
+      .pattern(/^[a-zA-Z]+(?: [a-zA-Z]+)+$/)
+      .message(
+        "Full name must contain at least two names separated by a space."
+      ),
     phone: Joi.string()
       .pattern(new RegExp(/^\+[1-9]\d{1,14}$/))
       .message("Please enter a valid phone number in international format")
@@ -162,14 +162,14 @@ function validateEducator(Educator) {
 function validateInvitedEducator(Educator) {
   const schema = Joi.object({
     DOB: Joi.date().required(),
-   fullName: Joi.string()
-    .min(2)
-    .max(300)
-    .required()
-    .pattern(/^[a-zA-Z]+ [a-zA-Z]+$/)
-    .message(
-      "Full name must contain at least a first name and a last name separated by a space."
-    ),
+    fullName: Joi.string()
+      .min(2)
+      .max(300)
+      .required()
+      .pattern(/^[a-zA-Z]+(?: [a-zA-Z]+)+$/)
+      .message(
+        "Full name must contain at least two names separated by a space."
+      ),
     phone: Joi.string()
       .pattern(new RegExp(/^\+[1-9]\d{1,14}$/))
       .message("Please enter a valid phone number in international format")
@@ -187,24 +187,24 @@ function validateInvitedEducator(Educator) {
 
 function validateEducatorUpdate(Educator) {
   const schema = Joi.object({
-    DOB: Joi.date().optional(), 
+    DOB: Joi.date().optional(),
     fullName: Joi.string()
       .min(2)
       .max(300)
-      .pattern(/^[a-zA-Z]+ [a-zA-Z]+$/)
+      .pattern(/^[a-zA-Z]+(?: [a-zA-Z]+)+$/)
       .message(
-        "Full name must contain at least a first name and a last name separated by a space."
+        "Full name must contain at least two names separated by a space."
       )
-      .optional(), 
+      .optional(),
     phone: Joi.string()
       .pattern(new RegExp(/^\+[1-9]\d{1,14}$/))
       .message("Please enter a valid phone number in international format")
-      .optional(), 
+      .optional(),
     email: Joi.string().min(5).max(255).email().optional(),
-    gender: Joi.string().valid("male", "female").optional(), 
-    country: Joi.string().min(2).max(255).optional(), 
-    state: Joi.string().min(2).max(255).optional(), 
-    lga: Joi.string().min(2).max(255).optional(), 
+    gender: Joi.string().valid("male", "female").optional(),
+    country: Joi.string().min(2).max(255).optional(),
+    state: Joi.string().min(2).max(255).optional(),
+    lga: Joi.string().min(2).max(255).optional(),
   });
 
   return schema.validate(Educator);
