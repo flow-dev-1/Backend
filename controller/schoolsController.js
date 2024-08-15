@@ -520,83 +520,95 @@ exports.courseEnrollment = async (req, res) => {
         studentEnrollments: []
     })
 
-    const uniqueEmails = new Set(students);
+    // Not relevant comm
+    // const uniqueEmails = new Set(students);
 
-    for (const email of uniqueEmails) {
-        let user = await User.findOne({ email });
 
-        if (!user) {
+    for (const item of students) {
 
-            // Create a new user
-            user = new User({
-                _id: new mongoose.Types.ObjectId(),
-                first_name: "N/A",
-                last_name: "N/A",
-                email,
-                userType: "School",
-                grade: stdClass.substring(0, 3) === "Pri" ? "Primary" : stdClass.substring(0, 3) === "Sec" ? "Secondary" : "Educator",
-                newCourseInvite: {
-                    school: id,
-                },
-            });
+        // toDo: Check if the item.email already exist i.e old parent
+        //if exist dont create new parent else create parent info
 
-            // Create a new enrollment
-            const newStudentEnrollment = new StudentEnrollments({
-                _id: new mongoose.Types.ObjectId(),
-                course: courseId, // Assuming you have some course ID here
-                school: id,
-                schoolCourseEnrollment: newEnrollment._id,
-                user: user._id
-            })
 
-            newEnrollment.studentEnrollments.push(newStudentEnrollment._id);
-            const token = user.generateAuthToken();
+        //toDo: Check if student already exist e.g new class
+        // if exist dont create new else create new and prefill with parentInfo and fullname
+        // let user = await User.findOne({ email });
 
-            await Promise.all([
-                newStudentEnrollment.save(),
-                user.save()
-            ]);
-            let stdGrade = stdClass.substring(0, 3) === "Pri" ? "Primary" : stdClass.substring(0, 3) === "Sec" ? "Secondary" : "Educator"
-            // Send email to student
-            // console.log("new", stdGrade, newStudentEnrollment._id, school.school_name, course.title, email, token)
-            await school_course_invite("new", stdGrade, newStudentEnrollment._id, school.school_name, course.title, email, token);
 
-        } else {
+        // ToDo uncomment below
 
-            // Check if the user is already enrolled in this course
-            const studentEnrollment = await StudentEnrollments.findOne({
+        // if (!user) {
 
-                course: courseId, // Assuming you have some course ID here
-                school: id,
-                schoolCourseEnrollment: newEnrollment._id,
-                user: user._id
-            })
+        //     // Create a new user
+        //     user = new User({
+        //         _id: new mongoose.Types.ObjectId(),
+        //         first_name: "N/A",
+        //         last_name: "N/A",
+        //         email,
+        //         userType: "School",
+        //         grade: stdClass.substring(0, 3) === "Pri" ? "Primary" : stdClass.substring(0, 3) === "Sec" ? "Secondary" : "Educator",
+        //         newCourseInvite: {
+        //             school: id,
+        //         },
+        //     });
 
-            if (!studentEnrollment) {
-                // Create a new enrollment
-                const newStudentEnrollment = new StudentEnrollments({
-                    _id: new mongoose.Types.ObjectId(),
-                    course: courseId, // Assuming you have some course ID here
-                    school: id,
-                    schoolCourseEnrollment: newEnrollment._id,
-                    user: user._id
-                })
+        //     // Create a new enrollment
+        //     const newStudentEnrollment = new StudentEnrollments({
+        //         _id: new mongoose.Types.ObjectId(),
+        //         course: courseId, // Assuming you have some course ID here
+        //         school: id,
+        //         schoolCourseEnrollment: newEnrollment._id,
+        //         user: user._id
+        //     })
 
-                newEnrollment.studentEnrollments.push(newStudentEnrollment._id);
-                const token = user.generateAuthToken();
+        //     newEnrollment.studentEnrollments.push(newStudentEnrollment._id);
+        //     const token = user.generateAuthToken();
 
-                user.newCourseInvite = { school: id };
-                await Promise.all([
-                    newStudentEnrollment.save(),
-                    user.save()
-                ]);
-                // await school_course_invite("new", stdGrade, newStudentEnrollment._id, school.school_name, course.title, email, token);
-                let stdGrade = stdClass.substring(0, 3) === "Pri" ? "Primary" : stdClass.substring(0, 3) === "Sec" ? "Secondary" : "Educator"
-                // Send email to student
-                await school_course_invite("old", stdGrade, newStudentEnrollment._id, school.school_name, course.title, email, token);
-            }
+        //     await Promise.all([
+        //         newStudentEnrollment.save(),
+        //         user.save()
+        //     ]);
+        //     let stdGrade = stdClass.substring(0, 3) === "Pri" ? "Primary" : stdClass.substring(0, 3) === "Sec" ? "Secondary" : "Educator"
+        //     // Send email to student
+        //     // console.log("new", stdGrade, newStudentEnrollment._id, school.school_name, course.title, email, token)
+        //     await school_course_invite("new", stdGrade, newStudentEnrollment._id, school.school_name, course.title, email, token);
 
-        }
+        // } else {
+
+        //     // Check if the user is already enrolled in this course
+        //     const studentEnrollment = await StudentEnrollments.findOne({
+
+        //         course: courseId, // Assuming you have some course ID here
+        //         school: id,
+        //         schoolCourseEnrollment: newEnrollment._id,
+        //         user: user._id
+        //     })
+
+        //     if (!studentEnrollment) {
+        //         // Create a new enrollment
+        //         const newStudentEnrollment = new StudentEnrollments({
+        //             _id: new mongoose.Types.ObjectId(),
+        //             course: courseId, // Assuming you have some course ID here
+        //             school: id,
+        //             schoolCourseEnrollment: newEnrollment._id,
+        //             user: user._id
+        //         })
+
+        //         newEnrollment.studentEnrollments.push(newStudentEnrollment._id);
+        //         const token = user.generateAuthToken();
+
+        //         user.newCourseInvite = { school: id };
+        //         await Promise.all([
+        //             newStudentEnrollment.save(),
+        //             user.save()
+        //         ]);
+        //         // await school_course_invite("new", stdGrade, newStudentEnrollment._id, school.school_name, course.title, email, token);
+        //         let stdGrade = stdClass.substring(0, 3) === "Pri" ? "Primary" : stdClass.substring(0, 3) === "Sec" ? "Secondary" : "Educator"
+        //         // Send email to student
+        //         await school_course_invite("old", stdGrade, newStudentEnrollment._id, school.school_name, course.title, email, token);
+        //     }
+
+        // }
     }
 
     await newEnrollment.save();

@@ -1,11 +1,7 @@
 const mongoose = require("mongoose");
 
 const parentSchema = mongoose.Schema({
-    user: {
-        type: mongoose.Schema.Types.ObjectId,
-        required: true,
-        refPath: "checkModel",
-    },
+    fullName: { type: String },
     email: { type: String, },
     phone: {
         type: String,
