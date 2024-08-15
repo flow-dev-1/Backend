@@ -152,7 +152,7 @@ function validateUser(user) {
       .required()
       .pattern(/^[a-zA-Z]+(?: [a-zA-Z]+)+$/)
       .message(
-        "Full name must contain at least a first name and a last name separated by a space."
+        "Full name must contain at least two names separated by a space."
       ),
     grade: Joi.string().optional(),
     gender: Joi.string().valid("male", "female").required(),
@@ -190,7 +190,7 @@ function validateInvitedUser(user) {
       .min(2)
       .max(300)
       .required()
-      .pattern(/^[a-zA-Z]+ [a-zA-Z]+$/)
+      .pattern(/^[a-zA-Z]+(?: [a-zA-Z]+)+$/)
       .message(
         "Full name must contain at least a first name and a last name separated by a space."
       ),
@@ -198,7 +198,7 @@ function validateInvitedUser(user) {
       .min(2)
       .max(300)
       .required()
-      .pattern(/^[a-zA-Z]+ [a-zA-Z]+$/)
+      .pattern(/^[a-zA-Z]+(?: [a-zA-Z]+)+$/)
       .message(
         "Full name must contain at least a first name and a last name separated by a space."
       ),
@@ -223,7 +223,7 @@ function validateUserUpdate(user) {
     fullName: Joi.string()
       .min(2)
       .max(300)
-      .pattern(/^[a-zA-Z]+ [a-zA-Z]+$/)
+      .pattern(/^[a-zA-Z]+(?: [a-zA-Z]+)+$/)
       .message(
         "Full name must contain at least a first name and a last name separated by a space."
       )
