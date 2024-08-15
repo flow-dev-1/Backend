@@ -9,6 +9,7 @@ const { Otp_ForgotPassword } = require("../utils/sendmail");
 const otpGenerator = require("otp-generator");
 const Counter = require("../models/counter");
 const { Schools } = require("../models/school");
+
 // Login Route
 exports.login = async (req, res) => {
   const { usernameOrEmail, password } = req.body;
@@ -20,39 +21,44 @@ exports.login = async (req, res) => {
     );
   };
 
+  // Regular expression to check if the input is an email
+  const isEmail = (input) => /\S+@\S+\.\S+/.test(input);
+
   let account;
   let accountType = "";
 
-  // Search for a School by email
-  const school = await findUser(Schools, {
-    email: usernameOrEmail,
-    isVerified: true,
-  });
-
-  if (school) {
-    account = school;
-    accountType = "School";
-  } else {
-    // Search for an Educator by email if no School was found
-    const educator = await findUser(Educator, {
+  if (isEmail(usernameOrEmail)) {
+    console.log("emails")
+    // Search for a School by email
+    const school = await findUser(Schools, {
       email: usernameOrEmail,
       isVerified: true,
     });
-
-    if (educator) {
-      account = educator;
-      accountType = "Educator";
+    if (school) {
+      account = school;
+      accountType = "School";
     } else {
-      // Search for an Individual user by userId if no School or Educator was found
-      const user = await findUser(User, {
-        userId: usernameOrEmail,
+      // Search for an Educator by email if no School was found
+      const educator = await findUser(Educator, {
+        email: usernameOrEmail,
         isVerified: true,
       });
 
-      if (user) {
-        account = user;
-        accountType = "Individual";
+      if (educator) {
+        account = educator;
+        accountType = "Educator";
       }
+    }
+  } else {
+    // Search for an Individual user by userId if not email is entered.
+    const user = await findUser(User, {
+      userId: usernameOrEmail,
+      isVerified: true,
+    });
+
+    if (user) {
+      account = user;
+      accountType = "Individual";
     }
   }
 
@@ -140,14 +146,14 @@ exports.forgotPassword = async (req, res) => {
     type: "ForgotPassword",
     expiresIn: Date.now() + 3600000, // 1 hour expiration
   });
-//  school_name;
+  //  school_name;
   await otp.save();
 
   // Generate authentication token
   const token = account.generateAuthToken();
 
   // Send OTP email
-  await Otp_ForgotPassword(account.fullName|| account.school_name, account.email, code, token);
+  await Otp_ForgotPassword(account.fullName || account.school_name, account.email, code, token);
 
   // Return success response
   res.status(StatusCodes.OK).json({
