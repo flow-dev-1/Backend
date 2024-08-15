@@ -92,102 +92,102 @@ exports.getSingleUser = async (req, res) => {
 }
 
 exports.registerSchool = async (req, res) => {
-  const {
-    email,
-    contact_name,
-    school_name,
-    password,
-    grade,
-    phone,
-    country,
-    state,
-    lga,
-    address,
-  } = req.body;
-  let photo; // Initialize photo variable
+    const {
+        email,
+        contact_name,
+        school_name,
+        password,
+        grade,
+        phone,
+        country,
+        state,
+        lga,
+        address,
+    } = req.body;
+    let photo; // Initialize photo variable
 
-  // Check if a file is uploaded and handle it
-  if (req.file?.path) {
-    const result = await cloudinary.uploader.upload(req.file.path);
-    photo = result.secure_url; // Set the photo URL if uploaded
-  }
+    // Check if a file is uploaded and handle it
+    if (req.file?.path) {
+        const result = await cloudinary.uploader.upload(req.file.path);
+        photo = result.secure_url; // Set the photo URL if uploaded
+    }
 
-  let school = await Schools.findOne({ email });
+    let school = await Schools.findOne({ email });
 
-  if (school && school.isVerified) {
-    return res
-      .status(StatusCodes.BAD_REQUEST)
-      .json({ message: "School already registered." });
-  }
+    if (school && school.isVerified) {
+        return res
+            .status(StatusCodes.BAD_REQUEST)
+            .json({ message: "School already registered." });
+    }
 
-  if (school && !school.isVerified) {
+    if (school && !school.isVerified) {
+        const code = otpGenerator.generate(6, {
+            lowerCaseAlphabets: false,
+            upperCaseAlphabets: false,
+            specialChars: false,
+        });
+
+        const otp = new OTP({
+            user: school._id,
+            checkModel: "School",
+            code,
+            type: "RegisterSchool",
+            expiresIn: Date.now() + 3600000,
+        });
+
+        const token = await school.generateAuthToken();
+        await otp.save();
+        await Otp_VerifyAccount(school.email, school.school_name, code);
+
+        return res.status(StatusCodes.OK).json({
+            message: "Please enter the code sent to your email.",
+            token,
+        });
+    }
+
+    // Handle School registration if not already registered
+    const newSchool = new Schools({
+        school_name,
+        contact_name,
+        email,
+        grade,
+        phone,
+        country,
+        state,
+        lga,
+        address,
+        photo, // Include photo only if it was uploaded
+    });
+
+    const salt = await bcrypt.genSalt(10);
+    newSchool.password = await bcrypt.hash(password, salt);
+    await newSchool.save();
+
     const code = otpGenerator.generate(6, {
-      lowerCaseAlphabets: false,
-      upperCaseAlphabets: false,
-      specialChars: false,
+        lowerCaseAlphabets: false,
+        upperCaseAlphabets: false,
+        specialChars: false,
     });
 
     const otp = new OTP({
-      user: school._id,
-      checkModel: "School",
-      code,
-      type: "RegisterSchool",
-      expiresIn: Date.now() + 3600000,
+        user: newSchool._id,
+        checkModel: "School",
+        code,
+        type: "RegisterSchool",
+        expiresIn: Date.now() + 3600000,
     });
 
-    const token = await school.generateAuthToken();
     await otp.save();
-    await Otp_VerifyAccount(school.email, school.school_name, code);
+    await Otp_VerifyAccount(newSchool.email, newSchool.school_name, code);
 
-    return res.status(StatusCodes.OK).json({
-      message: "Please enter the code sent to your email.",
-      token,
-    });
-  }
+    const token = await newSchool.generateAuthToken();
 
-  // Handle School registration if not already registered
-  const newSchool = new Schools({
-    school_name,
-    contact_name,
-    email,
-    grade,
-    phone,
-    country,
-    state,
-    lga,
-    address,
-    photo, // Include photo only if it was uploaded
-  });
-
-  const salt = await bcrypt.genSalt(10);
-  newSchool.password = await bcrypt.hash(password, salt);
-  await newSchool.save();
-
-  const code = otpGenerator.generate(6, {
-    lowerCaseAlphabets: false,
-    upperCaseAlphabets: false,
-    specialChars: false,
-  });
-
-  const otp = new OTP({
-    user: newSchool._id,
-    checkModel: "School",
-    code,
-    type: "RegisterSchool",
-    expiresIn: Date.now() + 3600000,
-  });
-
-  await otp.save();
-  await Otp_VerifyAccount(newSchool.email, newSchool.school_name, code);
-
-  const token = await newSchool.generateAuthToken();
-
-  res
-    .status(StatusCodes.OK)
-    .json({
-      message: `Enter OTP sent to ${email} to verify your account.`,
-      token,
-    });
+    res
+        .status(StatusCodes.OK)
+        .json({
+            message: `Enter OTP sent to ${email} to verify your account.`,
+            token,
+        });
 };
 
 
@@ -512,7 +512,7 @@ exports.courseEnrollment = async (req, res) => {
         docModel: req.user.isSchool ? "School" : req.user.isAdmin ? "Admin" : "User",
         course: courseId, // Assuming you have some course ID here
         school: id,
-        status: "Active",
+        status: "Active",//Active becos the courses will be deactivated @ end of term
         stdClass,
         dayOfWeek,
         startTime,
