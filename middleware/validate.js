@@ -248,13 +248,19 @@ exports.schoolCourseEnrollmentValidator = function (req) {
 };
 
 exports.schoolCourseAddStudentsValidator = function (req) {
+    const studentSchema = Joi.object({
+
+        email: Joi.string().email().required(),
+        guardianFullName: Joi.string().min(2).max(100).required(), // Example additional field
+        fullName: Joi.string().min(2).max(100).required(), // Example additional field
+    });
     const schema = Joi.object({
         stdClass: Joi.string()
             .min(2)
             .max(100)
             .required(),
         students: Joi.array()
-            .items(Joi.string().email())
+            .items(studentSchema)
             .required(),
     });
 
