@@ -25,7 +25,7 @@ exports.getSingleSchool = async (req, res) => {
 
     const school = await Schools.findById(req.params.id)
         .select('-password -isVerified -isDeleted -resetPassword')
-    // .populate("team", "first_name last_name email school schoolAdminStatus schoolAdminPermission schoolAdminDate newInvite");
+    // .populate("team", "fullName email school schoolAdminStatus schoolAdminPermission schoolAdminDate newInvite");
     res.status(StatusCodes.OK).json({
         status: 'success',
         school
@@ -36,7 +36,7 @@ exports.getSchoolAdminTeam = async (req, res) => {
 
     let teams = await Schools.findOne({ _id: req.params.id })
         .select('team')
-        .populate("team", "first_name last_name email school schoolAdminStatus schoolAdminPermission schoolAdminDate newInvite");
+        .populate("team", "fullName email school schoolAdminStatus schoolAdminPermission schoolAdminDate newInvite");
     res.status(StatusCodes.OK).json({ teams });
 }
 
@@ -71,7 +71,7 @@ exports.getSingleEnrolledCourse = async (req, res) => {
             path: "studentEnrollments",
             populate: {
                 path: "user",
-                select: "first_name last_name email phone gender DOB"
+                select: "fullName email phone gender DOB"
             }
         });
 
