@@ -57,7 +57,7 @@ exports.registerUser = async (req, res) => {
 
     let query = {
       email: email,
-      "student.userId": studentItem.userId,
+      // "student.userId": studentItem.userId,
       $and: nameParts.map((name) => ({
         "student.fullName": new RegExp(`\\b${name}\\b`, "i"),
       })),

@@ -10,7 +10,7 @@ const parentSchema = mongoose.Schema({
     country: { type: String },
     state: { type: String },
     lga: { type: String },
-
+    students: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
 });
 
 
