@@ -13,6 +13,7 @@ const Schools = require("../models/school");
 const Counter = require("../models/counter");
 const { Educator } = require("../models/educators");
 const { Admin } = require("../models/admin");
+const { Parents } = require("../models/parentGuardian");
 
 exports.getLoggedUser = async (req, res) => {
   const user = await User.findById(req.user._id).select(
@@ -35,7 +36,6 @@ exports.getCourses = async (req, res) => {
   res.status(StatusCodes.OK).json({ courses });
 };
 exports.registerUser = async (req, res) => {
-
   const { type } = req.query;
   const { guardianFullName, phone, email, country, state, lga, student } =
     req.body;
@@ -57,7 +57,7 @@ exports.registerUser = async (req, res) => {
 
     let query = {
       email: email,
-      "student.userId": studentItem.userId,
+      // "student.userId": studentItem.userId,
       $and: nameParts.map((name) => ({
         "student.fullName": new RegExp(`\\b${name}\\b`, "i"),
       })),
@@ -377,3 +377,36 @@ exports.courseEnrollment = async (req, res) => {
     data,
   });
 };
+
+exports.getParentWithNewCourseInvite = async (req, res) => {
+  const { email } = req.body;
+
+  const parent = await Parents.findOne({ email });
+
+  if (!parent) {
+    return res.status(StatusCodes.NOT_FOUND).json({
+      status: "failed",
+      message: "Parent not found",
+    });
+  }
+  const usersWithInvite = await User.find({
+    email: parent.email,
+    newCourseInvite: { $exists: true },
+  }).select("-password");
+  if (!usersWithInvite.length) {
+    return res.status(StatusCodes.NOT_FOUND).json({
+      status: "failed",
+      message: "No students found with a new course invite for this parent",
+    });
+  }
+
+  parent.students = usersWithInvite;
+
+  res.status(StatusCodes.OK).json({
+    status: "success",
+    data: parent,
+  });
+};
+
+
+
