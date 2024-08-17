@@ -22,6 +22,7 @@ router.post('/invited-user', auth, validate(validateInvitedUser), userController
 
 router.post('/invited-school-admin', auth, validate(validateInvitedUser), userController.registerSchoolInvitedAdmin);
 
+// router.get("/:id/courses", auth, userController.getCourses);
 
 router.patch('/profile', auth, validate(validateUserUpdate), userController.updateProfile);
 
