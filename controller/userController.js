@@ -28,7 +28,8 @@ exports.getCourses = async (req, res) => {
   let courses;
 
   if (type === "Enrolled") {
-    courses = await SchoolCourses.find({ school: req.params.id, status: "Active" })
+
+    courses = await CourseEnrollment.find({ user: req.user._id, status: "Confirmed" })
       .populate("course")
   } else {
     courses = await Courses.find({ status: "published" });
@@ -251,7 +252,6 @@ exports.registerInvitedUser = async (req, res) => {
       await stdData.save()
     }
 
-
   }
 
 
@@ -437,21 +437,4 @@ exports.getParentWithNewCourseInvite = async (req, res) => {
     status: "success",
     data: parent,
   });
-};
-
-
-exports.getCourses = async (req, res) => {
-  let { type } = req.query;
-
-  let courses;
-
-  if (type === "Enrolled") {
-    courses = await SchoolCourses.find({
-      school: req.params.id,
-      status: "Active",
-    }).populate("course");
-  } else {
-    courses = await Courses.find({ status: "published" });
-  }
-  res.status(StatusCodes.OK).json({ courses });
 };
