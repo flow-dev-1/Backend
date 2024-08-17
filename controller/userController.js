@@ -29,7 +29,7 @@ exports.getCourses = async (req, res) => {
 
   if (type === "Enrolled") {
     courses = await SchoolCourses.find({ school: req.params.id, status: "Active" })
-    .populate("course")
+      .populate("course")
   } else {
     courses = await Courses.find({ status: "published" });
   }
@@ -179,8 +179,9 @@ exports.registerInvitedUser = async (req, res) => {
   const { guardianFullName, phone, email, country, state, lga, students } =
     req.body;
 
+
   // Check if this parent exist
-  const checkParent = await Parents.findOneAndUpdate({ email: item.email }, {
+  const checkParent = await Parents.findOneAndUpdate({ email }, {
     $set: {
       fullName: guardianFullName,
       phone,
@@ -199,12 +200,14 @@ exports.registerInvitedUser = async (req, res) => {
 
   let stdToken; // Initialize a variable to store the token
   let isFirstStudent = true;
+  let firstStudentId;
 
   for (const student of students) {
 
-    const stdData = await User.findById(student._id)
+    const stdData = await User.findOne({ userId: student.userId })
 
-    stdData.fullName = student?.fullName
+
+    stdData.fullName = student.fullName
     stdData.guardianFullName = guardianFullName
     stdData.email = email
     stdData.gender = student.gender
@@ -217,97 +220,65 @@ exports.registerInvitedUser = async (req, res) => {
       stdData.password = await bcrypt.hash(student.password, salt);
     }
 
-    // Check for course enrollment
-    const studentEnrollment = await StudentEnrollments.findOne({
-      school: stdData?.newCourseInvite.school,
-      user: stdData._id,
-      status: "Pending",
-    });
-
-    if (studentEnrollment) {
-      studentEnrollment.status = "Confirmed";
-
-      await Courses.findByIdAndUpdate(studentEnrollment.course, {
-        $push: {
-          courseEnrollment: studentEnrollment._id,
-        },
+    if (stdData.newCourseInvite) {
+      // Check for course enrollment
+      const studentEnrollment = await StudentEnrollments.findOne({
+        school: stdData.newCourseInvite.school,
+        user: stdData._id,
+        status: "Pending",
       });
 
-      stdData.newCourseInvite = null
+      if (studentEnrollment) {
+        studentEnrollment.status = "Confirmed";
+
+        await Courses.findByIdAndUpdate(studentEnrollment.course, {
+          $push: {
+            courseEnrollment: studentEnrollment._id,
+          },
+        });
+
+        stdData.newCourseInvite = null
 
 
-      await studentEnrollment.save();
+        await studentEnrollment.save();
+      }
+      // Generate token only for the first student
+      if (isFirstStudent) {
+        stdToken = stdData.generateAuthToken();
+        isFirstStudent = false; // Set the flag to false after generating the token
+        firstStudentId = stdData._id
+      }
+      await stdData.save()
     }
 
-    // Generate token only for the first student
-    if (isFirstStudent) {
-      stdToken = stdData.generateAuthToken();
-      isFirstStudent = false; // Set the flag to false after generating the token
-    }
-    await stdData.save()
-  }
-<<<<<<< HEAD
-=======
 
-  // Check for course enrollment
-  const studentEnrollment = await StudentEnrollments.findOne({
-    school: user?.newCourseInvite.school,
-    user: user._id,
-    status: "Pending",
-  });
-
-  if (!studentEnrollment) {
-    return res
-      .status(StatusCodes.BAD_REQUEST)
-      .json({ message: "Expired or Invalid invite link!" });
-  }
-  const counter = await Counter.findOneAndUpdate(
-    { name: "userId" },
-    { $inc: { seq: 1 } },
-    { new: true, upsert: true, strict: true }
-  );
-
-  const userId = `FLS${counter.seq
-    .toString()
-    .padStart(Math.max(3, counter.seq.toString().length), "0")}`;
-
-  user.fullName = fullName;
-  user.phone = phone;
-  user.email = email;
-  user.gender = gender;
-  user.guardianFullName = guardianFullName
-  user.DOB = DOB;
-  user.country = country;
-  user.state = state;
-  user.lga = lga;
-  user.userType = "School";
-  user.grade = grade;
-  user.school = user.newCourseInvite.school;
-  user.newCourseInvite = null;
-  user.userId = userId;
-
-  if (!user.isVerified) {
-    user.isVerified = true;
   }
 
-  if (password) {
-    const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(password, salt);
+
+  // Send OTP if and only if any of the stdnets are newly enrolled to a course.
+  //Sometimes they may stumble on d form a second time no need 2 send OTP again
+  if (!isFirstStudent) {
+    const code = otpGenerator.generate(6, {
+      lowerCaseAlphabets: false,
+      upperCaseAlphabets: false,
+      specialChars: false,
+    });
+
+    const otp = new OTP({
+      user: firstStudentId,
+      checkModel: "User",
+      code,
+      type: "RegisterUser",
+      expiresIn: Date.now() + 3600000, // 1 hour expiration
+    });
+
+    await otp.save();
+
+    await Otp_VerifyAccount(email, guardianFullName, code);
   }
-  studentEnrollment.status = "Confirmed";
 
-  await Courses.findByIdAndUpdate(studentEnrollment.course, {
-    $push: {
-      courseEnrollment: studentEnrollment._id,
-    },
-  });
 
-  await studentEnrollment.save();
-  await user.save();
 
-  const token = user.generateAuthToken();
-
->>>>>>> db890d81312c7ff745d8b0ffb3bc3828f556a0f9
   res
     .status(StatusCodes.OK)
     .json({ message: "Accounts created successfully!", stdToken });
@@ -447,8 +418,8 @@ exports.getParentWithNewCourseInvite = async (req, res) => {
   }
 
   const studentsWithInvite = await User.find({
-    email: email, 
-    newCourseInvite: { $exists: true, $ne: null }, 
+    email: email,
+    newCourseInvite: { $exists: true, $ne: null },
   });
 
 
