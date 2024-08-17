@@ -383,7 +383,8 @@ exports.courseEnrollment = async (req, res) => {
 };
 
 exports.getParentWithNewCourseInvite = async (req, res) => {
-  const { email } = req.body;
+  const { email } = req.user;
+  console.log(email)
 
   const parent = await Parents.findOne({ email });
 
