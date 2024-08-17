@@ -34,7 +34,7 @@ exports.getSingleSchool = async (req, res) => {
   const school = await Schools.findById(req.params.id).select(
     "-password -isVerified -isDeleted -resetPassword"
   );
-  // .populate("team", "first_name last_name email school schoolAdminStatus schoolAdminPermission schoolAdminDate newInvite");
+  // .populate("team", "fullNaame email school schoolAdminStatus schoolAdminPermission schoolAdminDate newInvite");
   res.status(StatusCodes.OK).json({
     status: "success",
     school,
@@ -46,7 +46,7 @@ exports.getSchoolAdminTeam = async (req, res) => {
     .select("team")
     .populate(
       "team",
-      "first_name last_name email school schoolAdminStatus schoolAdminPermission schoolAdminDate newInvite"
+      "fullNaame email school schoolAdminStatus schoolAdminPermission schoolAdminDate newInvite"
     );
   res.status(StatusCodes.OK).json({ teams });
 };
@@ -83,7 +83,7 @@ exports.getSingleEnrolledCourse = async (req, res) => {
       path: "studentEnrollments",
       populate: {
         path: "user",
-        select: "first_name last_name email phone gender DOB",
+        select: "fullNaame email phone gender DOB",
       },
     });
 
@@ -476,8 +476,8 @@ exports.inviteSchoolAdmin = async (req, res) => {
     const token = await user.generateAuthToken();
     await school_admin_invite(
       "old",
-      first_name,
-      last_name,
+      fullName,
+
       req.user._id,
       req.user.schoolName,
       email,
@@ -493,8 +493,7 @@ exports.inviteSchoolAdmin = async (req, res) => {
   }
   // Save Admin record
   user = new User({
-    first_name,
-    last_name,
+    fullName,
     email,
     userType: "Educator",
     newInvite: {
@@ -511,8 +510,7 @@ exports.inviteSchoolAdmin = async (req, res) => {
   // Send Invite
   await school_admin_invite(
     "new",
-    first_name,
-    last_name,
+    fullName,
     req.user._id,
     req.user.schoolName,
     email,

@@ -12,6 +12,8 @@ router.get('/', async (req, res) => {
 })
 router.get('/me', auth, userController.getLoggedUser);
 
+router.get('/parent', auth, userController.getParentWithNewCourseInvite);
+
 router.get('/courses', auth, userController.getCourses);
 
 router.post('/register', validate(validateUser), userController.registerUser);
