@@ -28,13 +28,14 @@ exports.getCourses = async (req, res) => {
   let courses;
 
   if (type === "Enrolled") {
-    // courses = await SchoolCourses.find({ school: req.params.id, status: "Active" })
-    // .populate("course")
+    courses = await SchoolCourses.find({ school: req.params.id, status: "Active" })
+    .populate("course")
   } else {
     courses = await Courses.find({ status: "published" });
   }
   res.status(StatusCodes.OK).json({ courses });
 };
+
 exports.registerUser = async (req, res) => {
   const { type } = req.query;
   const { guardianFullName, phone, email, country, state, lga, student } =
@@ -46,6 +47,12 @@ exports.registerUser = async (req, res) => {
       .json({ message: "User type is required!" });
   }
 
+  if (!student || student.length === 0) {
+    return res
+      .status(StatusCodes.BAD_REQUEST)
+      .json({ message: "No students provided in the request." });
+  }
+
   for (const studentItem of student) {
     if (!studentItem.fullName || !studentItem.userId) {
       return res
@@ -53,17 +60,12 @@ exports.registerUser = async (req, res) => {
         .json({ message: "Each student must have a full name and userId!" });
     }
 
-    const nameParts = studentItem.fullName.toLowerCase().split(" ");
-
-    let query = {
+    // Normalize the full name for comparison
+    const studentFullName = studentItem.fullName.toLowerCase().trim();
+    let user = await User.findOne({
       email: email,
-      // "student.userId": studentItem.userId,
-      $and: nameParts.map((name) => ({
-        "student.fullName": new RegExp(`\\b${name}\\b`, "i"),
-      })),
-    };
-
-    let user = await User.findOne(query);
+      "student.fullName": studentFullName,
+    });
 
     if (user && user.isVerified) {
       return res
@@ -71,7 +73,6 @@ exports.registerUser = async (req, res) => {
         .json({ message: "User already registered." });
     }
 
-    // Handle the case where the user exists but is not verified
     if (user && !user.isVerified) {
       const code = otpGenerator.generate(6, {
         lowerCaseAlphabets: false,
@@ -98,77 +99,79 @@ exports.registerUser = async (req, res) => {
       });
     }
 
-    if (student && student.length > 0) {
-      const code = otpGenerator.generate(6, {
-        lowerCaseAlphabets: false,
-        upperCaseAlphabets: false,
-        specialChars: false,
-      });
+    // Register the new students
+    const code = otpGenerator.generate(6, {
+      lowerCaseAlphabets: false,
+      upperCaseAlphabets: false,
+      specialChars: false,
+    });
 
-      // Variable to hold the first student's ID
-      let firstStudentId;
+    let firstStudentId;
 
-      await Promise.all(
-        student.map(
-          async ({ userId, fullName, grade, gender, DOB, password }, index) => {
-            const salt = await bcrypt.genSalt(10);
-            const hashedPassword = await bcrypt.hash(password, salt);
+    await Promise.all(
+      student.map(
+        async ({ userId, fullName, grade, gender, DOB, password }, index) => {
+          const salt = await bcrypt.genSalt(10);
+          const hashedPassword = await bcrypt.hash(password, salt);
 
-            // Create the new student account
-            const newStudent = new User({
-              userId,
-              fullName,
-              grade,
-              gender,
-              DOB,
-              password: hashedPassword,
-              guardianFullName,
-              phone,
-              email,
-              country,
-              state,
-              lga,
-              userType: "Individual",
-            });
+          const newStudent = new User({
+            userId,
+            fullName,
+            grade,
+            gender,
+            DOB,
+            password: hashedPassword,
+            guardianFullName,
+            phone,
+            email,
+            country,
+            state,
+            lga,
+            userType: "Individual",
+          });
 
-            await newStudent.save();
+          await newStudent.save();
 
-            // Store the first student's ID for OTP
-            if (index === 0) {
-              firstStudentId = newStudent._id;
-            }
+          if (index === 0) {
+            firstStudentId = newStudent._id;
           }
-        )
-      );
+        }
+      )
+    );
 
-      // Create OTP using the first student's ID
-      const otp = new OTP({
-        user: firstStudentId,
-        checkModel: "User",
-        code,
-        type: "RegisterUser",
-        expiresIn: Date.now() + 3600000, // 1 hour expiration
+    let parentExists = await Parents.findOne({ email });
+    if (!parentExists) {
+      const newParent = new Parents({
+        fullName: guardianFullName,
+        email: email,
+        phone,
+        country,
+        state,
+        students: [],
       });
 
-      await otp.save();
-
-      // Send OTP email once for the guardian email
-      await Otp_VerifyAccount(email, guardianFullName, code);
-
-      // Generate token using the first student's ID
-      const firstStudent = await User.findById(firstStudentId);
-      const token = firstStudent.generateAuthToken();
-
-      return res.status(StatusCodes.OK).json({
-        message: "Students registered successfully",
-        token,
-      });
+      await newParent.save();
     }
 
-    // In case no students are passed in the request body
-    return res
-      .status(StatusCodes.BAD_REQUEST)
-      .json({ message: "No students provided in the request." });
+    const otp = new OTP({
+      user: firstStudentId,
+      checkModel: "User",
+      code,
+      type: "RegisterUser",
+      expiresIn: Date.now() + 3600000, // 1 hour expiration
+    });
+
+    await otp.save();
+
+    await Otp_VerifyAccount(email, guardianFullName, code);
+
+    const firstStudent = await User.findById(firstStudentId);
+    const token = firstStudent.generateAuthToken();
+
+    return res.status(StatusCodes.OK).json({
+      message: "Students registered successfully",
+      token,
+    });
   }
 };
 
@@ -243,6 +246,68 @@ exports.registerInvitedUser = async (req, res) => {
     }
     await stdData.save()
   }
+<<<<<<< HEAD
+=======
+
+  // Check for course enrollment
+  const studentEnrollment = await StudentEnrollments.findOne({
+    school: user?.newCourseInvite.school,
+    user: user._id,
+    status: "Pending",
+  });
+
+  if (!studentEnrollment) {
+    return res
+      .status(StatusCodes.BAD_REQUEST)
+      .json({ message: "Expired or Invalid invite link!" });
+  }
+  const counter = await Counter.findOneAndUpdate(
+    { name: "userId" },
+    { $inc: { seq: 1 } },
+    { new: true, upsert: true, strict: true }
+  );
+
+  const userId = `FLS${counter.seq
+    .toString()
+    .padStart(Math.max(3, counter.seq.toString().length), "0")}`;
+
+  user.fullName = fullName;
+  user.phone = phone;
+  user.email = email;
+  user.gender = gender;
+  user.guardianFullName = guardianFullName
+  user.DOB = DOB;
+  user.country = country;
+  user.state = state;
+  user.lga = lga;
+  user.userType = "School";
+  user.grade = grade;
+  user.school = user.newCourseInvite.school;
+  user.newCourseInvite = null;
+  user.userId = userId;
+
+  if (!user.isVerified) {
+    user.isVerified = true;
+  }
+
+  if (password) {
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(password, salt);
+  }
+  studentEnrollment.status = "Confirmed";
+
+  await Courses.findByIdAndUpdate(studentEnrollment.course, {
+    $push: {
+      courseEnrollment: studentEnrollment._id,
+    },
+  });
+
+  await studentEnrollment.save();
+  await user.save();
+
+  const token = user.generateAuthToken();
+
+>>>>>>> db890d81312c7ff745d8b0ffb3bc3828f556a0f9
   res
     .status(StatusCodes.OK)
     .json({ message: "Accounts created successfully!", stdToken });
@@ -380,24 +445,41 @@ exports.getParentWithNewCourseInvite = async (req, res) => {
       message: "Parent not found",
     });
   }
-  const usersWithInvite = await User.find({
-    email: parent.email,
-    newCourseInvite: { $exists: true },
-  }).select("-password");
-  if (!usersWithInvite.length) {
+
+  const studentsWithInvite = await User.find({
+    email: email, 
+    newCourseInvite: { $exists: true, $ne: null }, 
+  });
+
+
+  if (!studentsWithInvite.length) {
     return res.status(StatusCodes.NOT_FOUND).json({
       status: "failed",
       message: "No students found with a new course invite for this parent",
     });
   }
 
-  parent.students = usersWithInvite;
+  parent.students = studentsWithInvite;
 
-  res.status(StatusCodes.OK).json({
+  return res.status(StatusCodes.OK).json({
     status: "success",
     data: parent,
   });
 };
 
 
+exports.getCourses = async (req, res) => {
+  let { type } = req.query;
 
+  let courses;
+
+  if (type === "Enrolled") {
+    courses = await SchoolCourses.find({
+      school: req.params.id,
+      status: "Active",
+    }).populate("course");
+  } else {
+    courses = await Courses.find({ status: "published" });
+  }
+  res.status(StatusCodes.OK).json({ courses });
+};

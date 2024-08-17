@@ -226,3 +226,18 @@ exports.updateProfile = async (req, res) => {
   });
 };
 
+exports.getCourses = async (req, res) => {
+  let { type } = req.query;
+
+  let courses;
+
+  if (type === "Enrolled") {
+    courses = await SchoolCourses.find({
+      school: req.params.id,
+      status: "Active",
+    }).populate("course");
+  } else {
+    courses = await Courses.find({ status: "published" });
+  }
+  res.status(StatusCodes.OK).json({ courses });
+};

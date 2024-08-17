@@ -21,6 +21,8 @@ router.post(
   educatorController.registerInvitedEducator
 );
 
+router.get("/courses", auth, educatorController.getCourses);
+
 
 router.patch(
   "/profile",

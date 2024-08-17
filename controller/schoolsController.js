@@ -603,7 +603,7 @@ exports.courseEnrollment = async (req, res) => {
     // Check if this parent exist
     const existingParent = await Parents.findOne({ email: item.email })
       .populate("students", "-password");
-
+// use this for the work.
     if (!existingParent) {
       const newParent = new Parents({
         fullName: item.guardianFullName,
