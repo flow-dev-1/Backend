@@ -173,88 +173,79 @@ exports.registerUser = async (req, res) => {
 };
 
 exports.registerInvitedUser = async (req, res) => {
-  const { guardianFullName, phone, email, country, state, lga, student } =
+  const { guardianFullName, phone, email, country, state, lga, students } =
     req.body;
 
-  let user = await User.findOne({ _id: req.user._id });
+  // Check if this parent exist
+  const checkParent = await Parents.findOneAndUpdate({ email: item.email }, {
+    $set: {
+      fullName: guardianFullName,
+      phone,
+      country,
+      state,
+      lga
+    }
+  })
 
-  if (!user)
+  // Only parent with Valid invite can use dis
+  if (!checkParent) {
     return res
       .status(StatusCodes.BAD_REQUEST)
       .json({ message: "Un-Authorized Action!" });
-
-  if (user && !user.newCourseInvite) {
-    return res
-      .status(StatusCodes.BAD_REQUEST)
-      .json({ message: "Expired or Invalid invite link!" });
   }
 
-  if (!user.password && !password) {
-    return res
-      .status(StatusCodes.UNPROCESSABLE_ENTITY)
-      .json({ message: "Password is required!" });
+  let stdToken; // Initialize a variable to store the token
+  let isFirstStudent = true;
+
+  for (const student of students) {
+
+    const stdData = await User.findById(student._id)
+
+    stdData.fullName = student?.fullName
+    stdData.guardianFullName = guardianFullName
+    stdData.email = email
+    stdData.gender = student.gender
+    stdData.DOB = student.DOB
+
+
+    // Only add the password field if it's present
+    if (student.password) {
+      const salt = await bcrypt.genSalt(10);
+      stdData.password = await bcrypt.hash(student.password, salt);
+    }
+
+    // Check for course enrollment
+    const studentEnrollment = await StudentEnrollments.findOne({
+      school: stdData?.newCourseInvite.school,
+      user: stdData._id,
+      status: "Pending",
+    });
+
+    if (studentEnrollment) {
+      studentEnrollment.status = "Confirmed";
+
+      await Courses.findByIdAndUpdate(studentEnrollment.course, {
+        $push: {
+          courseEnrollment: studentEnrollment._id,
+        },
+      });
+
+      stdData.newCourseInvite = null
+
+
+      await studentEnrollment.save();
+    }
+
+    // Generate token only for the first student
+    if (isFirstStudent) {
+      stdToken = stdData.generateAuthToken();
+      isFirstStudent = false; // Set the flag to false after generating the token
+    }
+    await stdData.save()
   }
-
-  // Check for course enrollment
-  const studentEnrollment = await StudentEnrollments.findOne({
-    school: user?.newCourseInvite.school,
-    user: user._id,
-    status: "Pending",
-  });
-
-  if (!studentEnrollment) {
-    return res
-      .status(StatusCodes.BAD_REQUEST)
-      .json({ message: "Expired or Invalid invite link!" });
-  }
-  const counter = await Counter.findOneAndUpdate(
-    { name: "userId" },
-    { $inc: { seq: 1 } },
-    { new: true, upsert: true, strict: true }
-  );
-
-  const userId = `FLS${counter.seq
-    .toString()
-    .padStart(Math.max(3, counter.seq.toString().length), "0")}`;
-
-  user.fullName = fullName;
-  user.phone = phone;
-  user.email = email;
-  user.gender = gender;
-  user.DOB = DOB;
-  user.country = country;
-  user.state = state;
-  user.lga = lga;
-  user.userType = "School";
-  user.grade = grade;
-  user.school = user.newCourseInvite.school;
-  user.newCourseInvite = null;
-  user.userId = userId;
-
-  if (!user.isVerified) {
-    user.isVerified = true;
-  }
-
-  if (password) {
-    const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(password, salt);
-  }
-  studentEnrollment.status = "Confirmed";
-
-  await Courses.findByIdAndUpdate(studentEnrollment.course, {
-    $push: {
-      courseEnrollment: studentEnrollment._id,
-    },
-  });
-
-  await studentEnrollment.save();
-  await user.save();
-
-  const token = user.generateAuthToken();
-
   res
     .status(StatusCodes.OK)
-    .json({ message: "Account created successfully!", token });
+    .json({ message: "Accounts created successfully!", stdToken });
 };
 
 exports.registerSchoolInvitedAdmin = async (req, res) => {
