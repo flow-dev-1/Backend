@@ -393,24 +393,28 @@ exports.getParentWithNewCourseInvite = async (req, res) => {
       message: "Parent not found",
     });
   }
-  const usersWithInvite = await User.find({
-    email: parent.email,
-    newCourseInvite: { $exists: true },
+
+  const studentsWithInvite = await User.find({
+    email: email, 
+    newCourseInvite: { $exists: true, $ne: null }, 
   });
-  if (!usersWithInvite.length) {
+
+
+  if (!studentsWithInvite.length) {
     return res.status(StatusCodes.NOT_FOUND).json({
       status: "failed",
       message: "No students found with a new course invite for this parent",
     });
   }
 
-  parent.students = usersWithInvite;
+  parent.students = studentsWithInvite;
 
-  res.status(StatusCodes.OK).json({
+  return res.status(StatusCodes.OK).json({
     status: "success",
     data: parent,
   });
 };
+
 
 exports.getCourses = async (req, res) => {
   let { type } = req.query;
