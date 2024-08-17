@@ -22,7 +22,8 @@ const StudentEnrollments = require("../models/courseEnrollment");
 const { Parents } = require("../models/parentGuardian");
 const { generateUserId } = require("./indexController");
 const generateId = require("../utils/generateId");
-
+const doesFullNameMatch = require('../utils/fullNameCheck')
+const findStudentByEmailAndFullName = require('../utils/findStudentBymail')
 exports.getCurrentSchool = async (req, res) => {
   let school = await Schools.findOne({ _id: req.user._id }).select(
     "-password -isVerified -isDeleted -resetPassword"
@@ -671,47 +672,6 @@ exports.courseEnrollment = async (req, res) => {
       // the parent already exist
       // Check if the child already exist
       // Function to check if a student's full name matches the given full name with possible swaps
-      function doesFullNameMatch(studentFullName, fullName) {
-
-
-        // NB: keep this incase we want to check 2/3 of name pass
-        // const studentNameParts = studentFullName.toLowerCase().split(" ");
-
-        // // Check if any subset of 2 or 3 parts of `fullNameParts` are present in `studentNameParts`
-        // const combinations = fullNameParts.length === 3 
-        //   ? [
-        //       [0, 1], [0, 2], [1, 2],    // 2-part combinations from 3 parts
-        //       [0, 1, 2]                    // All 3 parts
-        //     ]
-        //   : [ [0, 1] ];                  // Only 2-part combinations if 2 parts
-
-        // return combinations.some(indices => {
-        //   const subset = indices.map(i => fullNameParts[i].toLowerCase());
-        //   return subset.every(part => studentNameParts.includes(part)) &&
-        //          studentNameParts.every(part => subset.includes(part));
-        // });
-
-
-        const nameParts = fullName.toLowerCase().split(" ");
-        const studentNameParts = studentFullName.toLowerCase().split(" ");
-
-        // Check if all name parts are present in any order
-        return nameParts.every(part => studentNameParts.includes(part)) &&
-          studentNameParts.every(part => nameParts.includes(part));
-      }
-
-      // Function to find a student by email and full name in an array
-      async function findStudentByEmailAndFullName(email, fullName, students) {
-        const emailLower = email.toLowerCase();
-
-        for (const student of students) {
-          if (student.email.toLowerCase() === emailLower && doesFullNameMatch(student.fullName, fullName)) {
-            return student;
-          }
-        }
-
-        return null; // No match found
-      }
 
       const student = await findStudentByEmailAndFullName(item.email, item.fullName, existingParent.students)
 
