@@ -180,6 +180,15 @@ exports.registerInvitedUser = async (req, res) => {
   const { guardianFullName, phone, email, country, state, lga, students } =
     req.body;
 
+  // Check if all data are correctly send. An unverified student must cum with password
+  for (const student of students) {
+    const stdData = await User.findOne({ userId: student.userId })
+    if (!stdData.isVerified && !student.password) {
+      return res
+        .status(StatusCodes.UNPROCESSABLE_ENTITY)
+        .json({ message: "Please enter all required fields" });
+    }
+  }
 
   // Check if this parent exist
   const checkParent = await Parents.findOneAndUpdate({ email }, {
