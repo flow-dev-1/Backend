@@ -15,13 +15,11 @@ module.exports = doesFullNameMatch = (studentFullName, fullName) => {
   //   return subset.every(part => studentNameParts.includes(part)) &&
   //          studentNameParts.every(part => subset.includes(part));
   // });
-
-  const nameParts = fullName.toLowerCase().split(" ");
-  const studentNameParts = studentFullName.toLowerCase().split(" ");
-
-  // Check if all name parts are present in any order
+  const nameParts1 = studentFullName.toLowerCase().split(" ");
+  const nameParts2 = fullName.toLowerCase().split(" ");
+  // Check if both names have the same number of parts and the exact parts match in order
   return (
-    nameParts.every((part) => studentNameParts.includes(part)) &&
-    studentNameParts.every((part) => nameParts.includes(part))
+    nameParts1.length === nameParts2.length &&
+    nameParts1.every((part, index) => part === nameParts2[index])
   );
 };
