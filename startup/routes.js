@@ -4,6 +4,7 @@ const educator = require("../routes/educators");
 const school = require("../routes/schools");
 const users = require('../routes/users');
 const indexRouter = require("../routes/index")
+const paymentRouter = require("../routes/payment")
 const error = require("../middleware/error");
 
 module.exports = function (app) {
@@ -14,7 +15,7 @@ module.exports = function (app) {
     app.use('/api/schools', school);
     app.use('/api/users', users);
     app.use("/api", indexRouter)
-    app.use("/", indexRouter)
+    app.use("/", paymentRouter)
 
     app.use(error);
 }

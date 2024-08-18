@@ -14,6 +14,9 @@ const Counter = require("../models/counter");
 const { Educator } = require("../models/educators");
 const { Admin } = require("../models/admin");
 const { Parents } = require("../models/parentGuardian");
+const Course = require("../models/course");
+const { default: mongoose } = require("mongoose");
+const Payment = require("../models/payment");
 
 exports.getLoggedUser = async (req, res) => {
   const user = await User.findById(req.user._id).select(
@@ -35,6 +38,14 @@ exports.getCourses = async (req, res) => {
     courses = await Courses.find({ status: "published" });
   }
   res.status(StatusCodes.OK).json({ courses });
+};
+
+exports.getPayments = async (req, res) => {
+
+  const payments = await Payment.find({ user: req.user._id })
+    .select("-paymentDetails");
+
+  res.status(StatusCodes.OK).json({ payments });
 };
 
 exports.registerUser = async (req, res) => {
@@ -385,19 +396,35 @@ exports.updateProfile = async (req, res) => {
 
 exports.courseEnrollment = async (req, res) => {
   const { fullName, email, phone } = req.body;
-  let amount = 10000; //Will fix this later
+  const { id } = req.params
+
+  // Check if student is already enrolled in this course
+  const isEnrolled = await CourseEnrollment.findOne({
+    course: id,
+    user: req.user._id,
+    status: "Confirmed"
+  })
+
+  if (isEnrolled) {
+    return res.status(StatusCodes.BAD_REQUEST).json({
+      status: "failed",
+      message: "You are already enrolled in this course!",
+    });
+  }
+
+  const course = await Course.findById(id)
+
   const enrollment = new CourseEnrollment({
-    fullName,
-    email,
-    phone,
-    amount,
+    _id: new mongoose.Types.ObjectId(),
+    course: id,
     user: req.user._id,
   });
+
   const { data } = await initiatePaystackPayment(
-    amount,
+    course.cost,
     email,
-    `${fullName} ${last_name}`,
-    "course._id"
+    `${fullName}`,
+    enrollment._id
   );
 
   // If Paystack doesn't initiate payment stop the payment
@@ -407,7 +434,19 @@ exports.courseEnrollment = async (req, res) => {
       message: "Operation Failed",
     });
 
-  await enrollment.save();
+  // Generate payment Ticket
+  const payment = new Payment({
+    user: req.user._id,
+    checkModel: "User",
+    courseEnrollment: enrollment._id,
+    fullName,
+    phone,
+    email,
+    reference: data?.reference
+  })
+
+  await Promise.all([payment.save(), enrollment.save()])
+
   return res.status(StatusCodes.CREATED).json({
     status: "success",
     message: "Opening Payment Window please do not close the page!",
@@ -417,7 +456,6 @@ exports.courseEnrollment = async (req, res) => {
 
 exports.getParentWithNewCourseInvite = async (req, res) => {
   const { email } = req.user;
-  console.log(email)
 
   const parent = await Parents.findOne({ email });
 
