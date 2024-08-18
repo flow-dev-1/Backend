@@ -31,10 +31,9 @@ exports.getCourses = async (req, res) => {
   let courses;
 
   if (type === "Enrolled") {
-    courses = await SchoolCourses.find({
-      school: req.params.id,
-      status: "Active",
-    }).populate("course");
+
+    courses = await CourseEnrollment.find({ user: req.user._id, status: "Confirmed" })
+      .populate("course")
   } else {
     courses = await Courses.find({ status: "published" });
   }
