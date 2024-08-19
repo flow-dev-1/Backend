@@ -251,6 +251,7 @@ function validateUserUpdate(user) {
     DOB: Joi.date().optional(),
     country: Joi.string().min(2).max(255).optional(),
     state: Joi.string().min(2).max(255).optional(),
+    grade: Joi.string().optional(),
     lga: Joi.string().min(2).max(255).optional(),
   });
 
