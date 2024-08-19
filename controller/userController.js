@@ -33,8 +33,6 @@ exports.getLoggedUser = async (req, res) => {
 exports.getPayments = async (req, res) => {
 
   const payments = await Payment.find({ user: req.user._id })
-    .select("-paymentDetails");
-
   res.status(StatusCodes.OK).json({ payments });
 };
 
