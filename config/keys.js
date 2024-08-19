@@ -15,5 +15,6 @@ module.exports = {
     EMAIL_USER: process.env.EMAIL_USER,
     EMAIL_PASS: process.env.EMAIL_PASS,
     APP_ID: process.env.APP_ID,
-    API_KEY: process.env.API_KEY
+    API_KEY: process.env.API_KEY,
+    ENVIRONMENT: process.env.ENV
 }

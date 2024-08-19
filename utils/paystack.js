@@ -1,5 +1,5 @@
 const dotenv = require("dotenv");
-const { PAYSTACK_SECRET_KEY } = require('../config/keys')
+const { PAYSTACK_SECRET_KEY, ENVIRONMENT } = require('../config/keys')
 dotenv.config();
 const axios = require('axios');
 const paystack = require("paystack")(PAYSTACK_SECRET_KEY);
@@ -11,6 +11,8 @@ exports.initiatePaystackPayment = async (amount, email, name, enrolmentId) => {
         email: email,
         name: name,
         // channels:['card','bank'],
+        callback_url: ENVIRONMENT === "production" ? "https://flow.ng/dashboard/enrollment/confirm" :
+            ENVIRONMENT === "staging" ? "https://my-flow.netlify.app/dashboard/enrollment/confirm" : "http://localhost:3000/dashboard/enrollment/confirm",
         metadata: {
             enrolmentId
         }
@@ -21,44 +23,7 @@ exports.initiatePaystackPayment = async (amount, email, name, enrolmentId) => {
     return data;
 };
 
-//Validate users card for Loan application.
-exports.initiatePaystackCardValidation = async (amount, email, name, savings) => {
-    const params = {
-        amount: amount * 100,
-        email: email,
-        name: name,
-        channels: ['card'],
-        metadata: {
-            type: "Validate Card",
-            savings,
 
-        }
-    };
-
-    const data = await paystack.transaction.initialize(params);
-
-    return data;
-};
-
-//Validate users card for Loan application.
-exports.initiatePaystackScheduledCardValidation = async (amount, email, name, savings, scheduledSavings) => {
-    const params = {
-        amount: amount * 100,
-        email: email,
-        name: name,
-        channels: ['card'],
-        metadata: {
-            type: "Scheduled Savings Card",
-            scheduledSavings,
-            savings,
-
-        }
-    };
-
-    const data = await paystack.transaction.initialize(params);
-
-    return data;
-};
 //Charge a user saved card.
 exports.charge_authorization = async (amount, email, authorization_code) => {
     const params = {
@@ -78,25 +43,6 @@ exports.validatePaystackPayment = async (reference) => {
     return data;
 };
 
-// initiating paystack transfer/ withdrawal
-exports.initiatePaystackWithdrawal = async (
-    amount,
-    source,
-    recipient,
-    reason
-) => {
-    const params = {
-        source: source,
-        reason: reason,
-        amount: amount,
-        recipient: recipient,
-    };
-
-    const data = await paystack.transfer.create(params);
-
-    return data;
-};
-
 exports.verifyAccount = async (account_number, bank_code) => {
 
     try {
@@ -110,51 +56,6 @@ exports.verifyAccount = async (account_number, bank_code) => {
         return data;
     } catch (error) {
         return error.error
-    }
-
-};
-
-
-exports.createTransferRecip = async (account_name, account_number, bank_code) => {
-    const params = {
-        type: "nuban",
-        name: account_name,
-        account_number,
-        bank_code,
-        currency: "NGN"
-    }
-    const data = await paystack_api.transfer_recipient.create(params);
-    // console.log({params});
-
-
-    return data;
-};
-
-exports.initiateTransfer = async (amount, recipient_code, reference, reason) => {
-
-    const params = {
-        "source": "balance",
-        "amount": amount * 100,
-        "reference": `${reference}`,
-        "recipient": `${recipient_code}`,
-        // reference,
-        "reason": reason,
-
-    }
-
-    try {
-        const response = await axios.post('https://api.paystack.co/transfer', params, {
-            headers: {
-                Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
-                'Content-Type': 'application/json'
-            }
-        });
-
-        return response.data
-
-    } catch (error) {
-
-        return error.response.data
     }
 
 };
