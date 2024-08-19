@@ -18,6 +18,10 @@ const { Admin } = require("../models/admin");
 const { Parents } = require("../models/parentGuardian");
 const doesFullNameMatch = require("../utils/fullNameCheck");
 const findStudentByEmailAndFullName = require("../utils/findStudentBymail");
+const Course = require("../models/course");
+const { default: mongoose } = require("mongoose");
+const Payment = require("../models/payment");
+
 exports.getLoggedUser = async (req, res) => {
   const user = await User.findById(req.user._id).select(
     "-password -isDeleted -resetPassword"
