@@ -18,7 +18,10 @@ const { Admin } = require("../models/admin");
 const { Parents } = require("../models/parentGuardian");
 const doesFullNameMatch = require("../utils/fullNameCheck");
 const findStudentByEmailAndFullName = require("../utils/findStudentBymail");
-const { Payments } = require("../models/payment");
+const Course = require("../models/course");
+const { default: mongoose } = require("mongoose");
+const Payment = require("../models/payment");
+
 exports.getLoggedUser = async (req, res) => {
   const user = await User.findById(req.user._id).select(
     "-password -isDeleted -resetPassword"
@@ -43,7 +46,7 @@ exports.getCourses = async (req, res) => {
 
 exports.getPayments = async (req, res) => {
 
-  const payments = await Payments.find({ user: req.user._id })
+  const payments = await Payment.find({ user: req.user._id })
     .select("-paymentDetails");
 
   res.status(StatusCodes.OK).json({ payments });
