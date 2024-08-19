@@ -12,6 +12,7 @@ const paymentSchema = mongoose.Schema({
         required: true,
         ref: "CourseEnrollment",
     },
+    amount:{type: Number},
     fullName: { type: String, },
     phone: { type: String, },
     email: { type: String, },

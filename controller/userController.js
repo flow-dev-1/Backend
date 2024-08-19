@@ -32,7 +32,9 @@ exports.getLoggedUser = async (req, res) => {
 
 exports.getPayments = async (req, res) => {
 
-  const payments = await Payment.find({ user: req.user._id })
+  const payments = await Payment.find({ user: req.user._id }).select(
+    "-paymentDetails"
+  );
   res.status(StatusCodes.OK).json({ payments });
 };
 
@@ -381,14 +383,14 @@ exports.updateProfile = async (req, res) => {
 
 exports.courseEnrollment = async (req, res) => {
   const { fullName, email, phone } = req.body;
-  const { id } = req.params
+  const { id } = req.params;
 
   // Check if student is already enrolled in this course
   const isEnrolled = await CourseEnrollment.findOne({
     course: id,
     user: req.user._id,
-    status: "Confirmed"
-  })
+    status: "Confirmed",
+  });
 
   if (isEnrolled) {
     return res.status(StatusCodes.BAD_REQUEST).json({
@@ -397,7 +399,7 @@ exports.courseEnrollment = async (req, res) => {
     });
   }
 
-  const course = await Course.findById(id)
+  const course = await Course.findById(id);
 
   const enrollment = new CourseEnrollment({
     _id: new mongoose.Types.ObjectId(),
@@ -419,18 +421,21 @@ exports.courseEnrollment = async (req, res) => {
       message: "Operation Failed",
     });
 
+  const amount = Number(course.cost); 
+
   // Generate payment Ticket
   const payment = new Payment({
     user: req.user._id,
     checkModel: "User",
     courseEnrollment: enrollment._id,
     fullName,
+    amount,
     phone,
     email,
-    reference: data?.reference
-  })
+    reference: data?.reference,
+  });
 
-  await Promise.all([payment.save(), enrollment.save()])
+  await Promise.all([payment.save(), enrollment.save()]);
 
   return res.status(StatusCodes.CREATED).json({
     status: "success",
