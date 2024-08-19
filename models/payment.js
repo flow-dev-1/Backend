@@ -31,6 +31,8 @@ const paymentSchema = mongoose.Schema({
     timestamps: true,
 });
 
-module.exports = mongoose.model('Payment', paymentSchema);
+const payment = mongoose.model('s', paymentSchema);
+
+exports.Payments = payment
 
 
