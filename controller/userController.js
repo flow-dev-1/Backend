@@ -28,20 +28,7 @@ exports.getLoggedUser = async (req, res) => {
   res.status(StatusCodes.OK).json({ user });
 };
 
-exports.getCourses = async (req, res) => {
-  let { type } = req.query;
 
-  let courses;
-
-  if (type === "Enrolled") {
-
-    courses = await CourseEnrollment.find({ user: req.user._id, status: "Confirmed" })
-      .populate("course")
-  } else {
-    courses = await Courses.find({ status: "published" });
-  }
-  res.status(StatusCodes.OK).json({ courses });
-};
 
 exports.getPayments = async (req, res) => {
 
@@ -490,12 +477,12 @@ exports.getCourses = async (req, res) => {
   let { type } = req.query;
 
   let courses;
-
   if (type === "Enrolled") {
-    courses = await SchoolCourses.find({
-      school: req.params.id,
-      status: "Active",
+    courses = await CourseEnrollment.find({
+      user: req.user._id,
+      status: "Confirmed",
     }).populate("course");
+    console.log(req.user._id);
   } else {
     courses = await Courses.find({ status: "published" });
   }
