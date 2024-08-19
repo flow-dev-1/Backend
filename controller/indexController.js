@@ -12,83 +12,91 @@ const { Schools } = require("../models/school");
 
 // Login Route
 exports.login = async (req, res) => {
-  const { usernameOrEmail, password } = req.body;
+  try {
+    const { usernameOrEmail, password } = req.body;
 
-  // Helper function to find a user in the specified model
-  const findUser = async (Model, query) => {
-    return await Model.findOne(query).select(
-      "-isVerified -isDeleted -resetPassword"
-    );
-  };
+    // Helper function to find a user in the specified model
+    const findUser = async (Model, query) => {
+      return await Model.findOne(query).select(
+        "-isVerified -isDeleted -resetPassword"
+      );
+    };
 
-  // Regular expression to check if the input is an email
-  const isEmail = (input) => /\S+@\S+\.\S+/.test(input);
+    // Regular expression to check if the input is an email
+    const isEmail = (input) => /\S+@\S+\.\S+/.test(input);
 
-  let account;
-  let accountType = "";
+    let account;
+    let accountType = "";
 
-  if (isEmail(usernameOrEmail)) {
-    console.log("emails")
-    // Search for a School by email
-    const school = await findUser(Schools, {
-      email: usernameOrEmail,
-      isVerified: true,
-    });
-    if (school) {
-      account = school;
-      accountType = "School";
-    } else {
-      // Search for an Educator by email if no School was found
-      const educator = await findUser(Educator, {
+    if (isEmail(usernameOrEmail)) {
+      console.log("Checking emails");
+
+      // Search for a School by email
+      const school = await findUser(Schools, {
         email: usernameOrEmail,
         isVerified: true,
       });
+      if (school) {
+        account = school;
+        accountType = "School";
+      } else {
+        // Search for an Educator by email if no School was found
+        const educator = await findUser(Educator, {
+          email: usernameOrEmail,
+          isVerified: true,
+        });
 
-      if (educator) {
-        account = educator;
-        accountType = "Educator";
+        if (educator) {
+          account = educator;
+          accountType = "Educator";
+        }
+      }
+    } else {
+      // Search for an Individual user by userId if not email is entered.
+      const user = await findUser(User, {
+        userId: usernameOrEmail,
+        isVerified: true,
+      });
+      if (user) {
+        account = user;
+        accountType = "Individual";
       }
     }
-  } else {
-    // Search for an Individual user by userId if not email is entered.
-    const user = await findUser(User, {
-      userId: usernameOrEmail,
-      isVerified: true,
-    });
 
-    if (user) {
-      account = user;
-      accountType = "Individual";
+    // If no account is found, return an error response
+    if (!account) {
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ message: "Invalid credentials." });
     }
+
+    // Verify the password
+    const validPassword = await bcrypt.compare(password, account.password);
+    if (!validPassword) {
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ message: "Invalid credentials." });
+    }
+
+    // Generate the auth token
+    const token = await account.generateAuthToken();
+    const { password: _, ...accountData } = account.toObject();
+
+    // Return the success response
+    return res.status(StatusCodes.OK).json({
+      accountType,
+      message: `${accountType} Login successful!`,
+      token,
+      user: accountData,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      message: "An error occurred during login.",
+    });
   }
-
-  // If no account is found, return an error response
-  if (!account) {
-    return res
-      .status(StatusCodes.BAD_REQUEST)
-      .json({ message: "Invalid credentials." });
-  }
-
-  // Verify the password
-  const validPassword = await bcrypt.compare(password, account.password);
-  if (!validPassword) {
-    return res
-      .status(StatusCodes.BAD_REQUEST)
-      .json({ message: "Invalid credentials." });
-  }
-
-  // Generate the auth token
-  const token = await account.generateAuthToken();
-  const { password: _, ...accountData } = account.toObject();
-
-  // Return the success response
-  return res.status(StatusCodes.OK).json({
-    accountType,
-    message: `${accountType} Login successful!`,
-    token,
-    user: accountData,
-  });
 };
+
 
 // Forgot Password Route
 exports.forgotPassword = async (req, res) => {

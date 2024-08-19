@@ -248,6 +248,7 @@ function validateUserUpdate(user) {
       .optional(),
     email: Joi.string().min(5).max(255).email().optional(),
     gender: Joi.string().valid("male", "female").optional(),
+    DOB: Joi.date().optional(),
     country: Joi.string().min(2).max(255).optional(),
     state: Joi.string().min(2).max(255).optional(),
     lga: Joi.string().min(2).max(255).optional(),
