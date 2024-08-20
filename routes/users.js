@@ -16,6 +16,8 @@ router.get('/parent', auth, userController.getParentWithNewCourseInvite);
 
 router.get('/courses', auth, userController.getCourses);
 
+router.get('/payments', auth, userController.getPayments);
+
 router.post('/register', validate(validateUser), userController.registerUser);
 
 router.post('/invited-user', auth, validate(validateInvitedUser), userController.registerInvitedUser);
@@ -25,5 +27,7 @@ router.post('/invited-school-admin', auth, validate(validateInvitedUser), userCo
 router.patch('/profile', auth, validate(validateUserUpdate), userController.updateProfile);
 
 router.post('/courses/:id/enroll', auth, userController.courseEnrollment);
+
+
 
 module.exports = router; 
