@@ -108,8 +108,6 @@ exports.registerUser = async (req, res) => {
         firstStudentToken = existingStudent.generateAuthToken();
       }
     } else {
-      console.log("Processing student:", studentItem.fullName);
-      console.log("Guardian email:", email);
       // Register new student
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(password, salt);
@@ -182,9 +180,9 @@ exports.registerInvitedUser = async (req, res) => {
     req.body;
 
   if (!students || students.length === 0) {
-    return res.status(StatusCodes.BAD_REQUEST).json({
-      message: "No students provided in the request.",
-    });
+    return res
+      .status(StatusCodes.BAD_REQUEST)
+      .json({ message: "No students provided in the request." });
   }
 
   let checkParent = await Parents.findOne({ email }).populate(
@@ -193,16 +191,18 @@ exports.registerInvitedUser = async (req, res) => {
   );
 
   if (!checkParent) {
+    // Create new parent if not found
     checkParent = new Parents({
-      fullName: guardianFullName,
+      guardianFullName,
       email,
       phone,
       country,
       state,
+      lga,
       students: [],
     });
   } else {
-    // Update parent details
+    // Update existing parent details
     checkParent.fullName = guardianFullName;
     checkParent.phone = phone;
     checkParent.country = country;
@@ -222,9 +222,9 @@ exports.registerInvitedUser = async (req, res) => {
 
     if (existingStudent) {
       if (existingStudent.isVerified) {
-        continue; // Skip the student if already registered and verified
+        continue; // Skip if the student is already registered and verified
       } else {
-        // Handle case where student exists but is not verified
+        // Handle unverified existing student
         const code = otpGenerator.generate(6, {
           lowerCaseAlphabets: false,
           upperCaseAlphabets: false,
@@ -254,7 +254,7 @@ exports.registerInvitedUser = async (req, res) => {
 
       const foundStudent = await findStudentByEmailAndFullName(
         email,
-        studentItem.fullName,
+        fullName,
         checkParent.students
       );
 
@@ -279,7 +279,7 @@ exports.registerInvitedUser = async (req, res) => {
         country,
         state,
         lga,
-        userType: "School",
+        userType: "Individual", 
       });
 
       await newStudent.save();
@@ -316,6 +316,7 @@ exports.registerInvitedUser = async (req, res) => {
     token: firstStudentToken,
   });
 };
+
 
 
 exports.registerSchoolInvitedAdmin = async (req, res) => {
