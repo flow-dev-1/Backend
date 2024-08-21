@@ -13,6 +13,14 @@ router.get('/', async (req, res) => {
 
 router.get('/me', auth, schoolAccess, schoolsController.getCurrentSchool);
 
+router.get(
+  "/enrolled",
+  auth,
+  schoolAccess,
+  schoolsController.schoolEnrolledStudents
+);
+
+
 router.get('/:id', auth, schoolAccess, schoolsController.getSingleSchool);
 
 router.get('/:id/team', auth, schoolAccess, schoolsController.getSchoolAdminTeam);
