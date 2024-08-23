@@ -23,7 +23,7 @@ router.get("/me", auth, schoolAccess, schoolsController.getCurrentSchool);
 
 router.get("/teachers", auth, schoolAccess, schoolsController.schoolTeachers);
 
-router.get("/courses", auth, schoolAccess, schoolsController.schoolCoursesGraph);
+router.get("/courses-active", auth, schoolAccess, schoolsController.schoolCoursesActiveGraph);
 
 
 router.get(

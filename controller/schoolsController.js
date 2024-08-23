@@ -1255,15 +1255,29 @@ exports.schoolTeachers = async (req, res) => {
   });
 };
 
-exports.schoolCoursesGraph = async (req, res) => {
+exports.schoolCoursesActiveGraph = async (req, res) => {
   const school = req.user._id;
 
   const allCourses = await SchoolCourses.find({ school });
+
+  const { totalActive, totalNonActive } = allCourses.reduce(
+    (totals, course) => {
+      if (course.status === "Active") {
+        totals.totalActive += 1;
+      } else {
+        totals.totalNonActive += 1;
+      }
+      return totals;
+    },
+    { totalActive: 0, totalNonActive: 0 }
+  );
 
   // Send the response
   res.status(StatusCodes.OK).json({
     status: "success",
     allCourses,
+    totalActive,
+    totalNonActive,
   });
 };
 
