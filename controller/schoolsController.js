@@ -1258,7 +1258,10 @@ exports.schoolTeachers = async (req, res) => {
 exports.schoolCoursesActiveGraph = async (req, res) => {
   const school = req.user._id;
 
-  const allCourses = await SchoolCourses.find({ school });
+  const allCourses = await SchoolCourses.find({ school }).populate({
+    path: "course",
+    select: "title",
+  });
 
   const { totalActive, totalNonActive } = allCourses.reduce(
     (totals, course) => {
@@ -1272,12 +1275,27 @@ exports.schoolCoursesActiveGraph = async (req, res) => {
     { totalActive: 0, totalNonActive: 0 }
   );
 
+  const dataEnrollment = allCourses.reduce((acc, course) => {
+    const courseTitle = course.course.title;
+    const enrollmentCount = course.studentEnrollments.length;
+
+    // Check if the course title is already in the array
+    const existingCourse = acc.find((item) => item.name === courseTitle);
+    if (existingCourse) {
+      existingCourse.value += enrollmentCount; // Aggregate count if already exists
+    } else {
+      acc.push({ name: courseTitle, value: enrollmentCount });
+    }
+    return acc;
+  }, []);
+
   // Send the response
   res.status(StatusCodes.OK).json({
     status: "success",
     allCourses,
     totalActive,
     totalNonActive,
+    dataEnrollment, // Include the dataEnrollment array in the response
   });
 };
 
