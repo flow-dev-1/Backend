@@ -15,13 +15,14 @@ const otpGenerator = require("otp-generator");
 const cloudinary = require("../utils/cloudinary");
 const { User } = require("../models/user");
 const { Schools } = require("../models/school");
-
+const Payment = require("../models/payment");
 const Courses = require("../models/course");
 const SchoolCourses = require("../models/schoolCourseEnrollment");
 const StudentEnrollments = require("../models/courseEnrollment");
 const { Parents } = require("../models/parentGuardian");
 const { generateUserId } = require("./indexController");
 const generateId = require("../utils/generateId");
+const { Educator } = require("../models/educators");
 const doesFullNameMatch = require("../utils/fullNameCheck");
 const findStudentByEmailAndFullName = require("../utils/findStudentBymail");
 exports.getCurrentSchool = async (req, res) => {
@@ -1175,6 +1176,8 @@ exports.deleteStudentFromCourseEnrollment = async (req, res) => {
 exports.schoolEnrolledStudents = async (req, res) => {
   const school = req.user._id;
 
+  const allTeachers = await Educator.find({ school });
+  const teachersCount = allTeachers.length
   const enrolledCourses = await SchoolCourses.find({ school }).populate({
     path: "studentEnrollments",
     populate: {
@@ -1186,6 +1189,8 @@ exports.schoolEnrolledStudents = async (req, res) => {
   let totalEnrolledStudents = 0;
   let totalMales = 0;
   let totalFemales = 0;
+  let totalTeachers = teachersCount;
+
 
   enrolledCourses.forEach((course) => {
     if (course.studentEnrollments && course.studentEnrollments.length > 0) {
@@ -1208,6 +1213,57 @@ exports.schoolEnrolledStudents = async (req, res) => {
     totalEnrolledStudents,
     totalMales,
     totalFemales,
+    totalTeachers,
+  });
+};
+
+exports.schoolCoursesEnrollemnt = async (req, res) => {
+  const school = req.user._id;
+
+  const schoolCourses = await StudentEnrollments.find({ school }).populate({
+    path: "course",
+    select: "title courseEnrollment",
+  });
+
+  res.status(StatusCodes.OK).json({
+    status: "success",
+    schoolCourses,
+  });
+};
+
+
+exports.getPayments = async (req, res) => {
+  try {
+    const payments = await Payment.find({ user: req.user._id }).select(
+      "-paymentDetails"
+    );
+    res.status(StatusCodes.OK).json({ payments });
+  } catch (error) {
+    res.status(StatusCodes.BAD_REQUEST).json({ error: error.message });
+  }
+};
+
+exports.schoolTeachers = async (req, res) => {
+  const school = req.user._id;
+
+  const allTeachers = await Educator.find({ school })
+
+  // Send the response
+  res.status(StatusCodes.OK).json({
+    status: "success",
+    allTeachers,
+  });
+};
+
+exports.schoolCoursesGraph = async (req, res) => {
+  const school = req.user._id;
+
+  const allCourses = await SchoolCourses.find({ school });
+
+  // Send the response
+  res.status(StatusCodes.OK).json({
+    status: "success",
+    allCourses,
   });
 };
 

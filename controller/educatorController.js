@@ -10,6 +10,7 @@ const CourseEnrollment = require("../models/courseEnrollment");
 const Courses = require("../models/course");
 const StudentEnrollments = require("../models/courseEnrollment");
 const { Educator } = require("../models/educators");
+const Payment = require("../models/payment");
 
 exports.getLoggedEducator = async (req, res) => {
   const educator = await Educator.findById(req.user._id).select(
@@ -17,7 +18,6 @@ exports.getLoggedEducator = async (req, res) => {
   );
   res.status(StatusCodes.OK).json({ educator });
 };
-
 
 exports.registerEducator = async (req, res) => {
   const { type } = req.query;
@@ -117,7 +117,6 @@ exports.registerEducator = async (req, res) => {
   });
 };
 
-
 exports.registerInvitedEducator = async (req, res) => {
   const {
     fullName,
@@ -203,14 +202,16 @@ exports.registerInvitedEducator = async (req, res) => {
     .json({ message: "Account created successfully!", token });
 };
 
-
-
 exports.updateProfile = async (req, res) => {
   // Find and update the user's profile
-  const updateProfile = await Educator.findByIdAndUpdate(req.user._id, req.body, {
-    new: true,
-    select: "-password -isVerified -isDeleted -resetPassword",
-  });
+  const updateProfile = await Educator.findByIdAndUpdate(
+    req.user._id,
+    req.body,
+    {
+      new: true,
+      select: "-password -isVerified -isDeleted -resetPassword",
+    }
+  );
   // This user is not on the app
   if (!updateProfile) {
     return res.status(StatusCodes.BAD_REQUEST).json({
@@ -240,4 +241,11 @@ exports.getCourses = async (req, res) => {
     courses = await Courses.find({ status: "published" });
   }
   res.status(StatusCodes.OK).json({ courses });
+};
+
+exports.getPayments = async (req, res) => {
+  const payments = await Payment.find({ user: req.user._id }).select(
+    "-paymentDetails"
+  );
+  res.status(StatusCodes.OK).json({ payments });
 };
