@@ -31,5 +31,8 @@ router.patch(
   educatorController.updateProfile
 );
 
+router.get("/payments", auth, educatorController.getPayments);
+
+
 
 module.exports = router;
