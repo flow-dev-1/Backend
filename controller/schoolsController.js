@@ -1332,35 +1332,40 @@ exports.allGraphData = async (req, res) => {
   const dataEnrollment = [];
 
   graphData.forEach((entry) => {
+    // Count gender
     if (entry.user.gender === "male") {
       totalMales++;
     } else if (entry.user.gender === "female") {
       totalFemales++;
     }
 
+    // Count completion status
     if (entry.progress === 100) {
       completed++;
     } else {
       remaining++;
     }
 
+    // Count course enrollment status
     if (entry.schoolCourseEnrollment.status === "Active") {
       active++;
     } else {
       notActive++;
     }
 
+    // Accumulate total cost
     totalAmount += entry.course.cost;
 
-    const courseTitle = entry.course.title;
+    // Count students per course
+    const courseTitle = entry.course.title; // Use title for course
     const existingCourse = dataEnrollment.find(
-      (item) => item.title === courseTitle
+      (item) => item.name === courseTitle
     );
 
     if (existingCourse) {
-      existingCourse.value += 1;
+      existingCourse.value += 1; // Increment the student count
     } else {
-      dataEnrollment.push({ title: courseTitle, value: 1 });
+      dataEnrollment.push({ name: courseTitle, value: 1 }); // Add new course
     }
   });
 
@@ -1376,5 +1381,6 @@ exports.allGraphData = async (req, res) => {
     dataEnrollment, 
   });
 };
+
 
 
