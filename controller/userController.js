@@ -176,7 +176,7 @@ exports.registerUser = async (req, res) => {
 };
 
 exports.registerInvitedUser = async (req, res) => {
-  const { guardianFullName, phone, email, country, state, lga, students } =
+  const { guardianFullName, phone, email, country, state, lga, students, userId } =
     req.body;
 
   if (!students || students.length === 0) {
@@ -185,7 +185,7 @@ exports.registerInvitedUser = async (req, res) => {
       .json({ message: "No students provided in the request." });
   }
 
-  let newParent = await Parents.findOne({ email }).populate(
+  let newParent = await Parents.findOne({ email: req.body.email }).populate(
     "students",
     "-password"
   );
@@ -193,27 +193,26 @@ exports.registerInvitedUser = async (req, res) => {
   if (!newParent) {
     // Create new parent if not found
     newParent = new Parents({
-      guardianFullName,
+      fullName: guardianFullName,
       email,
       phone,
       country,
       state,
-      lga,
       students: [],
     });
   } else {
-    // Update existing parent details
-    newParent.fullName = guardianFullName;
-    newParent.phone = phone;
-    newParent.country = country;
-    newParent.state = state;
-    newParent.lga = lga;
+    // Update existing parent details dynamically
+    for (const key in req.body) {
+      if (req.body.hasOwnProperty(key) && key !== "students") {
+        newParent[key] = req.body[key];
+      }
+    }
   }
 
   let firstStudentToken = null;
 
   for (const studentItem of students) {
-    const { fullName, grade, gender, DOB, password } = studentItem;
+    const { userId, fullName, grade, gender, DOB, password } = studentItem;
 
     // Check if the student is already registered under this parent
     const existingStudent = newParent.students.find(
@@ -236,34 +235,35 @@ exports.registerInvitedUser = async (req, res) => {
         const otp = new OTP({
           user: existingStudent._id,
           checkModel: "User",
-          email,
+          email: req.body.email,
           code,
           type: "RegisterUser",
           expiresIn: Date.now() + 3600000, // 1 hour expiration
         });
 
         await otp.save();
-        await Otp_VerifyAccount(email, guardianFullName, code);
+        await Otp_VerifyAccount(
+          email,
+          guardianFullName,
+          code
+        );
 
         if (!firstStudentToken) {
           firstStudentToken = existingStudent.generateAuthToken();
         }
       }
     } else {
-      // Register new student or update an existing student
-      const foundStudent = await findStudentByEmailAndFullName(
-        email,
-        fullName,
-        newParent.students
-      );
+      // Attempt to find the student by userId
+      const foundStudent = await User.findOne({ userId });
 
       if (foundStudent) {
-        // Update existing student's details
-        foundStudent.fullName = fullName;
-        foundStudent.guardianFullName = guardianFullName;
-        foundStudent.grade = grade;
-        foundStudent.gender = gender;
-        foundStudent.DOB = DOB;
+        // Update existing student's details dynamically
+        for (const key in studentItem) {
+          if (studentItem.hasOwnProperty(key)) {
+            foundStudent[key] = studentItem[key];
+          }
+        }
+
         if (password) {
           const salt = await bcrypt.genSalt(10);
           foundStudent.password = await bcrypt.hash(password, salt);
@@ -279,49 +279,8 @@ exports.registerInvitedUser = async (req, res) => {
           firstStudentToken = foundStudent.generateAuthToken();
         }
       } else {
-        // Create a new student if not found
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
-
-        const newStudent = new User({
-          fullName,
-          grade,
-          gender,
-          DOB,
-          password: hashedPassword,
-          guardianFullName,
-          phone,
-          email,
-          country,
-          state,
-          lga,
-          userType: "Individual",
-        });
-
-        await newStudent.save();
-        newParent.students.push(newStudent._id);
-
-        if (!firstStudentToken) {
-          firstStudentToken = newStudent.generateAuthToken();
-        }
-
-        const code = otpGenerator.generate(6, {
-          lowerCaseAlphabets: false,
-          upperCaseAlphabets: false,
-          specialChars: false,
-        });
-
-        const otp = new OTP({
-          user: newStudent._id,
-          checkModel: "User",
-          email,
-          code,
-          type: "RegisterUser",
-          expiresIn: Date.now() + 3600000, // 1 hour expiration
-        });
-
-        await otp.save();
-        await Otp_VerifyAccount(email, guardianFullName, code);
+        // Skip creating a new student
+        continue;
       }
     }
   }
@@ -333,6 +292,8 @@ exports.registerInvitedUser = async (req, res) => {
     token: firstStudentToken,
   });
 };
+
+
 
 
 
