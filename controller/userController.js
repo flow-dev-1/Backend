@@ -205,14 +205,12 @@ exports.registerInvitedUser = async (req, res) => {
       state,
       students: [],
     });
-  } else {
-    // Update existing parent details dynamically
-    for (const key in req.body) {
-      if (req.body.hasOwnProperty(key) && key !== "students") {
-        newParent[key] = req.body[key];
-      }
-    }
   }
+  newParent.fullName = guardianFullName;
+  newParent.email = email;
+  newParent.phone = phone;
+  newParent.country = country;
+  newParent.state = state;
 
   let firstStudentToken = null;
 
@@ -238,7 +236,7 @@ exports.registerInvitedUser = async (req, res) => {
         const otp = new OTP({
           user: existingStudent._id,
           checkModel: "User",
-          email: req.body.email,
+          email,
           code,
           type: "RegisterUser",
           expiresIn: Date.now() + 3600000, // 1 hour expiration
@@ -247,16 +245,14 @@ exports.registerInvitedUser = async (req, res) => {
         await otp.save();
         await Otp_VerifyAccount(email, guardianFullName, code);
 
-        if (!firstStudentToken) {
+
           firstStudentToken = existingStudent.generateAuthToken();
-        }
       }
     } else {
       // Attempt to find the student by userId
       const foundStudent = await User.findOne({ userId });
 
       if (foundStudent) {
-        // Update existing student's details dynamically
         for (const key in studentItem) {
           if (studentItem.hasOwnProperty(key)) {
             foundStudent[key] = studentItem[key];
@@ -285,14 +281,12 @@ exports.registerInvitedUser = async (req, res) => {
 
         await otp.save();
         await Otp_VerifyAccount(email, guardianFullName, code);
-        // Add to parent's students array if not already present
         if (!newParent.students.includes(foundStudent._id)) {
           newParent.students.push(foundStudent._id);
         }
 
-        if (!firstStudentToken) {
+
           firstStudentToken = foundStudent.generateAuthToken();
-        }
       } else {
         // Skip creating a new student
         continue;
