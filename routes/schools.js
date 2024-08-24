@@ -25,6 +25,14 @@ router.get("/teachers", auth, schoolAccess, schoolsController.schoolTeachers);
 
 router.get("/courses-active", auth, schoolAccess, schoolsController.schoolCoursesActiveGraph);
 
+router.get(
+  "/graph",
+  auth,
+  schoolAccess,
+  schoolsController.allGraphData
+);
+
+
 
 router.get(
   "/enrolled-courses",
