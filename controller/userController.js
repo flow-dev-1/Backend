@@ -217,7 +217,9 @@ exports.registerInvitedUser = async (req, res) => {
 
     // Check if the student is already registered under this parent
     const existingStudent = newParent.students.find(
-      (s) => s.fullName === fullName && s.DOB === DOB
+      (s) =>
+        s.fullName === fullName &&
+        s.DOB.toISOString() === new Date(DOB).toISOString()
     );
 
     if (existingStudent) {
@@ -248,10 +250,7 @@ exports.registerInvitedUser = async (req, res) => {
         }
       }
     } else {
-      // Register new student
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(password, salt);
-
+      // Register new student or update an existing student
       const foundStudent = await findStudentByEmailAndFullName(
         email,
         fullName,
@@ -259,63 +258,82 @@ exports.registerInvitedUser = async (req, res) => {
       );
 
       if (foundStudent) {
-        return res.status(StatusCodes.BAD_REQUEST).json({
-          success: "failed",
-          message: "Student already exists",
+        // Update existing student's details
+        foundStudent.fullName = fullName;
+        foundStudent.guardianFullName = guardianFullName;
+        foundStudent.grade = grade;
+        foundStudent.gender = gender;
+        foundStudent.DOB = DOB;
+        if (password) {
+          const salt = await bcrypt.genSalt(10);
+          foundStudent.password = await bcrypt.hash(password, salt);
+        }
+        await foundStudent.save();
+
+        // Add to parent's students array if not already present
+        if (!newParent.students.includes(foundStudent._id)) {
+          newParent.students.push(foundStudent._id);
+        }
+
+        if (!firstStudentToken) {
+          firstStudentToken = foundStudent.generateAuthToken();
+        }
+      } else {
+        // Create a new student if not found
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
+        const newStudent = new User({
+          fullName,
+          grade,
+          gender,
+          DOB,
+          password: hashedPassword,
+          guardianFullName,
+          phone,
+          email,
+          country,
+          state,
+          lga,
+          userType: "Individual",
         });
+
+        await newStudent.save();
+        newParent.students.push(newStudent._id);
+
+        if (!firstStudentToken) {
+          firstStudentToken = newStudent.generateAuthToken();
+        }
+
+        const code = otpGenerator.generate(6, {
+          lowerCaseAlphabets: false,
+          upperCaseAlphabets: false,
+          specialChars: false,
+        });
+
+        const otp = new OTP({
+          user: newStudent._id,
+          checkModel: "User",
+          email,
+          code,
+          type: "RegisterUser",
+          expiresIn: Date.now() + 3600000, // 1 hour expiration
+        });
+
+        await otp.save();
+        await Otp_VerifyAccount(email, guardianFullName, code);
       }
-
-      const newStudent = new User({
-        _id: new mongoose.Types.ObjectId(),
-        userId,
-        fullName,
-        grade,
-        gender,
-        DOB,
-        password: hashedPassword,
-        guardianFullName,
-        phone,
-        email,
-        country,
-        state,
-        lga,
-        userType: "Individual", 
-      });
-
-      await newStudent.save();
-      newParent.students.push(newStudent._id);
-
-      if (!firstStudentToken) {
-        firstStudentToken = newStudent.generateAuthToken();
-      }
-
-      const code = otpGenerator.generate(6, {
-        lowerCaseAlphabets: false,
-        upperCaseAlphabets: false,
-        specialChars: false,
-      });
-
-      const otp = new OTP({
-        user: newStudent._id,
-        checkModel: "User",
-        email,
-        code,
-        type: "RegisterUser",
-        expiresIn: Date.now() + 3600000, // 1 hour expiration
-      });
-
-      await otp.save();
-      await Otp_VerifyAccount(email, guardianFullName, code);
     }
   }
 
   await newParent.save();
 
   return res.status(StatusCodes.OK).json({
-    message: "Accounts created successfully!",
+    message: "Accounts updated successfully!",
     token: firstStudentToken,
   });
 };
+
 
 
 
