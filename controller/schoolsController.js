@@ -1373,12 +1373,13 @@ exports.allGraphData = async (req, res) => {
     status: "success",
     totalMales,
     totalFemales,
+    totalStudents: totalMales + totalFemales,
     completed,
     remaining,
     active,
     notActive,
     totalAmount,
-    dataEnrollment, 
+    dataEnrollment,
   });
 };
 
