@@ -185,14 +185,14 @@ exports.registerInvitedUser = async (req, res) => {
       .json({ message: "No students provided in the request." });
   }
 
-  let checkParent = await Parents.findOne({ email }).populate(
+  let newParent = await Parents.findOne({ email }).populate(
     "students",
     "-password"
   );
 
-  if (!checkParent) {
+  if (!newParent) {
     // Create new parent if not found
-    checkParent = new Parents({
+    newParent = new Parents({
       guardianFullName,
       email,
       phone,
@@ -203,20 +203,20 @@ exports.registerInvitedUser = async (req, res) => {
     });
   } else {
     // Update existing parent details
-    checkParent.fullName = guardianFullName;
-    checkParent.phone = phone;
-    checkParent.country = country;
-    checkParent.state = state;
-    checkParent.lga = lga;
+    newParent.fullName = guardianFullName;
+    newParent.phone = phone;
+    newParent.country = country;
+    newParent.state = state;
+    newParent.lga = lga;
   }
 
   let firstStudentToken = null;
 
   for (const studentItem of students) {
-    const { userId, fullName, grade, gender, DOB, password } = studentItem;
+    const { fullName, grade, gender, DOB, password } = studentItem;
 
     // Check if the student is already registered under this parent
-    const existingStudent = checkParent.students.find(
+    const existingStudent = newParent.students.find(
       (s) => s.fullName === fullName && s.DOB === DOB
     );
 
@@ -255,7 +255,7 @@ exports.registerInvitedUser = async (req, res) => {
       const foundStudent = await findStudentByEmailAndFullName(
         email,
         fullName,
-        checkParent.students
+        newParent.students
       );
 
       if (foundStudent) {
@@ -283,7 +283,7 @@ exports.registerInvitedUser = async (req, res) => {
       });
 
       await newStudent.save();
-      checkParent.students.push(newStudent._id);
+      newParent.students.push(newStudent._id);
 
       if (!firstStudentToken) {
         firstStudentToken = newStudent.generateAuthToken();
@@ -309,7 +309,7 @@ exports.registerInvitedUser = async (req, res) => {
     }
   }
 
-  await checkParent.save();
+  await newParent.save();
 
   return res.status(StatusCodes.OK).json({
     message: "Accounts created successfully!",
