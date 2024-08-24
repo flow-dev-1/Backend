@@ -218,7 +218,7 @@ exports.registerInvitedUser = async (req, res) => {
     const existingStudent = newParent.students.find(
       (s) =>
         s.fullName === fullName &&
-        s.DOB.toISOString() === new Date(DOB).toISOString()
+        s.DOB === DOB
     );
 
     if (existingStudent) {
