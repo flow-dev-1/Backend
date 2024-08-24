@@ -28,10 +28,7 @@ exports.getLoggedUser = async (req, res) => {
   res.status(StatusCodes.OK).json({ user });
 };
 
-
-
 exports.getPayments = async (req, res) => {
-
   const payments = await Payment.find({ user: req.user._id }).select(
     "-paymentDetails"
   );
@@ -176,8 +173,16 @@ exports.registerUser = async (req, res) => {
 };
 
 exports.registerInvitedUser = async (req, res) => {
-  const { guardianFullName, phone, email, country, state, lga, students, userId } =
-    req.body;
+  const {
+    guardianFullName,
+    phone,
+    email,
+    country,
+    state,
+    lga,
+    students,
+    userId,
+  } = req.body;
 
   if (!students || students.length === 0) {
     return res
@@ -216,9 +221,7 @@ exports.registerInvitedUser = async (req, res) => {
 
     // Check if the student is already registered under this parent
     const existingStudent = newParent.students.find(
-      (s) =>
-        s.fullName === fullName &&
-        s.DOB === DOB
+      (s) => s.fullName === fullName && s.DOB === DOB
     );
 
     if (existingStudent) {
@@ -242,11 +245,7 @@ exports.registerInvitedUser = async (req, res) => {
         });
 
         await otp.save();
-        await Otp_VerifyAccount(
-          email,
-          guardianFullName,
-          code
-        );
+        await Otp_VerifyAccount(email, guardianFullName, code);
 
         if (!firstStudentToken) {
           firstStudentToken = existingStudent.generateAuthToken();
@@ -269,7 +268,23 @@ exports.registerInvitedUser = async (req, res) => {
           foundStudent.password = await bcrypt.hash(password, salt);
         }
         await foundStudent.save();
+        const code = otpGenerator.generate(6, {
+          lowerCaseAlphabets: false,
+          upperCaseAlphabets: false,
+          specialChars: false,
+        });
 
+        const otp = new OTP({
+          user: foundStudent._id,
+          checkModel: "User",
+          email: req.body.email,
+          code,
+          type: "RegisterUser",
+          expiresIn: Date.now() + 3600000, // 1 hour expiration
+        });
+
+        await otp.save();
+        await Otp_VerifyAccount(email, guardianFullName, code);
         // Add to parent's students array if not already present
         if (!newParent.students.includes(foundStudent._id)) {
           newParent.students.push(foundStudent._id);
@@ -292,11 +307,6 @@ exports.registerInvitedUser = async (req, res) => {
     token: firstStudentToken,
   });
 };
-
-
-
-
-
 
 exports.registerSchoolInvitedAdmin = async (req, res) => {
   const {
@@ -427,7 +437,7 @@ exports.courseEnrollment = async (req, res) => {
       message: "Operation Failed",
     });
 
-  const amount = Number(course.cost); 
+  const amount = Number(course.cost);
 
   // Generate payment Ticket
   const payment = new Payment({
