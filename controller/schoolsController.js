@@ -440,7 +440,7 @@ exports.updateProfile = async (req, res) => {
 };
 
 exports.inviteSchoolAdmin = async (req, res) => {
-  const { first_name, last_name, email, position } = req.body;
+  const {  fullName, email, position } = req.body;
 
   const school = await Schools.findById(req.user._id);
 
@@ -473,7 +473,6 @@ exports.inviteSchoolAdmin = async (req, res) => {
     await school_admin_invite(
       "old",
       fullName,
-
       req.user._id,
       req.user.schoolName,
       email,
@@ -1177,7 +1176,7 @@ exports.schoolEnrolledStudents = async (req, res) => {
   const school = req.user._id;
 
   const allTeachers = await Educator.find({ school });
-  const teachersCount = allTeachers.length
+  const teachersCount = allTeachers.length;
   const enrolledCourses = await SchoolCourses.find({ school }).populate({
     path: "studentEnrollments",
     populate: {
@@ -1190,7 +1189,6 @@ exports.schoolEnrolledStudents = async (req, res) => {
   let totalMales = 0;
   let totalFemales = 0;
   let totalTeachers = teachersCount;
-
 
   enrolledCourses.forEach((course) => {
     if (course.studentEnrollments && course.studentEnrollments.length > 0) {
@@ -1220,7 +1218,10 @@ exports.schoolEnrolledStudents = async (req, res) => {
 exports.schoolCoursesEnrollemnt = async (req, res) => {
   const school = req.user._id;
 
-  const schoolCourses = await StudentEnrollments.find({ school }).populate({
+  const schoolCourses = await StudentEnrollments.find({
+    school,
+    status: "Active",
+  }).populate({
     path: "course",
     select: "title courseEnrollment",
   });
@@ -1231,12 +1232,10 @@ exports.schoolCoursesEnrollemnt = async (req, res) => {
   });
 };
 
-
 exports.getPayments = async (req, res) => {
+  // const useerId = new MOn
   try {
-    const payments = await Payment.find({ user: req.user._id }).select(
-      "-paymentDetails"
-    );
+    const payments = await Payment.find({ user: req.user._id });
     res.status(StatusCodes.OK).json({ payments });
   } catch (error) {
     res.status(StatusCodes.BAD_REQUEST).json({ error: error.message });
@@ -1246,7 +1245,7 @@ exports.getPayments = async (req, res) => {
 exports.schoolTeachers = async (req, res) => {
   const school = req.user._id;
 
-  const allTeachers = await Educator.find({ school })
+  const allTeachers = await Educator.find({ school });
 
   // Send the response
   res.status(StatusCodes.OK).json({
@@ -1258,7 +1257,10 @@ exports.schoolTeachers = async (req, res) => {
 exports.schoolCoursesActiveGraph = async (req, res) => {
   const school = req.user._id;
 
-  const allCourses = await SchoolCourses.find({ school }).populate({
+  const allCourses = await SchoolCourses.find({
+    school,
+    status: "Active",
+  }).populate({
     path: "course",
     select: "title",
   });
@@ -1296,6 +1298,82 @@ exports.schoolCoursesActiveGraph = async (req, res) => {
     totalActive,
     totalNonActive,
     dataEnrollment, // Include the dataEnrollment array in the response
+  });
+};
+
+exports.allGraphData = async (req, res) => {
+  const school = req.user._id;
+
+  const graphData = await StudentEnrollments.find({
+    school,
+    status: "Confirmed",
+  }).populate([
+    {
+      path: "course",
+      select: "title status cost currency",
+    },
+    {
+      path: "schoolCourseEnrollment",
+      select: "status studentEnrollments",
+    },
+    {
+      path: "user",
+      select: "gender",
+    },
+  ]);
+
+  let totalMales = 0;
+  let totalFemales = 0;
+  let completed = 0;
+  let remaining = 0;
+  let active = 0;
+  let notActive = 0;
+  let totalAmount = 0;
+  const dataEnrollment = [];
+
+  graphData.forEach((entry) => {
+    if (entry.user.gender === "male") {
+      totalMales++;
+    } else if (entry.user.gender === "female") {
+      totalFemales++;
+    }
+
+    if (entry.progress === 100) {
+      completed++;
+    } else {
+      remaining++;
+    }
+
+    if (entry.schoolCourseEnrollment.status === "Active") {
+      active++;
+    } else {
+      notActive++;
+    }
+
+    totalAmount += entry.course.cost;
+
+    const courseTitle = entry.course.title;
+    const existingCourse = dataEnrollment.find(
+      (item) => item.title === courseTitle
+    );
+
+    if (existingCourse) {
+      existingCourse.value += 1;
+    } else {
+      dataEnrollment.push({ title: courseTitle, value: 1 });
+    }
+  });
+
+  res.status(StatusCodes.OK).json({
+    status: "success",
+    totalMales,
+    totalFemales,
+    completed,
+    remaining,
+    active,
+    notActive,
+    totalAmount,
+    dataEnrollment, 
   });
 };
 
