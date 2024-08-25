@@ -440,8 +440,9 @@ exports.updateProfile = async (req, res) => {
 };
 
 exports.inviteSchoolAdmin = async (req, res) => {
-  const {  fullName, email, position } = req.body;
+  const { fullName, email, position } = req.body;
 
+  // Fetch the school based on the logged-in user's ID
   const school = await Schools.findById(req.user._id);
 
   if (!school) {
@@ -450,26 +451,32 @@ exports.inviteSchoolAdmin = async (req, res) => {
       .json({ message: "School not found!" });
   }
 
+  // Check if the user already exists in the system
   let user = await Educator.findOne({ email });
+
   if (user) {
-    //  Send Invitation Link
-    // Check if user is already in the team
-    const existingTeamMember = school.team.some((teamMemberId) => {
-      return teamMemberId.toString() === user._id.toString();
-    });
+    // Check if the user is already part of the school's team
+    const existingTeamMember = school.team.some((teamMemberId) =>
+      teamMemberId.equals(user._id)
+    );
+
     if (existingTeamMember) {
       return res
-        .status(StatusCodes.UNPROCESSABLE_ENTITY)
+        .status(StatusCodes.BAD_REQUEST)
         .json({ message: "User is already in the team" });
     }
 
-    // Because user already may have admin details store new invite details seperately.
+    // Update user invite details for an existing user
     user.newInvite = {
       school: school._id,
       schoolAdminDate: Date.now(),
       schoolAdminPermission: position,
     };
+
+    // Generate an authentication token
     const token = await user.generateAuthToken();
+
+    // Send an invitation to the existing user
     await school_admin_invite(
       "old",
       fullName,
@@ -478,15 +485,18 @@ exports.inviteSchoolAdmin = async (req, res) => {
       email,
       token
     );
-    // Add the new user to the school's team
+
+    // Add the user to the school's team and save the changes
     school.team.push(user._id);
     await school.save();
     await user.save();
+
     return res
       .status(StatusCodes.OK)
       .json({ message: "Admin invite sent successfully!" });
   }
-  // Save Admin record
+
+  // Create a new educator record if the user does not exist
   user = new Educator({
     fullName,
     email,
@@ -499,10 +509,13 @@ exports.inviteSchoolAdmin = async (req, res) => {
       schoolAdminDate: Date.now(),
     },
   });
+
   await user.save();
+
+  // Generate an authentication token for the new user
   const token = await user.generateAuthToken();
 
-  // Send Invite
+  // Send an invitation to the new user
   await school_admin_invite(
     "new",
     fullName,
@@ -511,12 +524,16 @@ exports.inviteSchoolAdmin = async (req, res) => {
     email,
     token
   );
+
+  // Add the new user to the school's team and save the changes
   school.team.push(user._id);
   await school.save();
+
   res
     .status(StatusCodes.OK)
     .json({ message: "Admin invite sent successfully!" });
 };
+
 
 exports.addEmailNotificationadmin = async (req, res) => {
   const school = await Schools.findById(req.user._id);
