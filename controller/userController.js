@@ -190,7 +190,7 @@ exports.registerInvitedUser = async (req, res) => {
       .json({ message: "No students provided in the request." });
   }
 
-  let newParent = await Parents.findOne({ email: req.body.email }).populate(
+  let newParent = await Parents.findOne({ email }).populate(
     "students",
     "-password"
   );
@@ -206,6 +206,8 @@ exports.registerInvitedUser = async (req, res) => {
       students: [],
     });
   }
+
+  // Update parent details
   newParent.fullName = guardianFullName;
   newParent.email = email;
   newParent.phone = phone;
@@ -213,6 +215,7 @@ exports.registerInvitedUser = async (req, res) => {
   newParent.state = state;
 
   let firstStudentToken = null;
+  let emailSent = false;
 
   for (const studentItem of students) {
     const { userId, fullName, grade, gender, DOB, password } = studentItem;
@@ -243,16 +246,24 @@ exports.registerInvitedUser = async (req, res) => {
         });
 
         await otp.save();
-        await Otp_VerifyAccount(email, guardianFullName, code);
 
+        const emailResult = await Otp_VerifyAccount(
+          email,
+          guardianFullName,
+          code
+        );
+        if (emailResult) {
+          emailSent = true;
+        }
 
-          firstStudentToken = existingStudent.generateAuthToken();
+        firstStudentToken = existingStudent.generateAuthToken();
       }
     } else {
       // Attempt to find the student by userId
       const foundStudent = await User.findOne({ userId });
 
       if (foundStudent) {
+        // Update student details
         for (const key in studentItem) {
           if (studentItem.hasOwnProperty(key)) {
             foundStudent[key] = studentItem[key];
@@ -264,6 +275,7 @@ exports.registerInvitedUser = async (req, res) => {
           foundStudent.password = await bcrypt.hash(password, salt);
         }
         await foundStudent.save();
+
         const code = otpGenerator.generate(6, {
           lowerCaseAlphabets: false,
           upperCaseAlphabets: false,
@@ -273,20 +285,28 @@ exports.registerInvitedUser = async (req, res) => {
         const otp = new OTP({
           user: foundStudent._id,
           checkModel: "User",
-          email: req.body.email,
+          email,
           code,
           type: "RegisterUser",
           expiresIn: Date.now() + 3600000, // 1 hour expiration
         });
 
         await otp.save();
-        await Otp_VerifyAccount(email, guardianFullName, code);
+
+        const emailResult = await Otp_VerifyAccount(
+          email,
+          guardianFullName,
+          code
+        );
+        if (emailResult) {
+          emailSent = true;
+        }
+
         if (!newParent.students.includes(foundStudent._id)) {
           newParent.students.push(foundStudent._id);
         }
 
-
-          firstStudentToken = foundStudent.generateAuthToken();
+        firstStudentToken = foundStudent.generateAuthToken();
       } else {
         // Skip creating a new student
         continue;
@@ -295,6 +315,12 @@ exports.registerInvitedUser = async (req, res) => {
   }
 
   await newParent.save();
+
+  if (!emailSent) {
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      message: "Account update successful, but email sending failed.",
+    });
+  }
 
   return res.status(StatusCodes.OK).json({
     message: "Accounts updated successfully!",
