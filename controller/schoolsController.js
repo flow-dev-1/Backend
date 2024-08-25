@@ -48,7 +48,7 @@ exports.getSchoolAdminTeam = async (req, res) => {
     .select("team")
     .populate(
       "team",
-      "fullNaame email school schoolAdminStatus schoolAdminPermission schoolAdminDate newInvite"
+      "fullName email school schoolAdminStatus schoolAdminPermission schoolAdminDate newInvite"
     );
   res.status(StatusCodes.OK).json({ teams });
 };
@@ -450,7 +450,7 @@ exports.inviteSchoolAdmin = async (req, res) => {
       .json({ message: "School not found!" });
   }
 
-  let user = await User.findOne({ email });
+  let user = await Educator.findOne({ email });
   if (user) {
     //  Send Invitation Link
     // Check if user is already in the team
@@ -487,7 +487,7 @@ exports.inviteSchoolAdmin = async (req, res) => {
       .json({ message: "Admin invite sent successfully!" });
   }
   // Save Admin record
-  user = new User({
+  user = new Educator({
     fullName,
     email,
     userType: "Educator",
