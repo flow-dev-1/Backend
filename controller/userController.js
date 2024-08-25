@@ -215,7 +215,7 @@ exports.registerInvitedUser = async (req, res) => {
   newParent.state = state;
 
   let firstStudentToken = null;
-  let emailSent = false;
+  let emailError = null;
 
   for (const studentItem of students) {
     const { userId, fullName, grade, gender, DOB, password } = studentItem;
@@ -251,10 +251,9 @@ exports.registerInvitedUser = async (req, res) => {
           email,
           guardianFullName,
           code
-        );
-        if (emailResult) {
-          emailSent = true;
-        }
+        ).catch((error) => {
+          emailError = error;
+        });
 
         firstStudentToken = existingStudent.generateAuthToken();
       }
@@ -293,14 +292,11 @@ exports.registerInvitedUser = async (req, res) => {
 
         await otp.save();
 
-        const emailResult = await Otp_VerifyAccount(
-          email,
-          guardianFullName,
-          code
+        await Otp_VerifyAccount(email, guardianFullName, code).catch(
+          (error) => {
+            emailError = error;
+          }
         );
-        if (emailResult) {
-          emailSent = true;
-        }
 
         if (!newParent.students.includes(foundStudent._id)) {
           newParent.students.push(foundStudent._id);
@@ -316,9 +312,10 @@ exports.registerInvitedUser = async (req, res) => {
 
   await newParent.save();
 
-  if (!emailSent) {
-    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+  if (emailError) {
+    return res.status(StatusCodes.BAD_REQUEST).json({
       message: "Account update successful, but email sending failed.",
+      error: emailError.message || emailError,
     });
   }
 
@@ -327,6 +324,7 @@ exports.registerInvitedUser = async (req, res) => {
     token: firstStudentToken,
   });
 };
+
 
 exports.registerSchoolInvitedAdmin = async (req, res) => {
   const {
