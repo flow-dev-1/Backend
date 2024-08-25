@@ -486,8 +486,10 @@ exports.inviteSchoolAdmin = async (req, res) => {
       token
     );
 
-    // Add the user to the school's team and save the changes
+    // Add the user to the school's team
     school.team.push(user._id);
+
+    // Persist the changes to the school and user
     await school.save();
     await user.save();
 
@@ -525,14 +527,17 @@ exports.inviteSchoolAdmin = async (req, res) => {
     token
   );
 
-  // Add the new user to the school's team and save the changes
+  // Add the new user to the school's team
   school.team.push(user._id);
+
+  // Persist the changes to the school
   await school.save();
 
   res
     .status(StatusCodes.OK)
     .json({ message: "Admin invite sent successfully!" });
 };
+
 
 
 exports.addEmailNotificationadmin = async (req, res) => {

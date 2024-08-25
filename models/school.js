@@ -66,7 +66,7 @@ const schoolsSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    team: [{ type: mongoose.Schema.Types.ObjectId, required: true, ref: 'User' }],
+    team: [{ type: mongoose.Schema.Types.ObjectId, required: true, ref: 'Educator' }],
     email_notification: [{
         fullName: { type: String },
         email: { type: String },
