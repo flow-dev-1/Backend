@@ -85,7 +85,7 @@ exports.getSingleEnrolledCourse = async (req, res) => {
       path: "studentEnrollments",
       populate: {
         path: "user",
-        select: "fullNaame email phone gender DOB",
+        select: "fullName email phone gender DOB",
       },
     });
 
@@ -1384,4 +1384,91 @@ exports.allGraphData = async (req, res) => {
 };
 
 
+exports.addTeachersToEnrolledCourse = async (req, res) => {
+  const { stdClass, educators } = req.body;
+  const { id, enrolledCourseId } = req.params;
 
+  // Find the existing course enrollment
+  const existingEnrollment = await SchoolCourses.findOne({
+    _id: enrolledCourseId,
+  })
+    .populate("course", "title")
+    .populate("school", "school_name");
+
+  // Check if the course enrollment exists
+  if (!existingEnrollment) {
+    return res
+      .status(StatusCodes.UNPROCESSABLE_ENTITY)
+      .json({ message: "You are not enrolled in this course!" });
+  }
+
+  // Process each educator in the request
+  for (const educatorData of educators) {
+    // Check if the educator already exists
+    let educator = await Educator.findOne({ email: educatorData.email });
+
+    if (!educator) {
+      // If the educator doesn't exist, create a new one
+      educator = new Educator({
+        _id: new mongoose.Types.ObjectId(),
+        fullName: educatorData.fullName,
+        phone: "N/A",
+        email: educatorData.email,
+        educatorType: "School",
+        grade: "Educator",
+        newCourseInvite: { school: id },
+      });
+      await educator.save();
+    }
+
+    // Check if the educator is already enrolled in the course
+    let studentEnrollment = await StudentEnrollments.findOne({
+      course: existingEnrollment.course._id,
+      school: id,
+      schoolCourseEnrollment: existingEnrollment._id,
+      user: educator._id,
+      status: { $ne: "Deactivated" },
+    });
+
+    if (!studentEnrollment) {
+      // If not enrolled, create a new enrollment
+      studentEnrollment = new StudentEnrollments({
+        _id: new mongoose.Types.ObjectId(),
+        course: existingEnrollment.course._id,
+        school: id,
+        schoolCourseEnrollment: existingEnrollment._id,
+        user: educator._id,
+      });
+
+      existingEnrollment.studentEnrollments.push(studentEnrollment._id);
+      await studentEnrollment.save();
+    }
+
+    const token = educator.generateAuthToken();
+
+    // Determine the grade type
+    const stdGrade = stdClass.startsWith("Pri")
+      ? "Primary"
+      : stdClass.startsWith("Sec")
+      ? "Secondary"
+      : "Educator";
+
+    // Send invite to the educator
+    await school_course_invite(
+      educator.fullName,
+      "new",
+      stdGrade,
+      studentEnrollment._id,
+      existingEnrollment.school.school_name,
+      existingEnrollment.course.title,
+      educator.email,
+      token
+    );
+  }
+
+  await existingEnrollment.save();
+
+  res
+    .status(StatusCodes.OK)
+    .json({ message: "Educators invited to course successfully!" });
+};
