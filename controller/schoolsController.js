@@ -462,7 +462,7 @@ exports.inviteSchoolAdmin = async (req, res) => {
 
     if (existingTeamMember) {
       return res
-        .status(StatusCodes.UNPROCESSABLE_ENTITY)
+        .status(StatusCodes.BAD_REQUEST)
         .json({ message: "User is already in the team" });
     }
 
