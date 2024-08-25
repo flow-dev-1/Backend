@@ -114,14 +114,13 @@ exports.admin_invite = async (name, email, token) => {
 
 exports.school_admin_invite = async (
   status,
-  first_name,
-  last_name,
+  fullName,
   school_id,
   school_name,
   email,
   token
 ) => {
-  let query = `t=${token}&s=${school_id}&email=${email}&first_name=${first_name}&last_name=${last_name}`;
+  let query = `t=${token}&s=${school_id}&email=${email}&fullName=${fullName}`;
   let link;
   // if (status === "new") {
   // This is a new user
@@ -150,7 +149,7 @@ exports.school_admin_invite = async (
       from: EMAIL,
       to: email,
       subject: "FLOW For Schools Admin Invitation",
-      html: ` <b> Hi ${first_name} </b></br>
+      html: ` <b> Hi ${fullName} </b></br>
             <p>You have been invited to Join ${school_name} as an Administrator.</p>
             </br>
             <p>Please click or copy this link to complete your sign up.</p>
