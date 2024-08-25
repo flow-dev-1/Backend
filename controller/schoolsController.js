@@ -1089,7 +1089,7 @@ exports.removeSchoolAdmin = async (req, res) => {
   }
 
   // Find the user by ID
-  const user = await User.findById(req.params.id);
+  const user = await Educator.findById(req.params.id);
   if (!user) {
     return res
       .status(StatusCodes.UNPROCESSABLE_ENTITY)
