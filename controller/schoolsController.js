@@ -1361,7 +1361,7 @@ exports.allGraphData = async (req, res) => {
   // Initialize counters and result holders
   let totalMales = 0;
   let totalFemales = 0;
-  let totalTeachers = 0; // New counter for teachers
+  let totalTeachers = 0; // Counter for teachers
   let completed = 0;
   let remaining = 0;
   let active = 0;
@@ -1401,7 +1401,7 @@ exports.allGraphData = async (req, res) => {
         notActive++;
       }
 
-      // Accumulate total cost
+      // Accumulate total cost for courses
       if (course && course.cost) {
         totalAmount += course.cost;
       }
@@ -1415,7 +1415,7 @@ exports.allGraphData = async (req, res) => {
         }
       }
     } else if (checkModel === "Educator") {
-      // Count educators
+      // Count educators only
       totalTeachers++;
     }
   });
@@ -1432,7 +1432,7 @@ exports.allGraphData = async (req, res) => {
     totalMales,
     totalFemales,
     totalStudents: totalMales + totalFemales,
-    totalTeachers, // Include total teachers in the response
+    totalTeachers, // Total teachers in the response
     completed,
     remaining,
     active,
@@ -1442,6 +1442,7 @@ exports.allGraphData = async (req, res) => {
     validGraphData: graphData,
   });
 };
+
 
 
 
