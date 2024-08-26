@@ -1374,6 +1374,11 @@ exports.allGraphData = async (req, res) => {
     const { user, course, progress, schoolCourseEnrollment, checkModel } =
       entry;
 
+    // Accumulate total cost for courses, regardless of the checkModel
+    if (course && course.cost) {
+      totalAmount += course.cost;
+    }
+
     if (checkModel === "User") {
       // Count gender for students
       if (user && user.gender) {
@@ -1399,11 +1404,6 @@ exports.allGraphData = async (req, res) => {
         active++;
       } else {
         notActive++;
-      }
-
-      // Accumulate total cost for courses
-      if (course && course.cost) {
-        totalAmount += course.cost;
       }
 
       // Count students per course
@@ -1437,11 +1437,12 @@ exports.allGraphData = async (req, res) => {
     remaining,
     active,
     notActive,
-    totalAmount,
+    totalAmount, // Total amount includes both Users and Educators
     dataEnrollment: dataEnrollmentArray,
     validGraphData: graphData,
   });
 };
+
 
 
 
