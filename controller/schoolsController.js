@@ -47,9 +47,9 @@ exports.getSingleSchool = async (req, res) => {
 exports.getSchoolAdminTeam = async (req, res) => {
   // Find the school and populate the team field
   const school = await Schools.findOne({ _id: req.params.id })
-    .select("team") 
+    .select("team")
     .populate({
-      path: "team", 
+      path: "team",
       select:
         "fullName email newInvite.school newInvite.schoolAdminStatus newInvite.schoolAdminPermission newInvite.schoolAdminDate", // Select the fields you want from the Educator document
     });
@@ -63,7 +63,6 @@ exports.getSchoolAdminTeam = async (req, res) => {
   // Send the populated team array in the response
   res.status(StatusCodes.OK).json({ teams: school.team });
 };
-
 
 exports.getSchoolEmailTeam = async (req, res) => {
   let teams = await Schools.findOne({ _id: req.params.id }).select(
@@ -549,8 +548,6 @@ exports.inviteSchoolAdmin = async (req, res) => {
     .status(StatusCodes.OK)
     .json({ message: "Admin invite sent successfully!" });
 };
-
-
 
 exports.addEmailNotificationadmin = async (req, res) => {
   const school = await Schools.findById(req.user._id);
@@ -1353,9 +1350,14 @@ exports.allGraphData = async (req, res) => {
     },
     {
       path: "user",
-      select: "gender",
+      select: "gender fullName email",
     },
   ]);
+
+  // Filter out entries where any of the critical populated fields are null or undefined
+  const validGraphData = graphData.filter(
+    (entry) => entry.course && entry.user && entry.schoolCourseEnrollment
+  );
 
   let totalMales = 0;
   let totalFemales = 0;
@@ -1366,7 +1368,7 @@ exports.allGraphData = async (req, res) => {
   let totalAmount = 0;
   const dataEnrollment = [];
 
-  graphData.forEach((entry) => {
+  validGraphData.forEach((entry) => {
     // Count gender
     if (entry.user.gender === "male") {
       totalMales++;
@@ -1381,7 +1383,7 @@ exports.allGraphData = async (req, res) => {
       remaining++;
     }
 
-    // Count course enrollment status
+    // Check if schoolCourseEnrollment status is "Active"
     if (entry.schoolCourseEnrollment.status === "Active") {
       active++;
     } else {
@@ -1415,6 +1417,7 @@ exports.allGraphData = async (req, res) => {
     notActive,
     totalAmount,
     dataEnrollment,
+    validGraphData,
   });
 };
 
@@ -1509,4 +1512,3 @@ exports.addTeachersToEnrolledCourse = async (req, res) => {
     .status(StatusCodes.OK)
     .json({ message: "Educators invited to course successfully!" });
 };
-
