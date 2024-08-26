@@ -160,28 +160,37 @@ function validateEducator(Educator) {
 }
 
 function validateInvitedEducator(Educator) {
-  const schema = Joi.object({
-    DOB: Joi.date().required(),
+  const educatorSchema = Joi.object({
+    DOB: Joi.date().optional(),
     fullName: Joi.string()
       .min(2)
       .max(300)
-      .required()
+      .optional()
       .pattern(/^[a-zA-Z]+(?: [a-zA-Z]+)+$/)
-      .message(
-        "Full name must contain at least two names separated by a space."
-      ),
+      .messages({
+        "string.pattern.base":
+          "Full name must contain at least two names separated by a space.",
+        "string.min": "Full name must be at least 2 characters long.",
+        "string.max":
+          "Full name must be less than or equal to 300 characters long.",
+      }),
     phone: Joi.string()
-      .pattern(new RegExp(/^\+[1-9]\d{1,14}$/))
+      .pattern(/^\+[1-9]\d{1,14}$/)
       .message("Please enter a valid phone number in international format")
-      .required(),
-    email: Joi.string().min(5).max(255).required().email(),
+      .optional(),
+    email: Joi.string().min(5).max(255).optional().email(),
     password: Joi.string().allow(null).optional(),
     grade: Joi.string().optional(),
-    gender: Joi.string().valid("male", "female").required(),
-    country: Joi.string().min(2).max(255).required(),
-    state: Joi.string().min(2).max(255).required(),
-    lga: Joi.string().min(2).max(255).required(),
+    gender: Joi.string().valid("male", "female").optional(),
+    country: Joi.string().min(2).max(255).optional(),
+    state: Joi.string().min(2).max(255).optional(),
+    lga: Joi.string().min(2).max(255).optional(),
   });
+
+  const schema = Joi.object({
+    educators: Joi.array().items(educatorSchema).min(0).optional(),
+  });
+
   return schema.validate(Educator);
 }
 

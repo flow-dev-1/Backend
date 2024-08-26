@@ -266,3 +266,16 @@ exports.schoolCourseAddStudentsValidator = function (req) {
 
     return schema.validate(req);
 };
+
+exports.schoolCourseAddTeachersValidator = function (req) {
+  const studentSchema = Joi.object({
+    email: Joi.string().email().required(),
+    fullName: Joi.string().min(2).max(100).required(), // Example additional field
+  });
+  const schema = Joi.object({
+    stdClass: Joi.string().min(2).max(100).required(),
+    educators: Joi.array().items(studentSchema).required(),
+  });
+
+  return schema.validate(req);
+};

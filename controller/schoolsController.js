@@ -8,6 +8,7 @@ const {
   Otp_ForgotPassword,
   school_admin_invite,
   school_course_invite,
+  school_course_invite_teacher,
 } = require("../utils/sendmail");
 const otpGenerator = require("otp-generator");
 // const { initiatePaystackPayment } = require("../utils/paystack");
@@ -877,6 +878,7 @@ exports.addStudentsToCourseEnrollment = async (req, res) => {
         _id: new mongoose.Types.ObjectId(),
         course: existingEnrollment.course._id,
         school: id,
+        checkModel: "User",
         schoolCourseEnrollment: existingEnrollment._id,
         user: newUser._id,
       });
@@ -1458,6 +1460,7 @@ exports.addTeachersToEnrolledCourse = async (req, res) => {
     let studentEnrollment = await StudentEnrollments.findOne({
       course: existingEnrollment.course._id,
       school: id,
+      checkModel: "Educator",
       schoolCourseEnrollment: existingEnrollment._id,
       user: educator._id,
       status: { $ne: "Deactivated" },
@@ -1469,6 +1472,7 @@ exports.addTeachersToEnrolledCourse = async (req, res) => {
         _id: new mongoose.Types.ObjectId(),
         course: existingEnrollment.course._id,
         school: id,
+        checkModel: "Educator",
         schoolCourseEnrollment: existingEnrollment._id,
         user: educator._id,
       });
@@ -1487,7 +1491,7 @@ exports.addTeachersToEnrolledCourse = async (req, res) => {
       : "Educator";
 
     // Send invite to the educator
-    await school_course_invite(
+    await school_course_invite_teacher(
       educator.fullName,
       "new",
       stdGrade,
@@ -1505,3 +1509,4 @@ exports.addTeachersToEnrolledCourse = async (req, res) => {
     .status(StatusCodes.OK)
     .json({ message: "Educators invited to course successfully!" });
 };
+

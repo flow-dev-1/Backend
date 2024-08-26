@@ -10,6 +10,7 @@ const {
   inviteAdminValidator,
   schoolCourseEnrollmentValidator,
   schoolCourseAddStudentsValidator,
+  schoolCourseAddTeachersValidator,
 } = require("../middleware/validate");
 const schoolsController = require("../controller/schoolsController");
 const optionalUpload = require("../utils/optionalUpload");
@@ -133,6 +134,14 @@ router.put(
   schoolAccess,
   validate(schoolCourseAddStudentsValidator),
   schoolsController.addStudentsToCourseEnrollment
+);
+
+router.put(
+  "/:id/courses/:enrolledCourseId/educators",
+  auth,
+  schoolAccess,
+  validate(schoolCourseAddTeachersValidator),
+  schoolsController.addTeachersToEnrolledCourse
 );
 
 router.delete(

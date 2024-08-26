@@ -15,7 +15,7 @@ router.get("/me", auth, educatorController.getLoggedEducator);
 router.post("/register", validate(validateEducator), educatorController.registerEducator);
 
 router.post(
-  "/invited-user",
+  "/invited-educator",
   auth,
   validate(validateInvitedEducator),
   educatorController.registerInvitedEducator
