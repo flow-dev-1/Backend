@@ -15,7 +15,7 @@ router.get("/me", auth, educatorController.getLoggedEducator);
 router.post("/register", validate(validateEducator), educatorController.registerEducator);
 
 router.post(
-  "/invited-user",
+  "/invited-educator",
   auth,
   validate(validateInvitedEducator),
   educatorController.registerInvitedEducator
@@ -30,6 +30,9 @@ router.patch(
   validate(validateEducatorUpdate),
   educatorController.updateProfile
 );
+
+router.get("/payments", auth, educatorController.getPayments);
+
 
 
 module.exports = router;

@@ -28,10 +28,7 @@ exports.getLoggedUser = async (req, res) => {
   res.status(StatusCodes.OK).json({ user });
 };
 
-
-
 exports.getPayments = async (req, res) => {
-
   const payments = await Payment.find({ user: req.user._id }).select(
     "-paymentDetails"
   );
@@ -176,8 +173,16 @@ exports.registerUser = async (req, res) => {
 };
 
 exports.registerInvitedUser = async (req, res) => {
-  const { guardianFullName, phone, email, country, state, lga, students } =
-    req.body;
+  const {
+    guardianFullName,
+    phone,
+    email,
+    country,
+    state,
+    lga,
+    students,
+    userId,
+  } = req.body;
 
   if (!students || students.length === 0) {
     return res
@@ -185,38 +190,38 @@ exports.registerInvitedUser = async (req, res) => {
       .json({ message: "No students provided in the request." });
   }
 
-  let checkParent = await Parents.findOne({ email }).populate(
+  let newParent = await Parents.findOne({ email }).populate(
     "students",
     "-password"
   );
 
-  if (!checkParent) {
+  if (!newParent) {
     // Create new parent if not found
-    checkParent = new Parents({
-      guardianFullName,
+    newParent = new Parents({
+      fullName: guardianFullName,
       email,
       phone,
       country,
       state,
-      lga,
       students: [],
     });
-  } else {
-    // Update existing parent details
-    checkParent.fullName = guardianFullName;
-    checkParent.phone = phone;
-    checkParent.country = country;
-    checkParent.state = state;
-    checkParent.lga = lga;
   }
 
+  // Update parent details
+  newParent.fullName = guardianFullName;
+  newParent.email = email;
+  newParent.phone = phone;
+  newParent.country = country;
+  newParent.state = state;
+
   let firstStudentToken = null;
+  let emailError = null;
 
   for (const studentItem of students) {
     const { userId, fullName, grade, gender, DOB, password } = studentItem;
 
     // Check if the student is already registered under this parent
-    const existingStudent = checkParent.students.find(
+    const existingStudent = newParent.students.find(
       (s) => s.fullName === fullName && s.DOB === DOB
     );
 
@@ -241,82 +246,84 @@ exports.registerInvitedUser = async (req, res) => {
         });
 
         await otp.save();
-        await Otp_VerifyAccount(email, guardianFullName, code);
 
-        if (!firstStudentToken) {
-          firstStudentToken = existingStudent.generateAuthToken();
-        }
+        const emailResult = await Otp_VerifyAccount(
+          email,
+          guardianFullName,
+          code
+        ).catch((error) => {
+          emailError = error;
+        });
+
+        firstStudentToken = existingStudent.generateAuthToken();
       }
     } else {
-      // Register new student
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(password, salt);
-
-      const foundStudent = await findStudentByEmailAndFullName(
-        email,
-        fullName,
-        checkParent.students
-      );
+      // Attempt to find the student by userId
+      const foundStudent = await User.findOne({ userId });
 
       if (foundStudent) {
-        return res.status(StatusCodes.BAD_REQUEST).json({
-          success: "failed",
-          message: "Student already exists",
+        // Update student details
+        for (const key in studentItem) {
+          if (studentItem.hasOwnProperty(key)) {
+            foundStudent[key] = studentItem[key];
+          }
+        }
+
+        if (password) {
+          const salt = await bcrypt.genSalt(10);
+          foundStudent.password = await bcrypt.hash(password, salt);
+        }
+        await foundStudent.save();
+
+        const code = otpGenerator.generate(6, {
+          lowerCaseAlphabets: false,
+          upperCaseAlphabets: false,
+          specialChars: false,
         });
+
+        const otp = new OTP({
+          user: foundStudent._id,
+          checkModel: "User",
+          email,
+          code,
+          type: "RegisterUser",
+          expiresIn: Date.now() + 3600000, // 1 hour expiration
+        });
+
+        await otp.save();
+
+        await Otp_VerifyAccount(email, guardianFullName, code).catch(
+          (error) => {
+            emailError = error;
+          }
+        );
+
+        if (!newParent.students.includes(foundStudent._id)) {
+          newParent.students.push(foundStudent._id);
+        }
+
+        firstStudentToken = foundStudent.generateAuthToken();
+      } else {
+        // Skip creating a new student
+        continue;
       }
-
-      const newStudent = new User({
-        _id: new mongoose.Types.ObjectId(),
-        userId,
-        fullName,
-        grade,
-        gender,
-        DOB,
-        password: hashedPassword,
-        guardianFullName,
-        phone,
-        email,
-        country,
-        state,
-        lga,
-        userType: "Individual", 
-      });
-
-      await newStudent.save();
-      checkParent.students.push(newStudent._id);
-
-      if (!firstStudentToken) {
-        firstStudentToken = newStudent.generateAuthToken();
-      }
-
-      const code = otpGenerator.generate(6, {
-        lowerCaseAlphabets: false,
-        upperCaseAlphabets: false,
-        specialChars: false,
-      });
-
-      const otp = new OTP({
-        user: newStudent._id,
-        checkModel: "User",
-        email,
-        code,
-        type: "RegisterUser",
-        expiresIn: Date.now() + 3600000, // 1 hour expiration
-      });
-
-      await otp.save();
-      await Otp_VerifyAccount(email, guardianFullName, code);
     }
   }
 
-  await checkParent.save();
+  await newParent.save();
+
+  if (emailError) {
+    return res.status(StatusCodes.BAD_REQUEST).json({
+      message: "Account update successful, but email sending failed.",
+      error: emailError.message || emailError,
+    });
+  }
 
   return res.status(StatusCodes.OK).json({
-    message: "Accounts created successfully!",
+    message: "Accounts updated successfully!",
     token: firstStudentToken,
   });
 };
-
 
 
 exports.registerSchoolInvitedAdmin = async (req, res) => {
@@ -448,7 +455,7 @@ exports.courseEnrollment = async (req, res) => {
       message: "Operation Failed",
     });
 
-  const amount = Number(course.cost); 
+  const amount = Number(course.cost);
 
   // Generate payment Ticket
   const payment = new Payment({

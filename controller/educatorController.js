@@ -10,6 +10,7 @@ const CourseEnrollment = require("../models/courseEnrollment");
 const Courses = require("../models/course");
 const StudentEnrollments = require("../models/courseEnrollment");
 const { Educator } = require("../models/educators");
+const Payment = require("../models/payment");
 
 exports.getLoggedEducator = async (req, res) => {
   const educator = await Educator.findById(req.user._id).select(
@@ -17,7 +18,6 @@ exports.getLoggedEducator = async (req, res) => {
   );
   res.status(StatusCodes.OK).json({ educator });
 };
-
 
 exports.registerEducator = async (req, res) => {
   const { type } = req.query;
@@ -117,100 +117,152 @@ exports.registerEducator = async (req, res) => {
   });
 };
 
-
 exports.registerInvitedEducator = async (req, res) => {
-  const {
-    fullName,
-    phone,
-    email,
-    gender,
-    DOB,
-    country,
-    state,
-    lga,
-    password,
-    grade,
-  } = req.body;
+  const { educators } = req.body;
 
-  let educator = await Educator.findOne({ _id: req.user._id });
-
-  if (!educator)
+  if (!educators || educators.length === 0) {
     return res
       .status(StatusCodes.BAD_REQUEST)
-      .json({ message: "Un-Authorized Action!" });
-
-  if (educator && !educator.newCourseInvite) {
-    return res
-      .status(StatusCodes.BAD_REQUEST)
-      .json({ message: "Expired or Invalid invite link!" });
+      .json({ message: "No educators provided in the request." });
   }
 
-  if (!educator.password && !password) {
-    return res
-      .status(StatusCodes.UNPROCESSABLE_ENTITY)
-      .json({ message: "Password is required!" });
+  const results = [];
+
+  for (const educatorData of educators) {
+    const {
+      fullName,
+      phone,
+      email,
+      gender,
+      DOB,
+      country,
+      state,
+      lga,
+      password,
+      grade,
+    } = educatorData;
+
+    // Find the educator in the database
+    let foundEducator = await Educator.findOne({ email });
+
+    if (!foundEducator) {
+      // Create a new educator if not present
+      foundEducator = new Educator({
+        fullName,
+        phone,
+        email,
+        gender,
+        DOB,
+        country,
+        state,
+        lga,
+        grade,
+        educatorType: "School",
+        isVerified: false,
+        newCourseInvite: null,
+      });
+    } else {
+      if (!foundEducator.newCourseInvite) {
+        results.push({ email, message: "Expired or invalid invite link!" });
+        continue;
+      }
+
+      // Update the educator's details if they exist
+      foundEducator.fullName = fullName;
+      foundEducator.phone = phone;
+      foundEducator.email = email;
+      foundEducator.gender = gender;
+      foundEducator.DOB = DOB;
+      foundEducator.country = country;
+      foundEducator.state = state;
+      foundEducator.lga = lga;
+      foundEducator.educatorType = "School";
+      foundEducator.grade = grade;
+      foundEducator.school = foundEducator.newCourseInvite.school;
+      foundEducator.newCourseInvite = null;
+    }
+
+    if (!foundEducator.isVerified) {
+      const code = otpGenerator.generate(6, {
+        lowerCaseAlphabets: false,
+        upperCaseAlphabets: false,
+        specialChars: false,
+      });
+
+      const otp = new OTP({
+        user: foundEducator._id,
+        checkModel: "Educator",
+        email,
+        code,
+        type: "RegisterEducator",
+        expiresIn: Date.now() + 3600000, // 1 hour expiration
+      });
+
+      await otp.save();
+
+      await Otp_VerifyAccount(email, fullName, code).catch((error) => {
+        results.push({ email, message: "Failed to send OTP email.", error });
+      });
+
+      firstStudentToken = foundEducator.generateAuthToken();
+    }
+
+    if (password) {
+      const salt = await bcrypt.genSalt(10);
+      foundEducator.password = await bcrypt.hash(password, salt);
+    }
+
+    // Update or create the student enrollment status
+    let studentEnrollment = await StudentEnrollments.findOne({
+      school: foundEducator.school,
+      user: foundEducator._id,
+      status: "Pending",
+    });
+
+    if (!studentEnrollment) {
+      studentEnrollment = new StudentEnrollments({
+        school: foundEducator.school,
+        user: foundEducator._id,
+        course: foundEducator.newCourseInvite.course,
+        status: "Pending",
+      });
+    }
+
+    studentEnrollment.status = "Confirmed";
+
+    await studentEnrollment.save();
+
+    await Courses.findByIdAndUpdate(studentEnrollment.course, {
+      $push: {
+        courseEnrollment: studentEnrollment._id,
+      },
+    });
+
+    await foundEducator.save();
+
+    const token = foundEducator.generateAuthToken();
+
+    results.push({
+      email,
+      message: "Account created/updated successfully!",
+      token,
+    });
   }
 
-  // Check for course enrollment
-  const studentEnrollment = await StudentEnrollments.findOne({
-    school: educator?.newCourseInvite.school,
-    user: educator._id,
-    status: "Pending",
-  });
-
-  if (!studentEnrollment) {
-    return res
-      .status(StatusCodes.BAD_REQUEST)
-      .json({ message: "Expired or Invalid invite link!" });
-  }
-
-  educator.fullName = fullName;
-  educator.phone = phone;
-  educator.email = email;
-  educator.gender = gender;
-  educator.DOB = DOB;
-  educator.country = country;
-  educator.state = state;
-  educator.lga = lga;
-  educator.educatorType = "School";
-  educator.grade = grade;
-  educator.school = educator.newCourseInvite.school;
-  educator.newCourseInvite = null;
-
-  if (!educator.isVerified) {
-    educator.isVerified = true;
-  }
-
-  if (password) {
-    const salt = await bcrypt.genSalt(10);
-    educator.password = await bcrypt.hash(password, salt);
-  }
-  studentEnrollment.status = "Confirmed";
-
-  await Courses.findByIdAndUpdate(studentEnrollment.course, {
-    $push: {
-      courseEnrollment: studentEnrollment._id,
-    },
-  });
-
-  await studentEnrollment.save();
-  await educator.save();
-
-  const token = educator.generateAuthToken();
-
-  res
-    .status(StatusCodes.OK)
-    .json({ message: "Account created successfully!", token });
+  res.status(StatusCodes.OK).json({ results });
 };
-
 
 
 exports.updateProfile = async (req, res) => {
   // Find and update the user's profile
-  const updateProfile = await Educator.findByIdAndUpdate(req.user._id, req.body, {
-    new: true,
-    select: "-password -isVerified -isDeleted -resetPassword",
-  });
+  const updateProfile = await Educator.findByIdAndUpdate(
+    req.user._id,
+    req.body,
+    {
+      new: true,
+      select: "-password -isVerified -isDeleted -resetPassword",
+    }
+  );
   // This user is not on the app
   if (!updateProfile) {
     return res.status(StatusCodes.BAD_REQUEST).json({
@@ -240,4 +292,11 @@ exports.getCourses = async (req, res) => {
     courses = await Courses.find({ status: "published" });
   }
   res.status(StatusCodes.OK).json({ courses });
+};
+
+exports.getPayments = async (req, res) => {
+  const payments = await Payment.find({ user: req.user._id }).select(
+    "-paymentDetails"
+  );
+  res.status(StatusCodes.OK).json({ payments });
 };

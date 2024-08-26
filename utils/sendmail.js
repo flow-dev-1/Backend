@@ -114,14 +114,13 @@ exports.admin_invite = async (name, email, token) => {
 
 exports.school_admin_invite = async (
   status,
-  first_name,
-  last_name,
+  fullName,
   school_id,
   school_name,
   email,
   token
 ) => {
-  let query = `t=${token}&s=${school_id}&email=${email}&first_name=${first_name}&last_name=${last_name}`;
+  let query = `t=${token}&s=${school_id}&email=${email}&fullName=${fullName}`;
   let link;
   // if (status === "new") {
   // This is a new user
@@ -150,7 +149,7 @@ exports.school_admin_invite = async (
       from: EMAIL,
       to: email,
       subject: "FLOW For Schools Admin Invitation",
-      html: ` <b> Hi ${first_name} </b></br>
+      html: ` <b> Hi ${fullName} </b></br>
             <p>You have been invited to Join ${school_name} as an Administrator.</p>
             </br>
             <p>Please click or copy this link to complete your sign up.</p>
@@ -211,6 +210,64 @@ exports.school_course_invite = async (
       subject: "FLOW For Schools Course Invitation",
       html: ` <b> Hello ${parentName}, </b></br>
               <p>You child/ward <b>${childName}</b> been invited to enroll in the <b style="color: #2a9d8f;">${course_name}</b> course on FLOW by <b style="color: #264653;">${school_name}</b>.</p><br>
+            </br>
+            <p>Please click or copy this link to complete your sign up.</p>
+            </br>
+            </br>
+            <b><a href="${link}">${link}</a></b>
+            </br>
+            </br>
+            <p>Please do not forward this email to others in order to prevent anybody else from accessing your account.</p>   
+            </br>
+            <p>Kind Regards! </p>`,
+    });
+    console.log("email sent sucessfully");
+  } catch (error) {
+    console.log(error, "email not sent");
+  }
+};
+
+exports.school_course_invite_teacher = async (
+  teacherName,
+  status,
+  grade,
+  enrollment_id,
+  school_name,
+  course_name,
+  email,
+  token
+) => {
+  let query = `t=${token}&s=${enrollment_id}&email=${email}&status=${status}&grade=${grade}&schoolName=${school_name}&coursName=${course_name}`;
+  let link;
+  // if (status === "new") {
+  //     // This is a new user
+  //     link = process.env.ENV === 'staging' ? `https://my-flow.netlify.app/register?${query}` : `http://localhost:3000/register?${query}`
+
+  // } else {
+  // This is for users that are already registered.
+  // They just need to accept and confirm the invitation
+  link =
+    process.env.ENV === "staging"
+      ? `https://my-flow.netlify.app/invited-educator?${query}`
+      : `http://localhost:3000/invited-educator?${query}`;
+  // }
+
+  try {
+    const transporter = nodemailer.createTransport({
+      service: EMAIL_USER,
+      secure: true,
+      auth: {
+        pass: EMAIL_PASS,
+        user: EMAIL,
+      },
+    });
+
+    await transporter.sendMail({
+      from: EMAIL,
+      to: email,
+      subject: "FLOW For Schools Course Invitation",
+      html: ` <b> Hello ${teacherName}, </b></br>
+              <p>You have been invited to enroll in the <b style="color: #2a9d8f;">${course_name}</b> course on FLOW by <b style="color: #264653;">${school_name}</b>.</p><br>
             </br>
             <p>Please click or copy this link to complete your sign up.</p>
             </br>
