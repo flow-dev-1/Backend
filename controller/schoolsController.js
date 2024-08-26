@@ -989,6 +989,7 @@ exports.addStudentsToCourseEnrollment = async (req, res) => {
           _id: new mongoose.Types.ObjectId(),
           course: existingEnrollment.course._id,
           school: id,
+          checkModel: "User",
           schoolCourseEnrollment: existingEnrollment._id,
           user: newUser._id,
         });
@@ -1044,6 +1045,7 @@ exports.addStudentsToCourseEnrollment = async (req, res) => {
             _id: new mongoose.Types.ObjectId(),
             course: existingEnrollment.course._id,
             school: id,
+            checkModel: "User",
             schoolCourseEnrollment: existingEnrollment._id,
             user: student._id,
           });
