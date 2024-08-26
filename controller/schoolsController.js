@@ -1366,7 +1366,8 @@ exports.allGraphData = async (req, res) => {
   let remaining = 0;
   let active = 0;
   let notActive = 0;
-  let totalAmount = 0;
+  let totalAmount = 0; // Total amount includes both Users and Educators
+  let userAmount = 0; // Total amount specifically for users
   const dataEnrollment = {};
 
   // Process each entry in the graph data
@@ -1414,6 +1415,11 @@ exports.allGraphData = async (req, res) => {
           dataEnrollment[course.title] = 1;
         }
       }
+
+      // Accumulate total cost for users
+      if (course && course.cost) {
+        userAmount += course.cost;
+      }
     } else if (checkModel === "Educator") {
       // Count educators only
       totalTeachers++;
@@ -1432,16 +1438,20 @@ exports.allGraphData = async (req, res) => {
     totalMales,
     totalFemales,
     totalStudents: totalMales + totalFemales,
-    totalTeachers, // Total teachers in the response
-    completed,
-    remaining,
-    active,
-    notActive,
+    totalTeachers,
+    completed, // Only for students
+    remaining, // Only for students
+    active, // Only for students
+    notActive, // Only for students
     totalAmount, // Total amount includes both Users and Educators
+    userAmount, // Total amount specifically for users
     dataEnrollment: dataEnrollmentArray,
     validGraphData: graphData,
   });
 };
+
+
+
 
 
 
