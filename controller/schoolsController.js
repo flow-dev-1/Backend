@@ -47,9 +47,9 @@ exports.getSingleSchool = async (req, res) => {
 exports.getSchoolAdminTeam = async (req, res) => {
   // Find the school and populate the team field
   const school = await Schools.findOne({ _id: req.params.id })
-    .select("team")
+    .select("team") 
     .populate({
-      path: "team",
+      path: "team", 
       select:
         "fullName email newInvite.school newInvite.schoolAdminStatus newInvite.schoolAdminPermission newInvite.schoolAdminDate", // Select the fields you want from the Educator document
     });
@@ -63,6 +63,7 @@ exports.getSchoolAdminTeam = async (req, res) => {
   // Send the populated team array in the response
   res.status(StatusCodes.OK).json({ teams: school.team });
 };
+
 
 exports.getSchoolEmailTeam = async (req, res) => {
   let teams = await Schools.findOne({ _id: req.params.id }).select(
@@ -548,6 +549,8 @@ exports.inviteSchoolAdmin = async (req, res) => {
     .status(StatusCodes.OK)
     .json({ message: "Admin invite sent successfully!" });
 };
+
+
 
 exports.addEmailNotificationadmin = async (req, res) => {
   const school = await Schools.findById(req.user._id);
@@ -1336,6 +1339,7 @@ exports.schoolCoursesActiveGraph = async (req, res) => {
 exports.allGraphData = async (req, res) => {
   const school = req.user._id;
 
+  // Fetch the graph data with necessary fields populated
   const graphData = await StudentEnrollments.find({
     school,
     status: "Confirmed",
@@ -1354,72 +1358,93 @@ exports.allGraphData = async (req, res) => {
     },
   ]);
 
-  // Filter out entries where any of the critical populated fields are null or undefined
-  const validGraphData = graphData.filter(
-    (entry) => entry.course && entry.user && entry.schoolCourseEnrollment
-  );
-
+  // Initialize counters and result holders
   let totalMales = 0;
   let totalFemales = 0;
+  let totalTeachers = 0; // Counter for teachers
   let completed = 0;
   let remaining = 0;
   let active = 0;
   let notActive = 0;
   let totalAmount = 0;
-  const dataEnrollment = [];
+  const dataEnrollment = {};
 
-  validGraphData.forEach((entry) => {
-    // Count gender
-    if (entry.user.gender === "male") {
-      totalMales++;
-    } else if (entry.user.gender === "female") {
-      totalFemales++;
+  // Process each entry in the graph data
+  graphData.forEach((entry) => {
+    const { user, course, progress, schoolCourseEnrollment, checkModel } =
+      entry;
+
+    // Accumulate total cost for courses, regardless of the checkModel
+    if (course && course.cost) {
+      totalAmount += course.cost;
     }
 
-    // Count completion status
-    if (entry.progress === 100) {
-      completed++;
-    } else {
-      remaining++;
-    }
+    if (checkModel === "User") {
+      // Count gender for students
+      if (user && user.gender) {
+        if (user.gender === "male") {
+          totalMales++;
+        } else if (user.gender === "female") {
+          totalFemales++;
+        }
+      }
 
-    // Check if schoolCourseEnrollment status is "Active"
-    if (entry.schoolCourseEnrollment.status === "Active") {
-      active++;
-    } else {
-      notActive++;
-    }
+      // Count completion status for students
+      if (progress === 100) {
+        completed++;
+      } else {
+        remaining++;
+      }
 
-    // Accumulate total cost
-    totalAmount += entry.course.cost;
+      // Check enrollment status for students
+      if (
+        schoolCourseEnrollment &&
+        schoolCourseEnrollment.status === "Active"
+      ) {
+        active++;
+      } else {
+        notActive++;
+      }
 
-    // Count students per course
-    const courseTitle = entry.course.title; // Use title for course
-    const existingCourse = dataEnrollment.find(
-      (item) => item.name === courseTitle
-    );
-
-    if (existingCourse) {
-      existingCourse.value += 1; // Increment the student count
-    } else {
-      dataEnrollment.push({ name: courseTitle, value: 1 }); // Add new course
+      // Count students per course
+      if (course && course.title) {
+        if (dataEnrollment[course.title]) {
+          dataEnrollment[course.title] += 1;
+        } else {
+          dataEnrollment[course.title] = 1;
+        }
+      }
+    } else if (checkModel === "Educator") {
+      // Count educators only
+      totalTeachers++;
     }
   });
 
-  res.status(StatusCodes.OK).json({
+  // Convert dataEnrollment object to an array
+  const dataEnrollmentArray = Object.keys(dataEnrollment).map((key) => ({
+    name: key,
+    value: dataEnrollment[key],
+  }));
+
+  // Send the response with calculated values
+  res.status(200).json({
     status: "success",
     totalMales,
     totalFemales,
     totalStudents: totalMales + totalFemales,
+    totalTeachers, // Total teachers in the response
     completed,
     remaining,
     active,
     notActive,
-    totalAmount,
-    dataEnrollment,
-    validGraphData,
+    totalAmount, // Total amount includes both Users and Educators
+    dataEnrollment: dataEnrollmentArray,
+    validGraphData: graphData,
   });
 };
+
+
+
 
 
 exports.addTeachersToEnrolledCourse = async (req, res) => {
@@ -1512,3 +1537,4 @@ exports.addTeachersToEnrolledCourse = async (req, res) => {
     .status(StatusCodes.OK)
     .json({ message: "Educators invited to course successfully!" });
 };
+
