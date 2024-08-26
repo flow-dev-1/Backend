@@ -129,6 +129,7 @@ exports.registerInvitedEducator = async (req, res) => {
     lga,
     password,
     grade,
+    educators
   } = req.body;
 
   let educator = await Educator.findOne({ _id: req.user._id });
