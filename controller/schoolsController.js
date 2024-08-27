@@ -1462,10 +1462,10 @@ exports.allGraphData = async (req, res) => {
 exports.addTeachersToEnrolledCourse = async (req, res) => {
   const { stdClass, educators } = req.body;
   const { id, enrolledCourseId } = req.params;
-
+  console.log(enrolledCourseId)
   // Find the existing course enrollment
   const existingEnrollment = await SchoolCourses.findOne({
-    _id: enrolledCourseId,
+    school: id,
   })
     .populate("course", "title")
     .populate("school", "school_name");
