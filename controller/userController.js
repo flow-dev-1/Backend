@@ -493,6 +493,7 @@ exports.getParentWithNewCourseInvite = async (req, res) => {
   const studentsWithInvite = await User.find({
     email: email,
     newCourseInvite: { $exists: true, $ne: null },
+    isVerified:false
   });
 
   if (!studentsWithInvite.length) {
