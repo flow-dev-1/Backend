@@ -439,6 +439,7 @@ exports.courseEnrollment = async (req, res) => {
     _id: new mongoose.Types.ObjectId(),
     course: id,
     user: req.user._id,
+    checkModel: isEnrolled.grade === "Educator" ? "Educator" : "User",
   });
 
   const { data } = await initiatePaystackPayment(
