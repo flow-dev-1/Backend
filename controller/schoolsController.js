@@ -667,6 +667,8 @@ exports.courseEnrollment = async (req, res) => {
         school: id,
         schoolCourseEnrollment: newEnrollment._id,
         user: newUser._id,
+        checkModel:
+          existingEnrollment.grade === "Educator" ? "Educator" : "User",
       });
 
       newEnrollment.studentEnrollments.push(newStudentEnrollment._id);
