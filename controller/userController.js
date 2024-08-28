@@ -439,6 +439,7 @@ exports.courseEnrollment = async (req, res) => {
     _id: new mongoose.Types.ObjectId(),
     course: id,
     user: req.user._id,
+    checkModel: isEnrolled.grade === "Educator" ? "Educator" : "User",
   });
 
   const { data } = await initiatePaystackPayment(
@@ -493,6 +494,7 @@ exports.getParentWithNewCourseInvite = async (req, res) => {
   const studentsWithInvite = await User.find({
     email: email,
     newCourseInvite: { $exists: true, $ne: null },
+    isVerified:false
   });
 
   if (!studentsWithInvite.length) {
