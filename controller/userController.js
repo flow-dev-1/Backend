@@ -20,6 +20,7 @@ const findStudentByEmailAndFullName = require("../utils/findStudentBymail");
 const Course = require("../models/course");
 const { default: mongoose } = require("mongoose");
 const Payment = require("../models/payment");
+const Activity = require("../models/activity");
 
 exports.getLoggedUser = async (req, res) => {
   const user = await User.findById(req.user._id).select(
@@ -325,7 +326,6 @@ exports.registerInvitedUser = async (req, res) => {
   });
 };
 
-
 exports.registerSchoolInvitedAdmin = async (req, res) => {
   const {
     fullName,
@@ -524,4 +524,32 @@ exports.getCourses = async (req, res) => {
     courses = await Courses.find({ status: "published" });
   }
   res.status(StatusCodes.OK).json({ courses });
+};
+
+exports.activityData = async (req, res) => {
+  const user = req.user._id;
+  const email = req.user.email;
+  const checkModel = "User"
+    const activity = new Activity(
+      user,
+      email,
+      checkModel,
+      ...req.body);
+    await activity.save();
+     res.status(StatusCodes.OK).json({ activity });
+};
+exports.activityData = async (req, res) => {
+  const user = req.user._id;
+  const email = req.user.email;
+  const checkModel = "User";
+
+  const activity = new Activity({
+    user,
+    email,
+    checkModel,
+    ...req.body,
+  });
+
+  await activity.save();
+  res.status(StatusCodes.OK).json({ activity });
 };

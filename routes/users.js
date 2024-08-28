@@ -28,6 +28,9 @@ router.patch('/profile', auth, validate(validateUserUpdate), userController.upda
 
 router.post('/courses/:id/enroll', auth, userController.courseEnrollment);
 
+router.put("/activity", auth, userController.activityData);
+
+
 
 
 module.exports = router; 
