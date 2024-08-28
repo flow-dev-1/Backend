@@ -432,14 +432,14 @@ exports.courseEnrollment = async (req, res) => {
       message: "You are already enrolled in this course!",
     });
   }
-
   const course = await Course.findById(id);
 
+  console.log(course)
   const enrollment = new CourseEnrollment({
     _id: new mongoose.Types.ObjectId(),
     course: id,
     user: req.user._id,
-    checkModel: isEnrolled.grade === "Educator" ? "Educator" : "User",
+    checkModel: course.grade === "Educator" ? "Educator" : "User",
   });
 
   const { data } = await initiatePaystackPayment(
