@@ -14,16 +14,8 @@ const AnswerSchema = new mongoose.Schema({
 
 // Define the schema for each activity
 const ActivitySchema = new mongoose.Schema({
-  questionText: {
-    type: String,
-    required: true,
-  },
   answer: {
     type: mongoose.Schema.Types.Mixed, // Can be either a string or an array of AnswerSchema
-    required: true,
-  },
-  options: {
-    type: [String], // Array of strings for the options
     required: true,
   },
 });
