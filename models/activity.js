@@ -58,8 +58,13 @@ const ActivitiesSchema = new mongoose.Schema({
     type: Map,
     of: Schema.Types.Mixed,
     default: {} // For any other non-standard fields like "0", "1", "2"
-  }
-});
+  },
+      isDeleted: { type: Boolean, default: false },
+    deletedAt: { type: Date, default: null },
+},
+    {
+        timestamps: true,
+    });
 
 // Create the model
 const Activity = mongoose.model("Activity", ActivitiesSchema);
