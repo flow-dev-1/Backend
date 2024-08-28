@@ -42,11 +42,17 @@ const ActivitiesSchema = new mongoose.Schema({
   },
   week: {
     type: String,
-    required:true
+    required: true
   },
   activities: {
     type: [ActivitySchema], // Array of ActivitySchema
     required: true,
+  },
+  courseEnrollment:
+  {
+    type: mongoose.Schema.Types.ObjectId,
+    required: true,
+    ref: "CourseEnrollment",
   },
 });
 

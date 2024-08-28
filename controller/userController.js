@@ -527,29 +527,18 @@ exports.getCourses = async (req, res) => {
 };
 
 exports.activityData = async (req, res) => {
+  const { id } = req.params
   const user = req.user._id;
   const email = req.user.email;
   const checkModel = "User"
-    const activity = new Activity(
-      user,
-      email,
-      checkModel,
-      ...req.body);
-    await activity.save();
-     res.status(StatusCodes.OK).json({ activity });
-};
-exports.activityData = async (req, res) => {
-  const user = req.user._id;
-  const email = req.user.email;
-  const checkModel = "User";
 
-  const activity = new Activity({
-    user,
-    email,
-    checkModel,
-    ...req.body,
-  });
+  req.body.user = user
+  req.body.email = email
+  req.body.checkModel = checkModel
+  req.body.courseEnrollment = id
 
-  await activity.save();
+  // Update Activity for this course 
+  // If no activity has been created create it.
+  const activity = await Activity.findOneAndUpdate({ courseEnrollment: id }, req.body, { new: true, upsert: true })
   res.status(StatusCodes.OK).json({ activity });
 };

@@ -28,7 +28,7 @@ router.patch('/profile', auth, validate(validateUserUpdate), userController.upda
 
 router.post('/courses/:id/enroll', auth, userController.courseEnrollment);
 
-router.put("/activity", auth, userController.activityData);
+router.put("/course-enrollment/:id/activity", auth, userController.activityData);
 
 
 
