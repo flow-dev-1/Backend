@@ -544,3 +544,18 @@ exports.activityData = async (req, res) => {
   const activity = await Activity.findOneAndUpdate({ courseEnrollment: id }, req.body, { new: true, upsert: true })
   res.status(StatusCodes.OK).json({ activity });
 };
+
+exports.getactivityData = async (req, res) => {
+  const { id } = req.params
+  const user = req.user._id;
+  const activity = await Activity.findOne({ courseEnrollment: id, user })
+if (!activity){
+    return res.status(StatusCodes.NOT_FOUND).json({
+      status: "failed",
+      message: "No activity for this student",
+    });
+  
+}
+
+  res.status(StatusCodes.OK).json({ activity });
+};
