@@ -30,7 +30,19 @@ router.post('/courses/:id/enroll', auth, userController.courseEnrollment);
 
 router.put("/course-enrollment/:id/activity", auth, userController.activityData);
 
-router.get("/course-enrollment/:id/get-activity", auth, userController.getactivityData);
+router.post(
+  "/course-enrollment/:id/assesment",
+  auth,
+  userController.assessmentData
+);
+
+router.get(
+  "/course-enrollment/:id/get-assesment/:week",
+  auth,
+  userController.getAssessmentData
+);
+
+router.get("/course-enrollment/:id/get-activity/:week", auth, userController.getactivityData);
 
 
 
