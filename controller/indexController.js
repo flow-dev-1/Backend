@@ -12,91 +12,86 @@ const { Schools } = require("../models/school");
 
 // Login Route
 exports.login = async (req, res) => {
-  try {
-    const { usernameOrEmail, password } = req.body;
+  const { usernameOrEmail, password } = req.body;
 
-    // Helper function to find a user in the specified model
-    const findUser = async (Model, query) => {
-      return await Model.findOne(query).select(
-        "-isVerified -isDeleted -resetPassword"
-      );
-    };
+  // Helper function to find a user in the specified model
+  const findUser = async (Model, query) => {
+    return await Model.findOne(query).select(
+      "-isVerified -isDeleted -resetPassword"
+    );
+  };
 
-    // Regular expression to check if the input is an email
-    const isEmail = (input) => /\S+@\S+\.\S+/.test(input);
+  // Regular expression to check if the input is an email
+  const isEmail = (input) => /\S+@\S+\.\S+/.test(input);
 
-    let account;
-    let accountType = "";
+  let account;
+  let accountType = "";
 
-    if (isEmail(usernameOrEmail)) {
-      console.log("Checking emails");
+  if (isEmail(usernameOrEmail)) {
+    console.log("Checking emails");
 
-      // Search for a School by email
-      const school = await findUser(Schools, {
-        email: usernameOrEmail,
-        isVerified: true,
-      });
-      if (school) {
-        account = school;
-        accountType = "School";
-      } else {
-        // Search for an Educator by email if no School was found
-        const educator = await findUser(Educator, {
-          email: usernameOrEmail,
-          isVerified: true,
-        });
-
-        if (educator) {
-          account = educator;
-          accountType = "Educator";
-        }
-      }
+    // Search for a School by email
+    const school = await findUser(Schools, {
+      email: usernameOrEmail,
+      isVerified: true
+    });
+    if (school) {
+      account = school;
+      accountType = "School";
     } else {
-      // Search for an Individual user by userId if not email is entered.
-      const user = await findUser(User, {
-        userId: usernameOrEmail,
-        isVerified: true,
+      // Search for an Educator by email if no School was found
+      const educator = await findUser(Educator, {
+        email: usernameOrEmail,
+        isVerified: true
       });
-      if (user) {
-        account = user;
-        accountType = "Individual";
+
+      if (educator) {
+        account = educator;
+        accountType = "Educator";
       }
     }
+  } else {
+    // Convert the userId to uppercase for a case-insensitive search
+    const normalizedUserId = usernameOrEmail.toUpperCase();
 
-    // If no account is found, return an error response
-    if (!account) {
-      return res
-        .status(StatusCodes.BAD_REQUEST)
-        .json({ message: "Invalid credentials." });
-    }
-
-    // Verify the password
-    const validPassword = await bcrypt.compare(password, account.password);
-    if (!validPassword) {
-      return res
-        .status(StatusCodes.BAD_REQUEST)
-        .json({ message: "Invalid credentials." });
-    }
-
-    // Generate the auth token
-    const token = await account.generateAuthToken();
-    const { password: _, ...accountData } = account.toObject();
-
-    // Return the success response
-    return res.status(StatusCodes.OK).json({
-      accountType,
-      message: `${accountType} Login successful!`,
-      token,
-      user: accountData,
+    // Search for an Individual user by userId if not email is entered
+    const user = await findUser(User, {
+      userId: normalizedUserId,
+      isVerified: true
     });
-  } catch (error) {
-    console.error(error);
-    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      message: "An error occurred during login.",
-    });
+    if (user) {
+      account = user;
+      accountType = "Individual";
+    }
   }
-};
 
+  // If no account is found, return an error response
+  if (!account) {
+    return res
+      .status(StatusCodes.BAD_REQUEST)
+      .json({ message: "Invalid credentials." });
+  }
+
+  // Verify the password
+  const validPassword = await bcrypt.compare(password, account.password);
+  if (!validPassword) {
+    return res
+      .status(StatusCodes.BAD_REQUEST)
+      .json({ message: "Invalid credentials." });
+  }
+
+  // Generate the auth token
+  const token = await account.generateAuthToken();
+  const { password: _, ...accountData } = account.toObject();
+
+  // Return the success response
+  return res.status(StatusCodes.OK).json({
+    accountType,
+    message: `${accountType} Login successful!`,
+    token,
+    user: accountData
+  });
+};
 
 // Forgot Password Route
 exports.forgotPassword = async (req, res) => {
@@ -142,7 +137,7 @@ exports.forgotPassword = async (req, res) => {
   const code = otpGenerator.generate(6, {
     lowerCaseAlphabets: false,
     upperCaseAlphabets: false,
-    specialChars: false,
+    specialChars: false
   });
 
   // Create and save the OTP record
@@ -152,7 +147,7 @@ exports.forgotPassword = async (req, res) => {
     checkModel: accountType,
     code,
     type: "ForgotPassword",
-    expiresIn: Date.now() + 3600000, // 1 hour expiration
+    expiresIn: Date.now() + 3600000 // 1 hour expiration
   });
   //  school_name;
   await otp.save();
@@ -161,11 +156,16 @@ exports.forgotPassword = async (req, res) => {
   const token = account.generateAuthToken();
 
   // Send OTP email
-  await Otp_ForgotPassword(account.fullName || account.school_name, account.email, code, token);
+  await Otp_ForgotPassword(
+    account.fullName || account.school_name,
+    account.email,
+    code,
+    token
+  );
 
   // Return success response
   res.status(StatusCodes.OK).json({
-    message: "Please enter the code sent to your email.",
+    message: "Please enter the code sent to your email."
   });
 };
 
@@ -183,14 +183,14 @@ exports.verify_otp_forgotPassword = async (req, res) => {
   if (otp === null) {
     return res.status(StatusCodes.BAD_REQUEST).json({
       status: "failed",
-      error: "Invalid OTP Token",
+      error: "Invalid OTP Token"
     });
   }
 
   if (otp.user.toString() !== req.user._id) {
     return res.status(StatusCodes.BAD_REQUEST).json({
       status: "failed",
-      message: "Invalid User Credentials",
+      message: "Invalid User Credentials"
     });
   }
 
@@ -202,7 +202,7 @@ exports.verify_otp_forgotPassword = async (req, res) => {
     await OTP.findOneAndDelete({ code }).exec();
     return res.status(StatusCodes.BAD_REQUEST).json({
       status: "failed",
-      message: "Invalid or Expired Token.",
+      message: "Invalid or Expired Token."
     });
   }
 
@@ -212,16 +212,16 @@ exports.verify_otp_forgotPassword = async (req, res) => {
   await User.findByIdAndUpdate(
     otp.user,
     {
-      resetPassword: true,
+      resetPassword: true
     },
     {
-      new: true,
+      new: true
     }
   );
 
   return res.status(StatusCodes.OK).json({
     status: "success",
-    message: "OTP verified, You can now reset Password",
+    message: "OTP verified, You can now reset Password"
   });
 };
 
@@ -242,7 +242,7 @@ exports.resetPassword = async (req, res) => {
   if (!account) {
     return res.status(StatusCodes.BAD_REQUEST).json({
       status: "failed",
-      error: "Invalid credentials or reset password token expired.",
+      error: "Invalid credentials or reset password token expired."
     });
   }
 
@@ -268,7 +268,7 @@ exports.resetPassword = async (req, res) => {
   res.status(StatusCodes.OK).json({
     status: "success",
     message: "Your password has been successfully reset.",
-    accountType: accountType,
+    accountType: accountType
   });
 };
 
@@ -285,7 +285,7 @@ exports.generateUserId = async (req, res) => {
   res.status(StatusCodes.OK).json({
     status: "success",
     message: "successfully created the id",
-    userId,
+    userId
   });
 };
 
@@ -302,12 +302,12 @@ exports.verifyAccount = async (req, res) => {
 
   // Find the OTP entry that matches the provided code, email, and type
   const otp = await OTP.findOne({
-    code,
+    code
   });
 
   if (!otp) {
     return res.status(StatusCodes.BAD_REQUEST).json({
-      message: "Wrong code or code expired. Please request a new code.",
+      message: "Wrong code or code expired. Please request a new code."
     });
   }
 
@@ -325,7 +325,7 @@ exports.verifyAccount = async (req, res) => {
       break;
     default:
       return res.status(StatusCodes.BAD_REQUEST).json({
-        message: "Invalid account type.",
+        message: "Invalid account type."
       });
   }
 

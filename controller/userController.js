@@ -556,7 +556,8 @@ exports.activityData = async (req, res) => {
 exports.getactivityData = async (req, res) => {
   const { id, week } = req.params;
   const user = req.user._id;
-  const activity = await Activity.findOne({ courseEnrollment: id, user, week });
+  const activity = await Activity.findOne({ courseEnrollment: id, user, week:week });
+  console.log({courseEnrollment: id, user, week:week})
   if (!activity) {
     return res.status(StatusCodes.NOT_FOUND).json({
       status: "failed",
