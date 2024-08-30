@@ -613,7 +613,6 @@ exports.getAssessmentData = async (req, res) => {
     user,
     email,
     week,
-    courseEnrollment: id
   });
 
   if (existingAssessment) {
