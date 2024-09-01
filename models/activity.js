@@ -52,7 +52,7 @@ const ActivitiesSchema = new mongoose.Schema({
   courseEnrollment: {
     type: mongoose.Schema.Types.ObjectId,
     required: true,
-    ref: "CourseEnrollment",
+    ref: "Course",
   },
   additionalData: {
     type: Map,

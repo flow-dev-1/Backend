@@ -515,17 +515,31 @@ exports.getParentWithNewCourseInvite = async (req, res) => {
 
 exports.getCourses = async (req, res) => {
   let { type } = req.query;
-
   let courses;
+
   if (type === "Enrolled") {
     courses = await CourseEnrollment.find({
       user: req.user._id,
       status: "Confirmed"
     }).populate("course");
-    console.log(req.user._id);
+
+    for (let courseEnrollment of courses) {
+      let courseId = courseEnrollment.course._id;
+      console.log(courseId);
+      let courseProgress = await Activity.find({
+        user: req.user._id,
+        courseEnrollment: courseId
+      });
+
+
+      let progressPercentage = (courseProgress.length / 5) * 100;
+
+      courseEnrollment.progress = progressPercentage;
+    }
   } else {
     courses = await Courses.find({ status: "published" });
   }
+
   res.status(StatusCodes.OK).json({ courses });
 };
 
@@ -556,8 +570,12 @@ exports.activityData = async (req, res) => {
 exports.getactivityData = async (req, res) => {
   const { id, week } = req.params;
   const user = req.user._id;
-  const activity = await Activity.findOne({ courseEnrollment: id, user, week:week });
-  console.log({courseEnrollment: id, user, week:week})
+  const activity = await Activity.findOne({
+    courseEnrollment: id,
+    user,
+    week: week
+  });
+  console.log({ courseEnrollment: id, user, week: week });
   if (!activity) {
     return res.status(StatusCodes.NOT_FOUND).json({
       status: "failed",
@@ -612,7 +630,7 @@ exports.getAssessmentData = async (req, res) => {
   const existingAssessment = await Assesment.findOne({
     user,
     email,
-    week,
+    week
   });
 
   if (existingAssessment) {
@@ -625,4 +643,3 @@ exports.getAssessmentData = async (req, res) => {
     message: "No assessment found for the given criteria"
   });
 };
-
