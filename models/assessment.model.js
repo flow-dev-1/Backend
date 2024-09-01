@@ -26,7 +26,7 @@ const assesmentSchema = mongoose.Schema(
       type: String,
       required: true
     },
-
+    text: { type: [String] },
     isDeleted: { type: Boolean, default: false },
     deletedAt: { type: Date, default: null }
   },
@@ -37,5 +37,4 @@ const assesmentSchema = mongoose.Schema(
 
 const Assesment = mongoose.model("assessments", assesmentSchema);
 
-module.exports = Assesment
-
+module.exports = Assesment;
