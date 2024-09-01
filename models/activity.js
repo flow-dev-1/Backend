@@ -1,6 +1,5 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 const { Schema } = mongoose;
-
 
 // Schema for the overall structure (Activities)
 const ActivitiesSchema = new mongoose.Schema(
@@ -19,12 +18,7 @@ const ActivitiesSchema = new mongoose.Schema(
       type: String,
       required: true
     },
-    activities: {
-      type: Map,
-      of: Schema.Types.Mixed, 
-      default: {},
-      required: true
-    },
+    activities: { type: [Schema.Types.Mixed], default: [], required: true },
     courseEnrollment: {
       type: mongoose.Schema.Types.ObjectId,
       required: true,
