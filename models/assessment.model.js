@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
+const { Schema } = mongoose;
 
-const assesmentSchema = mongoose.Schema(
+const assesmentSchema = new mongoose.Schema(
   {
     user: {
       type: mongoose.Schema.Types.ObjectId,
@@ -22,6 +23,10 @@ const assesmentSchema = mongoose.Schema(
       type: String,
       required: true
     },
+    personalityColor: {
+      type: String
+    },
+    assessments: { type: [Schema.Types.Mixed], default: [], required: true },
     rating: {
       type: String,
       required: true
