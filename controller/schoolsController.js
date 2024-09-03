@@ -74,7 +74,6 @@ exports.getSchoolEmailTeam = async (req, res) => {
 
 exports.getCourses = async (req, res) => {
   let { type } = req.query;
-
   let courses;
 
   if (type === "Enrolled") {
