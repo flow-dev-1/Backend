@@ -420,7 +420,7 @@ exports.courseEnrollment = async (req, res) => {
   const { fullName, email, phone } = req.body;
   const { id } = req.params;
 
-  // Check if student is already enrolled in this course
+  // Check if the student is already enrolled in this course
   const isEnrolled = await CourseEnrollment.findOne({
     course: id,
     user: req.user._id,
@@ -433,33 +433,46 @@ exports.courseEnrollment = async (req, res) => {
       message: "You are already enrolled in this course!"
     });
   }
-  const course = await Course.findById(id);
 
-  console.log(course);
+  // Fetch the course details
+  const course = await Course.findById(id);
+  if (!course) {
+    return res.status(StatusCodes.NOT_FOUND).json({
+      status: "failed",
+      message: "Course not found!"
+    });
+  }
+
+  // Create a new course enrollment record
   const enrollment = new CourseEnrollment({
     _id: new mongoose.Types.ObjectId(),
     course: id,
     user: req.user._id,
-    checkModel: course.grade === "Educator" ? "Educator" : "User"
+    checkModel: req.user.isSchool
+      ? "School"
+      : req.user.educatorType
+      ? "Educator"
+      : "User"
   });
 
+  // Initiate payment through Paystack
   const { data } = await initiatePaystackPayment(
     course.cost,
     email,
-    `${fullName}`,
+    fullName,
     enrollment._id
   );
 
-  // If Paystack doesn't initiate payment stop the payment
-  if (!data)
+  // If Paystack payment initiation fails, return an error
+  if (!data) {
     return res.status(StatusCodes.BAD_REQUEST).json({
       status: "failed",
       message: "Operation Failed"
     });
+  }
 
+  // Prepare payment information
   const amount = Number(course.cost);
-
-  // Generate payment Ticket
   const payment = new Payment({
     user: req.user._id,
     checkModel: "User",
@@ -468,9 +481,10 @@ exports.courseEnrollment = async (req, res) => {
     amount,
     phone,
     email,
-    reference: data?.reference
+    reference: data.reference
   });
 
+  // Save the enrollment and payment records concurrently
   await Promise.all([payment.save(), enrollment.save()]);
 
   return res.status(StatusCodes.CREATED).json({
@@ -479,6 +493,7 @@ exports.courseEnrollment = async (req, res) => {
     data
   });
 };
+
 
 exports.getParentWithNewCourseInvite = async (req, res) => {
   const { email } = req.user;
