@@ -494,7 +494,6 @@ exports.courseEnrollment = async (req, res) => {
   });
 };
 
-
 exports.getParentWithNewCourseInvite = async (req, res) => {
   const { email } = req.user;
 
@@ -546,7 +545,6 @@ exports.getCourses = async (req, res) => {
         courseEnrollment: courseId
       });
 
-
       let progressPercentage = (courseProgress.length / 5) * 100;
 
       courseEnrollment.progress = progressPercentage;
@@ -560,26 +558,43 @@ exports.getCourses = async (req, res) => {
 
 exports.activityData = async (req, res) => {
   const { id } = req.params;
+
   const user = req.user._id;
   const email = req.user.email;
-  // const course = await Sc
-  const checkModel = "User";
 
   req.body.user = user;
+  const week = req.body.week;
   req.body.email = email;
-  req.body.checkModel = checkModel;
+  req.body.checkModel = req.user.isSchool
+    ? "School"
+    : req.user.educatorType
+    ? "Educator"
+    : "User";
   req.body.courseEnrollment = id;
-  const courseEnrollmentForActivity = await Course.findById(id);
+  const activities = req.body.activities;
 
-  console.log(courseEnrollmentForActivity);
-  // Update Activity for this course
-  // If no activity has been created create it.
-  const activity = await Activity.findOneAndUpdate(
-    { courseEnrollment: id },
-    req.body,
-    { new: true, upsert: true }
-  );
-  res.status(StatusCodes.OK).json({ activity });
+  const courseEnrollmentForActivity = await Course.findById(id);
+  if (!courseEnrollmentForActivity) {
+    return res
+      .status(StatusCodes.NOT_FOUND)
+      .json({ message: "Course not found" });
+  }
+
+  // Look for the existing activity
+  const activity = await Activity.findOne({ courseEnrollment: id, week, user });
+
+  // If no activity is found, create a new one
+  if (!activity) {
+    const newActivity = new Activity(req.body);
+    await newActivity.save();
+    return res.status(StatusCodes.OK).json({ newActivity });
+  }
+
+  // If an activity is found, respond with a conflict
+  return res.status(StatusCodes.CONFLICT).json({
+    success: "failed",
+    message: "You have already taken the activity"
+  });
 };
 
 exports.getactivityData = async (req, res) => {
