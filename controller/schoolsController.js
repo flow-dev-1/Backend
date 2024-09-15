@@ -1356,7 +1356,7 @@ exports.allGraphData = async (req, res) => {
   let notActive = 0;
   let totalAmount = 0; // Total amount includes both Users and Educators
   let userAmount = 0; // Total amount specifically for users
-  const dataEnrollment = {};
+  // const dataEnrollment = {};
 
   // Process each entry in the graph data
   graphData.forEach((entry) => {
@@ -1433,8 +1433,8 @@ exports.allGraphData = async (req, res) => {
     notActive, // Only for students
     totalAmount, // Total amount includes both Users and Educators
     userAmount, 
-    dataEnrollment: dataEnrollmentArray,
-    validGraphData: graphData,
+    // dataEnrollment: dataEnrollmentArray,
+    // validGraphData: graphData,
   });
 };
 
