@@ -21,6 +21,7 @@ const Course = require("../models/course");
 const { default: mongoose } = require("mongoose");
 const Payment = require("../models/payment");
 const Activity = require("../models/activity");
+const Assesment = require("../models/assessment.model");
 
 exports.getLoggedUser = async (req, res) => {
   const user = await User.findById(req.user._id).select(
@@ -66,7 +67,7 @@ exports.registerUser = async (req, res) => {
       phone,
       country,
       state,
-      students: [],
+      students: []
     });
   }
 
@@ -88,7 +89,7 @@ exports.registerUser = async (req, res) => {
         const code = otpGenerator.generate(6, {
           lowerCaseAlphabets: false,
           upperCaseAlphabets: false,
-          specialChars: false,
+          specialChars: false
         });
 
         const otp = new OTP({
@@ -97,7 +98,7 @@ exports.registerUser = async (req, res) => {
           email,
           code,
           type: "RegisterUser",
-          expiresIn: Date.now() + 3600000, // 1 hour expiration
+          expiresIn: Date.now() + 3600000 // 1 hour expiration
         });
 
         await otp.save();
@@ -118,7 +119,7 @@ exports.registerUser = async (req, res) => {
       if (foundStudent) {
         return res.status(StatusCodes.BAD_REQUEST).json({
           sucess: "failed",
-          message: "Student already exists",
+          message: "Student already exists"
         });
       }
       const newStudent = new User({
@@ -135,7 +136,7 @@ exports.registerUser = async (req, res) => {
         country,
         state,
         lga,
-        userType: "Individual",
+        userType: "Individual"
       });
 
       await newStudent.save();
@@ -148,7 +149,7 @@ exports.registerUser = async (req, res) => {
       const code = otpGenerator.generate(6, {
         lowerCaseAlphabets: false,
         upperCaseAlphabets: false,
-        specialChars: false,
+        specialChars: false
       });
 
       const otp = new OTP({
@@ -157,7 +158,7 @@ exports.registerUser = async (req, res) => {
         email,
         code,
         type: "RegisterUser",
-        expiresIn: Date.now() + 3600000, // 1 hour expiration
+        expiresIn: Date.now() + 3600000 // 1 hour expiration
       });
 
       await otp.save();
@@ -169,7 +170,7 @@ exports.registerUser = async (req, res) => {
 
   return res.status(StatusCodes.OK).json({
     message: "Students registered successfully",
-    token: firstStudentToken,
+    token: firstStudentToken
   });
 };
 
@@ -182,7 +183,7 @@ exports.registerInvitedUser = async (req, res) => {
     state,
     lga,
     students,
-    userId,
+    userId
   } = req.body;
 
   if (!students || students.length === 0) {
@@ -204,7 +205,7 @@ exports.registerInvitedUser = async (req, res) => {
       phone,
       country,
       state,
-      students: [],
+      students: []
     });
   }
 
@@ -234,7 +235,7 @@ exports.registerInvitedUser = async (req, res) => {
         const code = otpGenerator.generate(6, {
           lowerCaseAlphabets: false,
           upperCaseAlphabets: false,
-          specialChars: false,
+          specialChars: false
         });
 
         const otp = new OTP({
@@ -243,7 +244,7 @@ exports.registerInvitedUser = async (req, res) => {
           email,
           code,
           type: "RegisterUser",
-          expiresIn: Date.now() + 3600000, // 1 hour expiration
+          expiresIn: Date.now() + 3600000 // 1 hour expiration
         });
 
         await otp.save();
@@ -279,7 +280,7 @@ exports.registerInvitedUser = async (req, res) => {
         const code = otpGenerator.generate(6, {
           lowerCaseAlphabets: false,
           upperCaseAlphabets: false,
-          specialChars: false,
+          specialChars: false
         });
 
         const otp = new OTP({
@@ -288,7 +289,7 @@ exports.registerInvitedUser = async (req, res) => {
           email,
           code,
           type: "RegisterUser",
-          expiresIn: Date.now() + 3600000, // 1 hour expiration
+          expiresIn: Date.now() + 3600000 // 1 hour expiration
         });
 
         await otp.save();
@@ -316,13 +317,13 @@ exports.registerInvitedUser = async (req, res) => {
   if (emailError) {
     return res.status(StatusCodes.BAD_REQUEST).json({
       message: "Account update successful, but email sending failed.",
-      error: emailError.message || emailError,
+      error: emailError.message || emailError
     });
   }
 
   return res.status(StatusCodes.OK).json({
     message: "Accounts updated successfully!",
-    token: firstStudentToken,
+    token: firstStudentToken
   });
 };
 
@@ -337,7 +338,7 @@ exports.registerSchoolInvitedAdmin = async (req, res) => {
     state,
     lga,
     password,
-    grade,
+    grade
   } = req.body;
 
   let user = await User.findOne({ _id: req.user._id });
@@ -398,20 +399,20 @@ exports.updateProfile = async (req, res) => {
   // Find and update the user's profile
   const updateProfile = await User.findByIdAndUpdate(req.user._id, req.body, {
     new: true,
-    select: "-password -isVerified -isDeleted -resetPassword",
+    select: "-password -isVerified -isDeleted -resetPassword"
   });
   // This user is not on the app
   if (!updateProfile) {
     return res.status(StatusCodes.BAD_REQUEST).json({
       status: "failed",
-      error: "Invalid credentials",
+      error: "Invalid credentials"
     });
   }
 
   res.status(StatusCodes.OK).json({
     status: "success",
     message: "You have successfully updated your profile",
-    data: updateProfile,
+    data: updateProfile
   });
 };
 
@@ -419,45 +420,59 @@ exports.courseEnrollment = async (req, res) => {
   const { fullName, email, phone } = req.body;
   const { id } = req.params;
 
-  // Check if student is already enrolled in this course
+  // Check if the student is already enrolled in this course
   const isEnrolled = await CourseEnrollment.findOne({
     course: id,
     user: req.user._id,
-    status: "Confirmed",
+    status: "Confirmed"
   });
 
   if (isEnrolled) {
     return res.status(StatusCodes.BAD_REQUEST).json({
       status: "failed",
-      message: "You are already enrolled in this course!",
+      message: "You are already enrolled in this course!"
     });
   }
 
+  // Fetch the course details
   const course = await Course.findById(id);
+  if (!course) {
+    return res.status(StatusCodes.NOT_FOUND).json({
+      status: "failed",
+      message: "Course not found!"
+    });
+  }
 
+  // Create a new course enrollment record
   const enrollment = new CourseEnrollment({
     _id: new mongoose.Types.ObjectId(),
     course: id,
     user: req.user._id,
+    checkModel: req.user.isSchool
+      ? "School"
+      : req.user.educatorType
+      ? "Educator"
+      : "User"
   });
 
+  // Initiate payment through Paystack
   const { data } = await initiatePaystackPayment(
     course.cost,
     email,
-    `${fullName}`,
+    fullName,
     enrollment._id
   );
 
-  // If Paystack doesn't initiate payment stop the payment
-  if (!data)
+  // If Paystack payment initiation fails, return an error
+  if (!data) {
     return res.status(StatusCodes.BAD_REQUEST).json({
       status: "failed",
-      message: "Operation Failed",
+      message: "Operation Failed"
     });
+  }
 
+  // Prepare payment information
   const amount = Number(course.cost);
-
-  // Generate payment Ticket
   const payment = new Payment({
     user: req.user._id,
     checkModel: "User",
@@ -466,15 +481,16 @@ exports.courseEnrollment = async (req, res) => {
     amount,
     phone,
     email,
-    reference: data?.reference,
+    reference: data.reference
   });
 
+  // Save the enrollment and payment records concurrently
   await Promise.all([payment.save(), enrollment.save()]);
 
   return res.status(StatusCodes.CREATED).json({
     status: "success",
     message: "Opening Payment Window please do not close the page!",
-    data,
+    data
   });
 };
 
@@ -486,19 +502,20 @@ exports.getParentWithNewCourseInvite = async (req, res) => {
   if (!parent) {
     return res.status(StatusCodes.NOT_FOUND).json({
       status: "failed",
-      message: "Parent not found",
+      message: "Parent not found"
     });
   }
 
   const studentsWithInvite = await User.find({
     email: email,
     newCourseInvite: { $exists: true, $ne: null },
+    isVerified: false
   });
 
   if (!studentsWithInvite.length) {
     return res.status(StatusCodes.NOT_FOUND).json({
       status: "failed",
-      message: "No students found with a new course invite for this parent",
+      message: "No students found with a new course invite for this parent"
     });
   }
 
@@ -506,39 +523,153 @@ exports.getParentWithNewCourseInvite = async (req, res) => {
 
   return res.status(StatusCodes.OK).json({
     status: "success",
-    data: parent,
+    data: parent
   });
 };
 
 exports.getCourses = async (req, res) => {
   let { type } = req.query;
-
   let courses;
+
   if (type === "Enrolled") {
     courses = await CourseEnrollment.find({
       user: req.user._id,
-      status: "Confirmed",
+      status: "Confirmed"
     }).populate("course");
-    console.log(req.user._id);
+
+    for (let courseEnrollment of courses) {
+      let courseId = courseEnrollment.course._id;
+      console.log(courseId);
+      let courseProgress = await Activity.find({
+        user: req.user._id,
+        courseEnrollment: courseId
+      });
+
+      let progressPercentage = (courseProgress.length / 5) * 100;
+
+      courseEnrollment.progress = progressPercentage;
+    }
   } else {
     courses = await Courses.find({ status: "published" });
   }
+
   res.status(StatusCodes.OK).json({ courses });
 };
 
 exports.activityData = async (req, res) => {
-  const { id } = req.params
+  const { id } = req.params;
+
   const user = req.user._id;
   const email = req.user.email;
-  const checkModel = "User"
 
-  req.body.user = user
-  req.body.email = email
-  req.body.checkModel = checkModel
-  req.body.courseEnrollment = id
+  req.body.user = user;
+  const week = req.body.week;
+  req.body.email = email;
+  req.body.checkModel = req.user.isSchool
+    ? "School"
+    : req.user.educatorType
+    ? "Educator"
+    : "User";
+  req.body.courseEnrollment = id;
+  const activities = req.body.activities;
 
-  // Update Activity for this course 
-  // If no activity has been created create it.
-  const activity = await Activity.findOneAndUpdate({ courseEnrollment: id }, req.body, { new: true, upsert: true })
+  const courseEnrollmentForActivity = await Course.findById(id);
+  if (!courseEnrollmentForActivity) {
+    return res
+      .status(StatusCodes.NOT_FOUND)
+      .json({ message: "Course not found" });
+  }
+
+  // Look for the existing activity
+  const activity = await Activity.findOne({ courseEnrollment: id, week, user });
+
+  // If no activity is found, create a new one
+  if (!activity) {
+    const newActivity = new Activity(req.body);
+    await newActivity.save();
+    return res.status(StatusCodes.OK).json({ newActivity });
+  }
+
+  // If an activity is found, respond with a conflict
+  return res.status(StatusCodes.CONFLICT).json({
+    success: "failed",
+    message: "You have already taken the activity"
+  });
+};
+
+exports.getactivityData = async (req, res) => {
+  const { id, week } = req.params;
+  const user = req.user._id;
+  const activity = await Activity.findOne({
+    courseEnrollment: id,
+    user,
+    week: week
+  });
+  console.log({ courseEnrollment: id, user, week: week });
+  if (!activity) {
+    return res.status(StatusCodes.NOT_FOUND).json({
+      status: "failed",
+      message: "No activity for this student"
+    });
+  }
+
   res.status(StatusCodes.OK).json({ activity });
+};
+
+exports.assessmentData = async (req, res) => {
+  const { id } = req.params;
+  const user = req.user._id;
+  const email = req.user.email;
+  const checkModel = "User";
+
+  const assessmentData = {
+    user: user,
+    email: email,
+    checkModel: checkModel,
+    courseEnrollment: id,
+    ...req.body
+  };
+
+  // Check if an assessment already exists for the user
+  const existingAssessment = await Assesment.findOne({
+    user,
+    email,
+    week: req.body.week,
+    courseEnrollment: id
+  });
+
+  if (existingAssessment) {
+    return res.status(StatusCodes.CONFLICT).json({
+      success: "failed",
+      message: "You have already taken the assessment"
+    });
+  }
+
+  // Create a new assessment if none exists
+  const assessment = await Assesment.create(assessmentData);
+
+  res.status(StatusCodes.OK).json({ assessment });
+};
+
+exports.getAssessmentData = async (req, res) => {
+  const { id, week } = req.params;
+  const user = req.user._id;
+  const email = req.user.email;
+
+  // Find the assessment for the user
+  const existingAssessment = await Assesment.findOne({
+    user,
+    email,
+    week
+  });
+
+  if (existingAssessment) {
+    return res.status(StatusCodes.OK).json({ existingAssessment });
+  }
+
+  // Return a 404 if no assessment is found
+  res.status(StatusCodes.NOT_FOUND).json({
+    success: "failed",
+    message: "No assessment found for the given criteria"
+  });
 };

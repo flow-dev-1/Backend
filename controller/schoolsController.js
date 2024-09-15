@@ -74,7 +74,6 @@ exports.getSchoolEmailTeam = async (req, res) => {
 
 exports.getCourses = async (req, res) => {
   let { type } = req.query;
-
   let courses;
 
   if (type === "Enrolled") {
@@ -667,6 +666,8 @@ exports.courseEnrollment = async (req, res) => {
         school: id,
         schoolCourseEnrollment: newEnrollment._id,
         user: newUser._id,
+        checkModel:
+          existingEnrollment.grade === "Educator" ? "Educator" : "User",
       });
 
       newEnrollment.studentEnrollments.push(newStudentEnrollment._id);

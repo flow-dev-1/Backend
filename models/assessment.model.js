@@ -1,8 +1,7 @@
 const mongoose = require("mongoose");
 const { Schema } = mongoose;
 
-// Schema for the overall structure (Activities)
-const ActivitiesSchema = new mongoose.Schema(
+const assesmentSchema = new mongoose.Schema(
   {
     user: {
       type: mongoose.Schema.Types.ObjectId,
@@ -10,20 +9,29 @@ const ActivitiesSchema = new mongoose.Schema(
       refPath: "checkModel"
     },
     email: { type: String },
+    courseEnrollment: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+      ref: "CourseEnrollment"
+    },
     checkModel: {
       type: String,
       enum: ["User", "Admin", "School", "Educator"]
+      // required: true,
     },
     week: {
       type: String,
       required: true
     },
-    activities: { type: [Schema.Types.Mixed], default: [], required: true },
-    courseEnrollment: {
-      type: mongoose.Schema.Types.ObjectId,
-      required: true,
-      ref: "Course"
+    personalityColor: {
+      type: String
     },
+    assessments: { type: [Schema.Types.Mixed], default: [], required: true },
+    rating: {
+      type: String,
+      required: true
+    },
+    text: { type: [String] },
     isDeleted: { type: Boolean, default: false },
     deletedAt: { type: Date, default: null }
   },
@@ -32,7 +40,6 @@ const ActivitiesSchema = new mongoose.Schema(
   }
 );
 
-// Create the model
-const Activity = mongoose.model("Activity", ActivitiesSchema);
+const Assesment = mongoose.model("assessments", assesmentSchema);
 
-module.exports = Activity;
+module.exports = Assesment;
