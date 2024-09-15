@@ -539,12 +539,11 @@ exports.getCourses = async (req, res) => {
 
     for (let courseEnrollment of courses) {
       let courseId = courseEnrollment.course._id;
-      console.log(courseId);
       let courseProgress = await Activity.find({
         user: req.user._id,
-        courseEnrollment: courseId
+        courseEnrollment: courseId,
       });
-
+    console.log(courseProgress)
       let progressPercentage = (courseProgress.length / 5) * 100;
 
       courseEnrollment.progress = progressPercentage;
