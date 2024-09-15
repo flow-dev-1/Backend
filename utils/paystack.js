@@ -11,7 +11,7 @@ exports.initiatePaystackPayment = async (amount, email, name, enrolmentId) => {
         email: email,
         name: name,
         // channels:['card','bank'],
-        callback_url: ENVIRONMENT === "production" ? "https://flow.ng/dashboard/enrollment/confirm" :
+        callback_url: ENVIRONMENT === "production" ? "https://dashboard.flow.ng/dashboard/enrollment/confirm" :
             ENVIRONMENT === "staging" ? "https://my-flow.netlify.app/dashboard/enrollment/confirm" : "http://localhost:3000/dashboard/enrollment/confirm",
         metadata: {
             enrolmentId
