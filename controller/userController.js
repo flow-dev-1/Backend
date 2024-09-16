@@ -266,15 +266,7 @@ exports.registerInvitedUser = async (req, res) => {
 
       if (foundStudent) {
         // Update student details
-        await StudentEnrollments.findByIdAndUpdate(
-          foundStudent._id,
-          {
-            status: "Confirmed"
-          },
-          {
-            new: true,
-          }
-        );
+
         for (const key in studentItem) {
           if (studentItem.hasOwnProperty(key)) {
             foundStudent[key] = studentItem[key];
@@ -286,6 +278,15 @@ exports.registerInvitedUser = async (req, res) => {
           foundStudent.password = await bcrypt.hash(password, salt);
         }
         await foundStudent.save();
+        await StudentEnrollments.findByIdAndUpdate(
+          foundStudent._id,
+          {
+            status: "Confirmed"
+          },
+          {
+            new: true,
+          }
+        );
 
         const code = otpGenerator.generate(6, {
           lowerCaseAlphabets: false,
@@ -313,7 +314,7 @@ exports.registerInvitedUser = async (req, res) => {
         if (!newParent.students.includes(foundStudent._id)) {
           newParent.students.push(foundStudent._id);
         }
- 
+
 
         firstStudentToken = foundStudent.generateAuthToken();
       } else {
@@ -462,8 +463,8 @@ exports.courseEnrollment = async (req, res) => {
     checkModel: req.user.isSchool
       ? "School"
       : req.user.educatorType
-      ? "Educator"
-      : "User"
+        ? "Educator"
+        : "User"
   });
 
   // Initiate payment through Paystack
@@ -554,7 +555,7 @@ exports.getCourses = async (req, res) => {
         user: req.user._id,
         courseEnrollment: courseId,
       });
-    console.log(courseProgress)
+      console.log(courseProgress)
       let progressPercentage = (courseProgress.length / 5) * 100;
 
       courseEnrollment.progress = progressPercentage;
@@ -578,8 +579,8 @@ exports.activityData = async (req, res) => {
   req.body.checkModel = req.user.isSchool
     ? "School"
     : req.user.educatorType
-    ? "Educator"
-    : "User";
+      ? "Educator"
+      : "User";
   req.body.courseEnrollment = id;
   const activities = req.body.activities;
 
