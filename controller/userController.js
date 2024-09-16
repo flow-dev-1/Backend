@@ -278,13 +278,14 @@ exports.registerInvitedUser = async (req, res) => {
           foundStudent.password = await bcrypt.hash(password, salt);
         }
         await foundStudent.save();
-        await StudentEnrollments.findByIdAndUpdate(
-          foundStudent._id,
+
+        await StudentEnrollments.findOneAndUpdate(
+          { user: foundStudent._id }, // Filter to find the document
           {
-            status: "Confirmed"
+            status: "Confirmed" // Update object
           },
           {
-            new: true,
+            new: true, // Return the updated document
           }
         );
 
