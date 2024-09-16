@@ -22,6 +22,7 @@ const { default: mongoose } = require("mongoose");
 const Payment = require("../models/payment");
 const Activity = require("../models/activity");
 const Assesment = require("../models/assessment.model");
+const { courseEnrollment } = require("./schoolsController");
 
 exports.getLoggedUser = async (req, res) => {
   const user = await User.findById(req.user._id).select(
@@ -303,6 +304,15 @@ exports.registerInvitedUser = async (req, res) => {
         if (!newParent.students.includes(foundStudent._id)) {
           newParent.students.push(foundStudent._id);
         }
+        await StudentEnrollments.findByIdAndUpdate(
+          foundStudent._id, 
+          {
+            status: "Confirmed" 
+          },
+          {
+            new: true, 
+          }
+        );
 
         firstStudentToken = foundStudent.generateAuthToken();
       } else {
