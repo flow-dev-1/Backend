@@ -266,6 +266,15 @@ exports.registerInvitedUser = async (req, res) => {
 
       if (foundStudent) {
         // Update student details
+        await StudentEnrollments.findByIdAndUpdate(
+          foundStudent._id,
+          {
+            status: "Confirmed"
+          },
+          {
+            new: true,
+          }
+        );
         for (const key in studentItem) {
           if (studentItem.hasOwnProperty(key)) {
             foundStudent[key] = studentItem[key];
@@ -304,15 +313,7 @@ exports.registerInvitedUser = async (req, res) => {
         if (!newParent.students.includes(foundStudent._id)) {
           newParent.students.push(foundStudent._id);
         }
-        await StudentEnrollments.findByIdAndUpdate(
-          foundStudent._id, 
-          {
-            status: "Confirmed" 
-          },
-          {
-            new: true, 
-          }
-        );
+ 
 
         firstStudentToken = foundStudent.generateAuthToken();
       } else {
