@@ -735,7 +735,7 @@ exports.courseEnrollment = async (req, res) => {
           schoolCourseEnrollment: newEnrollment._id,
           user: newUser._id,
           checkModel: "User",
-          status: "Confirmed"
+          // status: "Confirmed"
 
         });
 
@@ -793,7 +793,6 @@ exports.courseEnrollment = async (req, res) => {
             schoolCourseEnrollment: newEnrollment._id,
             user: student._id,
             checkModel: "User",
-            status:"Confirmed"
           });
 
           newEnrollment.studentEnrollments.push(newStudentEnrollment._id);
@@ -887,7 +886,7 @@ exports.addStudentsToCourseEnrollment = async (req, res) => {
         checkModel: "User",
         schoolCourseEnrollment: existingEnrollment._id,
         user: newUser._id,
-        status: "Confirmed"
+         checkModel: "User",
       });
 
       existingEnrollment.studentEnrollments.push(newStudentEnrollment._id);
