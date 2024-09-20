@@ -166,7 +166,7 @@ exports.registerInvitedEducator = async (req, res) => {
         results.push({ email, message: "Expired or invalid invite link!" });
         continue;
       }
-
+   
       // Update the educator's details if they exist
       foundEducator.fullName = fullName;
       foundEducator.phone = phone;
@@ -332,4 +332,103 @@ exports.getInvitedEducator = async (req, res) => {
     status: "success",
     data: educatorInvited
   });
+};
+
+exports.registerInvitedEducatorAdmin = async (req, res) => {
+  const {
+    fullName,
+    phone,
+    email,
+    gender,
+    DOB,
+    country,
+    state,
+    lga,
+    password,
+    grade
+  } = req.body;
+
+  const salt = await bcrypt.genSalt(10);
+  const hashed_password = await bcrypt.hash(password, salt)
+  // Check if the educator already exists
+  let foundEducator = await Educator.findOne({ email });
+
+  if (!foundEducator) {
+    foundEducator = new Educator({
+      fullName,
+      phone,
+      email,
+      gender,
+      DOB,
+      country,
+      state,
+      lga,
+      grade,
+      educatorType: "School",
+      isVerified: false,
+      newCourseInvite: null,
+      password: hashed_password
+    });
+  } else {
+    // Check if the invite has expired or is invalid
+    if (!foundEducator.newCourseInvite) {
+      return res.status(StatusCodes.BAD_REQUEST).json({ message: "Expired or invalid invite link!" });
+    }
+
+    // Update the educator's details if they already exist
+    foundEducator.fullName = fullName;
+    foundEducator.phone = phone;
+    foundEducator.email = email;
+    foundEducator.gender = gender;
+    foundEducator.DOB = DOB;
+    foundEducator.country = country;
+    foundEducator.state = state;
+    foundEducator.lga = lga;
+    foundEducator.grade = grade;
+    foundEducator.educatorType = "School";
+    foundEducator.school = foundEducator.newCourseInvite.school;
+    foundEducator.newCourseInvite = null; // Clear the course invite after it's been used
+  }
+
+  // Hash and set password if provided
+  if (password) {
+    const salt = await bcrypt.genSalt(10);
+    foundEducator.password = await bcrypt.hash(password, salt);
+  }
+
+  // If the educator is not verified, generate and send OTP
+  if (!foundEducator.isVerified) {
+    const code = otpGenerator.generate(6, {
+      lowerCaseAlphabets: false,
+      upperCaseAlphabets: false,
+      specialChars: false,
+    });
+
+    const otp = new OTP({
+      user: foundEducator._id,
+      checkModel: "Educator",
+      email,
+      code,
+      type: "RegisterEducator",
+      expiresIn: Date.now() + 3600000, // OTP expires in 1 hour
+    });
+
+    await otp.save();
+
+    // Send the OTP email
+    await Otp_VerifyAccount(email, fullName, code);
+  }
+
+
+
+  // Save the educator's updated details
+  await foundEducator.save();
+
+  // Generate the token for the newly registered educator
+  const token = foundEducator.generateAuthToken();
+
+  // Return the results
+  res.status(StatusCodes.OK).json({
+    message: "Please enter the code sent to your email.",
+    token, });
 };
