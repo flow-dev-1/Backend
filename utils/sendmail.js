@@ -128,7 +128,7 @@ exports.school_admin_invite = async (
   // This is a new user
   link =
     process.env.ENV === "staging"
-      ? `https://my-flow.netlify.app/invited-educator?${query}`
+      ? `https://my-flow.netlify.app/invited-admin?${query}`
       : `http://localhost:3000/invited-admin?${query}`;
 
   // } else {
