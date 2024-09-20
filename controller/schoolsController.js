@@ -521,6 +521,8 @@ exports.inviteSchoolAdmin = async (req, res) => {
       schoolAdminPermission: position,
       schoolAdminDate: Date.now(),
     },
+    educatorType:"School",
+    school:school._id,
   });
 
   await user.save();
