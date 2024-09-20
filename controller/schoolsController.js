@@ -492,7 +492,7 @@ exports.inviteSchoolAdmin = async (req, res) => {
       "old",
       fullName,
       req.user._id,
-      req.user.schoolName,
+      school.school_name,
       email,
       token
     );
@@ -535,7 +535,7 @@ exports.inviteSchoolAdmin = async (req, res) => {
     "new",
     fullName,
     req.user._id,
-    req.user.schoolName,
+    school.school_name,
     email,
     token
   );
