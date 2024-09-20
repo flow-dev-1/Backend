@@ -36,9 +36,10 @@ exports.Otp_VerifyAccount = async (email, name, otp) => {
 
 exports.Otp_ForgotPassword = async (name, email, otp, token) => {
   let link =
-    process.env.ENV === "staging"
-      ? `https://my-flow.netlify.app/forgot-password?t=${token}&c=${otp}`
-      : `http://localhost:3000/forgot-password?t=${token}&c=${otp}`;
+    process.env.ENV === "production" ? `https://dashboard.flow.ng/forgot-password?t=${token}&c=${otp}` :
+      process.env.ENV === "staging"
+        ? `https://my-flow.netlify.app/forgot-password?t=${token}&c=${otp}`
+        : `http://localhost:3000/forgot-password?t=${token}&c=${otp}`;
 
   try {
     const transporter = nodemailer.createTransport({
@@ -75,9 +76,10 @@ exports.Otp_ForgotPassword = async (name, email, otp, token) => {
 
 exports.admin_invite = async (name, email, token) => {
   let link =
-    process.env.ENV === "staging"
-      ? `https://admin-flow.netlify.app/sign-up?t=${token}&email=${email}`
-      : ` http://localhost:5173/sign-up?t=${token}&email=${email}`;
+    process.env.ENV === "production" ? `https://dashboard.flow.ng/sign-up?t=${token}&email=${email}` :
+      process.env.ENV === "staging"
+        ? `https://admin-flow.netlify.app/sign-up?t=${token}&email=${email}`
+        : ` http://localhost:5173/sign-up?t=${token}&email=${email}`;
 
   try {
     const transporter = nodemailer.createTransport({
@@ -189,9 +191,10 @@ exports.school_course_invite = async (
   // This is for users that are already registered.
   // They just need to accept and confirm the invitation
   link =
-    process.env.ENV === "staging"
-      ? `https://my-flow.netlify.app/invited-user?${query}`
-      : `http://localhost:3000/invited-user?${query}`;
+    process.env.ENV === "production" ? `https://dashboard.flow.ng/invited-user?${query}` :
+      process.env.ENV === "staging"
+        ? `https://my-flow.netlify.app/invited-user?${query}`
+        : `http://localhost:3000/invited-user?${query}`;
   // }
 
   try {
@@ -247,9 +250,10 @@ exports.school_course_invite_teacher = async (
   // This is for users that are already registered.
   // They just need to accept and confirm the invitation
   link =
-    process.env.ENV === "staging"
-      ? `https://my-flow.netlify.app/invited-educator?${query}`
-      : `http://localhost:3000/invited-educator?${query}`;
+    process.env.ENV === "production" ? `https://dashboard.flow.ng/invited-educator?${query}` :
+      process.env.ENV === "staging"
+        ? `https://my-flow.netlify.app/invited-educator?${query}`
+        : `http://localhost:3000/invited-educator?${query}`;
   // }
 
   try {
