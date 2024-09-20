@@ -370,10 +370,6 @@ exports.registerInvitedEducatorAdmin = async (req, res) => {
       password: hashed_password
     });
   } else {
-    // Check if the invite has expired or is invalid
-    if (!foundEducator.newCourseInvite) {
-      return res.status(StatusCodes.BAD_REQUEST).json({ message: "Expired or invalid invite link!" });
-    }
 
     // Update the educator's details if they already exist
     foundEducator.fullName = fullName;
