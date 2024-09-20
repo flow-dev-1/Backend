@@ -381,9 +381,7 @@ exports.registerInvitedEducatorAdmin = async (req, res) => {
     foundEducator.state = state;
     foundEducator.lga = lga;
     foundEducator.grade = grade;
-    foundEducator.educatorType = "School";
-    foundEducator.school = foundEducator.newCourseInvite.school;
-    foundEducator.newCourseInvite = null; // Clear the course invite after it's been used
+    foundEducator.educatorType = "School";d
   }
 
   // Hash and set password if provided
