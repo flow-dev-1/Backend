@@ -300,3 +300,36 @@ exports.getPayments = async (req, res) => {
   );
   res.status(StatusCodes.OK).json({ payments });
 };
+
+exports.getInvitedEducator = async (req, res) => {
+  const { email } = req.user;
+
+  const educator = await Educator.findOne({ email });
+
+  if (!educator) {
+    return res.status(StatusCodes.NOT_FOUND).json({
+      status: "failed",
+      message: "Educator not found"
+    });
+  }
+
+  const educatorInvited = await Educator.find({
+    email: email,
+    newInvite: { $exists: true, $ne: null },
+    isVerified: false
+  });
+
+  if (!educatorInvited.length) {
+    return res.status(StatusCodes.NOT_FOUND).json({
+      status: "failed",
+      message: "No students found with a new course invite for this parent"
+    });
+  }
+
+
+
+  return res.status(StatusCodes.OK).json({
+    status: "success",
+    data: educatorInvited
+  });
+};

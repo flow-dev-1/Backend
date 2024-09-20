@@ -23,6 +23,7 @@ router.post(
 
 router.get("/courses", auth, educatorController.getCourses);
 
+router.get('/educator', auth, educatorController.getInvitedEducator);
 
 router.patch(
   "/profile",
