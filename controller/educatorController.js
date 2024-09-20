@@ -382,6 +382,7 @@ exports.registerInvitedEducatorAdmin = async (req, res) => {
     foundEducator.lga = lga;
     foundEducator.grade = grade;
     foundEducator.educatorType = "School";
+    foundEducator.newInvite.schoolAdminStatus = "Confirmed"
   }
 
   // Hash and set password if provided
