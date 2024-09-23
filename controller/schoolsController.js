@@ -109,6 +109,28 @@ exports.getSingleEnrolledCourse = async (req, res) => {
   res.status(StatusCodes.OK).json({ course });
 };
 
+exports.getCourselist = async (req, res) => {
+  let { enrolledCourseId } = req.params;
+
+  const course = await SchoolCourses.find({ _id: enrolledCourseId, school:req.params.id })
+    .populate("course", "title image")
+    .populate({
+      path: "studentEnrollments",
+      populate: {
+        path: "user",
+        select: "fullName email phone gender DOB",
+      },
+    });
+
+  // console.log(course)
+
+  course.studentEnrollments = course.studentEnrollments.filter(
+    (item) => item.status === "Confirmed"
+  );
+
+  res.status(StatusCodes.OK).json({ course });
+};
+
 exports.getSingleUser = async (req, res) => {
   let { userId } = req.params;
 
@@ -889,6 +911,7 @@ exports.addStudentsToCourseEnrollment = async (req, res) => {
         schoolCourseEnrollment: existingEnrollment._id,
         user: newUser._id,
          checkModel: "User",
+         stdClass
       });
 
       existingEnrollment.studentEnrollments.push(newStudentEnrollment._id);
