@@ -75,6 +75,13 @@ router.get(
 );
 
 router.get(
+  "/:id/school-courses/enrolled/:courseId",
+  auth,
+  schoolAccess,
+  schoolsController.getAllEnrolledCourse
+);
+
+router.get(
   "/:id/users/:userId",
   auth,
   schoolAccess,
