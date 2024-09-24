@@ -33,6 +33,18 @@ const courseEnrollmentSchema = new mongoose.Schema(
     stdClass:{
       type:String
     },
+    dayOfWeek: {
+      type: String,
+      enum: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+    },
+    startTime: {
+      type: String, 
+      required: true
+    },
+    endTime: {
+      type: String, 
+      required: true
+    },
     user: {
       type: mongoose.Schema.Types.ObjectId,
       required: true,
