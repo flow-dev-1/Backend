@@ -110,9 +110,13 @@ exports.getSingleEnrolledCourse = async (req, res) => {
 };
 
 exports.getAllEnrolledCourse = async (req, res) => {
-  let { courseId } = req.params;
+  const { courseId } = req.params;
 
-  const course = await SchoolCourses.find({ school: req.params.id, status: "Active", course:courseId  })
+  const courses = await SchoolCourses.find({
+    school: req.params.id,
+    status: "Active",
+    course: courseId,
+  })
     .populate("course", "title image")
     .populate({
       path: "studentEnrollments",
@@ -122,14 +126,17 @@ exports.getAllEnrolledCourse = async (req, res) => {
       },
     });
 
-  // console.log(course)
+  const filteredCourses = courses.map((course) => {
+    course.studentEnrollments = course.studentEnrollments.filter(
+      (item) => item.status === "Confirmed"
+    );
+    return course;
+  });
 
-  course.studentEnrollments = course.studentEnrollments.filter(
-    (item) => item.status === "Confirmed"
-  );
-
-  res.status(StatusCodes.OK).json({ course });
+  // Respond with the filtered courses
+  res.status(StatusCodes.OK).json({ courses: filteredCourses });
 };
+
 
 
 exports.getCourselist = async (req, res) => {
