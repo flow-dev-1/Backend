@@ -612,6 +612,7 @@ exports.courseEnrollment = async (req, res) => {
     course: courseId,
     school: id,
     status: "Active",
+    stdClass
   });
 
   if (existingEnrollment) {
@@ -911,7 +912,8 @@ exports.addStudentsToCourseEnrollment = async (req, res) => {
         schoolCourseEnrollment: existingEnrollment._id,
         user: newUser._id,
          checkModel: "User",
-         stdClass
+         stdClass,
+         
       });
 
       existingEnrollment.studentEnrollments.push(newStudentEnrollment._id);
