@@ -31,7 +31,7 @@ const schoolCourseEnrollmentSchema = new mongoose.Schema({
         default: 'Active'
     },
     stdClass: {
-        type: String //This is also responsible for educator class
+        type: String 
     },
     dayOfWeek: {
         type: String,

@@ -22,6 +22,7 @@ const { default: mongoose } = require("mongoose");
 const Payment = require("../models/payment");
 const Activity = require("../models/activity");
 const Assesment = require("../models/assessment.model");
+const { courseEnrollment } = require("./schoolsController");
 
 exports.getLoggedUser = async (req, res) => {
   const user = await User.findById(req.user._id).select(
@@ -265,6 +266,7 @@ exports.registerInvitedUser = async (req, res) => {
 
       if (foundStudent) {
         // Update student details
+
         for (const key in studentItem) {
           if (studentItem.hasOwnProperty(key)) {
             foundStudent[key] = studentItem[key];
@@ -276,6 +278,16 @@ exports.registerInvitedUser = async (req, res) => {
           foundStudent.password = await bcrypt.hash(password, salt);
         }
         await foundStudent.save();
+
+        await StudentEnrollments.findOneAndUpdate(
+          { user: foundStudent._id }, // Filter to find the document
+          {
+            status: "Confirmed" // Update object
+          },
+          {
+            new: true, // Return the updated document
+          }
+        );
 
         const code = otpGenerator.generate(6, {
           lowerCaseAlphabets: false,
@@ -303,6 +315,7 @@ exports.registerInvitedUser = async (req, res) => {
         if (!newParent.students.includes(foundStudent._id)) {
           newParent.students.push(foundStudent._id);
         }
+
 
         firstStudentToken = foundStudent.generateAuthToken();
       } else {
@@ -451,8 +464,8 @@ exports.courseEnrollment = async (req, res) => {
     checkModel: req.user.isSchool
       ? "School"
       : req.user.educatorType
-      ? "Educator"
-      : "User"
+        ? "Educator"
+        : "User"
   });
 
   // Initiate payment through Paystack
@@ -543,7 +556,7 @@ exports.getCourses = async (req, res) => {
         user: req.user._id,
         courseEnrollment: courseId,
       });
-    console.log(courseProgress)
+      console.log(courseProgress)
       let progressPercentage = (courseProgress.length / 5) * 100;
 
       courseEnrollment.progress = progressPercentage;
@@ -567,8 +580,8 @@ exports.activityData = async (req, res) => {
   req.body.checkModel = req.user.isSchool
     ? "School"
     : req.user.educatorType
-    ? "Educator"
-    : "User";
+      ? "Educator"
+      : "User";
   req.body.courseEnrollment = id;
   const activities = req.body.activities;
 

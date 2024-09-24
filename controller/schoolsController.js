@@ -109,6 +109,28 @@ exports.getSingleEnrolledCourse = async (req, res) => {
   res.status(StatusCodes.OK).json({ course });
 };
 
+exports.getCourselist = async (req, res) => {
+  let { enrolledCourseId } = req.params;
+
+  const course = await SchoolCourses.find({ _id: enrolledCourseId, school:req.params.id })
+    .populate("course", "title image")
+    .populate({
+      path: "studentEnrollments",
+      populate: {
+        path: "user",
+        select: "fullName email phone gender DOB",
+      },
+    });
+
+  // console.log(course)
+
+  course.studentEnrollments = course.studentEnrollments.filter(
+    (item) => item.status === "Confirmed"
+  );
+
+  res.status(StatusCodes.OK).json({ course });
+};
+
 exports.getSingleUser = async (req, res) => {
   let { userId } = req.params;
 
@@ -492,7 +514,7 @@ exports.inviteSchoolAdmin = async (req, res) => {
       "old",
       fullName,
       req.user._id,
-      req.user.schoolName,
+      school.school_name,
       email,
       token
     );
@@ -521,6 +543,8 @@ exports.inviteSchoolAdmin = async (req, res) => {
       schoolAdminPermission: position,
       schoolAdminDate: Date.now(),
     },
+    educatorType:"School",
+    school:school._id,
   });
 
   await user.save();
@@ -533,7 +557,7 @@ exports.inviteSchoolAdmin = async (req, res) => {
     "new",
     fullName,
     req.user._id,
-    req.user.schoolName,
+    school.school_name,
     email,
     token
   );
@@ -588,6 +612,7 @@ exports.courseEnrollment = async (req, res) => {
     course: courseId,
     school: id,
     status: "Active",
+    stdClass
   });
 
   if (existingEnrollment) {
@@ -652,7 +677,7 @@ exports.courseEnrollment = async (req, res) => {
         userType: "School",
         grade: stdClass.startsWith("Pri")
           ? "Primary"
-          : stdClass.startsWith("Sec")
+          : stdClass.startsWith("Year")
           ? "Secondary"
           : "Educator",
         newCourseInvite: {
@@ -681,7 +706,7 @@ exports.courseEnrollment = async (req, res) => {
 
       let stdGrade = stdClass.startsWith("Pri")
         ? "Primary"
-        : stdClass.startsWith("Sec")
+        : stdClass.startsWith("Year")
         ? "Secondary"
         : "Educator";
 
@@ -720,7 +745,7 @@ exports.courseEnrollment = async (req, res) => {
           userType: "School",
           grade: stdClass.startsWith("Pri")
             ? "Primary"
-            : stdClass.startsWith("Sec")
+            : stdClass.startsWith("Year")
             ? "Secondary"
             : "Educator",
           newCourseInvite: {
@@ -734,6 +759,9 @@ exports.courseEnrollment = async (req, res) => {
           school: id,
           schoolCourseEnrollment: newEnrollment._id,
           user: newUser._id,
+          checkModel: "User",
+          // status: "Confirmed"
+
         });
 
         newEnrollment.studentEnrollments.push(newStudentEnrollment._id);
@@ -748,7 +776,7 @@ exports.courseEnrollment = async (req, res) => {
 
         let stdGrade = stdClass.startsWith("Pri")
           ? "Primary"
-          : stdClass.startsWith("Sec")
+          : stdClass.startsWith("Year")
           ? "Secondary"
           : "Educator";
 
@@ -789,6 +817,7 @@ exports.courseEnrollment = async (req, res) => {
             school: id,
             schoolCourseEnrollment: newEnrollment._id,
             user: student._id,
+            checkModel: "User",
           });
 
           newEnrollment.studentEnrollments.push(newStudentEnrollment._id);
@@ -798,7 +827,7 @@ exports.courseEnrollment = async (req, res) => {
 
           let stdGrade = stdClass.startsWith("Pri")
             ? "Primary"
-            : stdClass.startsWith("Sec")
+            : stdClass.startsWith("Year")
             ? "Secondary"
             : "Educator";
 
@@ -867,7 +896,7 @@ exports.addStudentsToCourseEnrollment = async (req, res) => {
         userType: "School",
         grade: stdClass.startsWith("Pri")
           ? "Primary"
-          : stdClass.startsWith("Sec")
+          : stdClass.startsWith("Year")
           ? "Secondary"
           : "Educator",
         newCourseInvite: {
@@ -882,6 +911,9 @@ exports.addStudentsToCourseEnrollment = async (req, res) => {
         checkModel: "User",
         schoolCourseEnrollment: existingEnrollment._id,
         user: newUser._id,
+         checkModel: "User",
+         stdClass,
+         
       });
 
       existingEnrollment.studentEnrollments.push(newStudentEnrollment._id);
@@ -896,7 +928,7 @@ exports.addStudentsToCourseEnrollment = async (req, res) => {
 
       let stdGrade = stdClass.startsWith("Pri")
         ? "Primary"
-        : stdClass.startsWith("Sec")
+        : stdClass.startsWith("Year")
         ? "Secondary"
         : "Educator";
 
@@ -963,7 +995,7 @@ exports.addStudentsToCourseEnrollment = async (req, res) => {
           userType: "School",
           grade: stdClass.startsWith("Pri")
             ? "Primary"
-            : stdClass.startsWith("Sec")
+            : stdClass.startsWith("Year")
             ? "Secondary"
             : "Educator",
           newCourseInvite: {
@@ -992,7 +1024,7 @@ exports.addStudentsToCourseEnrollment = async (req, res) => {
 
         let stdGrade = stdClass.startsWith("Pri")
           ? "Primary"
-          : stdClass.startsWith("Sec")
+          : stdClass.startsWith("Year")
           ? "Secondary"
           : "Educator";
 
@@ -1043,7 +1075,7 @@ exports.addStudentsToCourseEnrollment = async (req, res) => {
 
           let stdGrade = stdClass.startsWith("Pri")
             ? "Primary"
-            : stdClass.startsWith("Sec")
+            : stdClass.startsWith("Year")
             ? "Secondary"
             : "Educator";
 
@@ -1512,7 +1544,7 @@ exports.addTeachersToEnrolledCourse = async (req, res) => {
     // Determine the grade type
     const stdGrade = stdClass.startsWith("Pri")
       ? "Primary"
-      : stdClass.startsWith("Sec")
+      : stdClass.startsWith("Year")
       ? "Secondary"
       : "Educator";
 

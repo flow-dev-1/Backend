@@ -30,6 +30,9 @@ const courseEnrollmentSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    stdClass:{
+      type:String
+    },
     user: {
       type: mongoose.Schema.Types.ObjectId,
       required: true,
