@@ -205,6 +205,7 @@ exports.registerInvitedUser = async (req, res) => {
       email,
       phone,
       country,
+      lga,
       state,
       students: []
     });
@@ -216,6 +217,7 @@ exports.registerInvitedUser = async (req, res) => {
   newParent.phone = phone;
   newParent.country = country;
   newParent.state = state;
+  newParent.lga = lga
 
   let firstStudentToken = null;
   let emailError = null;
@@ -276,6 +278,9 @@ exports.registerInvitedUser = async (req, res) => {
         if (password) {
           const salt = await bcrypt.genSalt(10);
           foundStudent.password = await bcrypt.hash(password, salt);
+          foundStudent.phone = phone
+          foundStudent.lga = lga
+          foundStudent.state = state
         }
         await foundStudent.save();
 
