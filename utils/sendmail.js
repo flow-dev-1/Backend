@@ -212,8 +212,8 @@ exports.school_course_invite = async (
       from: EMAIL,
       to: email,
       subject: "FLOW For Schools Course Invitation",
-      html: ` <b> Hello ${parentName}, </b></br>
-              <p>You child/ward <b>${childName}</b> been invited to enroll in the <b style="color: #2a9d8f;">${course_name}</b> course on FLOW by <b style="color: #264653;">${school_name}</b>.</p><br>
+      html: ` <b> Hi!, </b></br>
+              <p><b>${childName}</b> has been invited to enroll in the <b style="color: #2a9d8f;">${course_name}</b> course on FLOW by <b style="color: #264653;">${school_name}</b>.</p><br>
             </br>
             <p>Please click or copy this link to complete your sign up.</p>
             </br>
