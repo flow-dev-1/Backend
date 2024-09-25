@@ -80,12 +80,26 @@ exports.getCourses = async (req, res) => {
     courses = await SchoolCourses.find({
       school: req.params.id,
       status: "Active",
-    }).populate("course");
+    }).populate("course").lean();
+
+    // Create a map to track unique courses
+    const uniqueCoursesMap = new Map();
+
+    courses.forEach(course => {
+      const courseId = course.course._id.toString(); // Get course ID as a string
+      if (!uniqueCoursesMap.has(courseId)) {
+        uniqueCoursesMap.set(courseId, course); // Store the course if it's not already in the map
+      }
+    });
+
+    courses = Array.from(uniqueCoursesMap.values()); // Get the unique courses as an array
   } else {
-    courses = await Courses.find({ status: "published" });
+    courses = await Courses.find({ status: "published" }).lean();
   }
+
   res.status(StatusCodes.OK).json({ courses });
 };
+
 
 exports.getSingleEnrolledCourse = async (req, res) => {
   let { enrolledCourseId } = req.params;
@@ -108,6 +122,36 @@ exports.getSingleEnrolledCourse = async (req, res) => {
 
   res.status(StatusCodes.OK).json({ course });
 };
+
+exports.getAllEnrolledCourse = async (req, res) => {
+  const { courseId } = req.params;
+
+  const courses = await SchoolCourses.find({
+    school: req.params.id,
+    status: "Active",
+    course: courseId,
+  })
+    .populate("course", "title image")
+    .populate({
+      path: "studentEnrollments",
+      populate: {
+        path: "user",
+        select: "fullName email phone gender DOB",
+      },
+    });
+
+  const filteredCourses = courses.map((course) => {
+    course.studentEnrollments = course.studentEnrollments.filter(
+      (item) => item.status === "Confirmed"
+    );
+    return course;
+  });
+
+  // Respond with the filtered courses
+  res.status(StatusCodes.OK).json({ courses: filteredCourses });
+};
+
+
 
 exports.getCourselist = async (req, res) => {
   let { enrolledCourseId } = req.params;
