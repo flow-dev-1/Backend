@@ -134,6 +134,7 @@ exports.getCourselist = async (req, res) => {
 exports.getAllEnrolledCourse = async (req, res) => {
   const { courseId } = req.params;
 
+  // Find all active courses with the specified courseId and school
   const courses = await SchoolCourses.find({
     school: req.params.id,
     status: "Active",
@@ -148,6 +149,7 @@ exports.getAllEnrolledCourse = async (req, res) => {
       },
     });
 
+  // Filter student enrollments with 'Confirmed' status
   const filteredCourses = courses.map((course) => {
     course.studentEnrollments = course.studentEnrollments.filter(
       (item) => item.status === "Confirmed"
@@ -155,10 +157,46 @@ exports.getAllEnrolledCourse = async (req, res) => {
     return course;
   });
 
-  // Respond with the filtered courses
-  res.status(StatusCodes.OK).json({ courses: filteredCourses });
+  // Create a Map to remove duplicates based on courseId
+  const uniqueCourses = new Map();
+
+  filteredCourses.forEach((course) => {
+    if (!uniqueCourses.has(course.course._id.toString())) {
+      uniqueCourses.set(course.course._id.toString(), course);
+    }
+  });
+
+  // Convert the Map back to an array of unique courses
+  const deduplicatedCourses = Array.from(uniqueCourses.values());
+
+  // Respond with the deduplicated courses
+  res.status(StatusCodes.OK).json({ courses: deduplicatedCourses });
 };
 
+
+
+
+exports.getCourselist = async (req, res) => {
+  let { enrolledCourseId } = req.params;
+
+  const course = await SchoolCourses.find({ _id: enrolledCourseId, school:req.params.id })
+    .populate("course", "title image")
+    .populate({
+      path: "studentEnrollments",
+      populate: {
+        path: "user",
+        select: "fullName email phone gender DOB",
+      },
+    });
+
+  // console.log(course)
+
+  course.studentEnrollments = course.studentEnrollments.filter(
+    (item) => item.status === "Confirmed"
+  );
+
+  res.status(StatusCodes.OK).json({ course });
+};
 
 exports.getSingleUser = async (req, res) => {
   let { userId } = req.params;
