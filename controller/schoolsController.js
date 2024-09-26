@@ -72,27 +72,59 @@ exports.getSchoolEmailTeam = async (req, res) => {
   res.status(StatusCodes.OK).json({ teams });
 };
 
-exports.getCourses = async (req, res) => {
-  let { type } = req.query;
+xports.getCourses = async (req, res) => {
+  const { type } = req.query;
   let courses;
 
   if (type === "Enrolled") {
-    courses = await SchoolCourses.find({
-      school: req.params.id,
-      status: "Active",
-    }).populate("course").lean();
-
-    // Create a map to track unique courses
-    const uniqueCoursesMap = new Map();
-
-    courses.forEach(course => {
-      const courseId = course.course.course.toString(); // Get course ID as a string
-      if (!uniqueCoursesMap.has(courseId)) {
-        uniqueCoursesMap.set(courseId, course); // Store the course if it's not already in the map
+    courses = await SchoolCourses.aggregate([
+      {
+        $match: {
+          school: mongoose.Types.ObjectId(req.params.id),
+          status: "Active"
+        }
+      },
+      {
+        $group: {
+          _id: {
+            course: "$course",
+            school: "$school"
+          },
+          courseData: { $first: "$$ROOT" } 
+        }
+      },
+      {
+        $replaceRoot: { newRoot: "$courseData" }
+      },
+      {
+        $lookup: {
+          from: "courses", 
+          localField: "course",
+          foreignField: "_id",
+          as: "course"
+        }
+      },
+      {
+        $unwind: "$course" 
+      },
+      {
+        $project: {
+          _id: 1,
+          enrolledBy: 1,
+          docModel: 1,
+          course: 1,
+          school: 1,
+          status: 1,
+          stdClass: 1,
+          dayOfWeek: 1,
+          startTime: 1,
+          endTime: 1,
+          studentEnrollments: 1,
+          createdAt: 1,
+          updatedAt: 1
+        }
       }
-    });
-
-    courses = Array.from(uniqueCoursesMap.values()); // Get the unique courses as an array
+    ]).lean();
   } else {
     courses = await Courses.find({ status: "published" }).lean();
   }
@@ -125,7 +157,6 @@ exports.getSingleEnrolledCourse = async (req, res) => {
 
 exports.getAllEnrolledCourse = async (req, res) => {
   const { courseId } = req.params;
-
   const courses = await SchoolCourses.find({
     school: req.params.id,
     status: "Active",
@@ -139,17 +170,16 @@ exports.getAllEnrolledCourse = async (req, res) => {
         select: "fullName email phone gender DOB",
       },
     });
-
   const filteredCourses = courses.map((course) => {
     course.studentEnrollments = course.studentEnrollments.filter(
       (item) => item.status === "Confirmed"
     );
     return course;
   });
-
   // Respond with the filtered courses
   res.status(StatusCodes.OK).json({ courses: filteredCourses });
 };
+
 
 
 
