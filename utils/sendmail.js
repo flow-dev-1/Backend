@@ -36,9 +36,9 @@ exports.Otp_VerifyAccount = async (email, name, otp) => {
 
 exports.Otp_ForgotPassword = async (name, email, otp, token) => {
   let link =
-    process.env.ENV === "production" ? `https://dashboard.flow.ng/forgot-password?t=${token}&c=${otp}` :
+    process.env.ENV === "production" ? `https://flowonline.app/forgot-password?t=${token}&c=${otp}` :
       process.env.ENV === "staging"
-        ? `https://my-flow.netlify.app/forgot-password?t=${token}&c=${otp}`
+        ? `https://my-flow-dev/forgot-password?t=${token}&c=${otp}`
         : `http://localhost:3000/forgot-password?t=${token}&c=${otp}`;
 
   try {
@@ -76,7 +76,7 @@ exports.Otp_ForgotPassword = async (name, email, otp, token) => {
 
 exports.admin_invite = async (name, email, token) => {
   let link =
-    process.env.ENV === "production" ? `https://dashboard.flow.ng/sign-up?t=${token}&email=${email}` :
+    process.env.ENV === "production" ? `https://flowonline.app/sign-up?t=${token}&email=${email}` :
       process.env.ENV === "staging"
         ? `https://admin-flow.netlify.app/sign-up?t=${token}&email=${email}`
         : ` http://localhost:5173/sign-up?t=${token}&email=${email}`;
@@ -127,14 +127,15 @@ exports.school_admin_invite = async (
   // if (status === "new") {
   // This is a new user
   link =
-    process.env.ENV === "staging"
-      ? `https://my-flow.netlify.app/invited-admin?${query}`
-      : `http://localhost:3000/invited-admin?${query}`;
+    process.env.ENV === "production" ? `https://flowonline.app/invited-admin?${query}` :
+      process.env.ENV === "staging"
+        ? `https://my-flow-dev/invited-admin?${query}`
+        : `http://localhost:3000/invited-admin?${query}`;
 
   // } else {
   //     // This is for users that are already registered.
   //     // They just need to accept and confirm the invitation
-  //     link = process.env.ENV === 'staging' ? `https://my-flow.netlify.app/invited-admin?${query}` : `http://localhost:3000/invited-admin?${query}`
+  //     link = process.env.ENV === 'staging' ? `https://my-flow-dev/invited-admin?${query}` : `http://localhost:3000/invited-admin?${query}`
   // }
 
   try {
@@ -185,15 +186,15 @@ exports.school_course_invite = async (
   let link;
   // if (status === "new") {
   //     // This is a new user
-  //     link = process.env.ENV === 'staging' ? `https://my-flow.netlify.app/register?${query}` : `http://localhost:3000/register?${query}`
+  //     link = process.env.ENV === 'staging' ? `https://my-flow-dev/register?${query}` : `http://localhost:3000/register?${query}`
 
   // } else {
   // This is for users that are already registered.
   // They just need to accept and confirm the invitation
   link =
-    process.env.ENV === "production" ? `https://dashboard.flow.ng/invited-user?${query}` :
+    process.env.ENV === "production" ? `https://flowonline.app/invited-user?${query}` :
       process.env.ENV === "staging"
-        ? `https://my-flow.netlify.app/invited-user?${query}`
+        ? `https://my-flow-dev/invited-user?${query}`
         : `http://localhost:3000/invited-user?${query}`;
   // }
 
@@ -211,8 +212,8 @@ exports.school_course_invite = async (
       from: EMAIL,
       to: email,
       subject: "FLOW For Schools Course Invitation",
-      html: ` <b> Hello ${parentName}, </b></br>
-              <p>You child/ward <b>${childName}</b> been invited to enroll in the <b style="color: #2a9d8f;">${course_name}</b> course on FLOW by <b style="color: #264653;">${school_name}</b>.</p><br>
+      html: ` <b> Hi!, </b></br>
+              <p><b>${childName}</b> has been invited to enroll in the <b style="color: #2a9d8f;">${course_name}</b> course on FLOW by <b style="color: #264653;">${school_name}</b>.</p><br>
             </br>
             <p>Please click or copy this link to complete your sign up.</p>
             </br>
@@ -244,15 +245,15 @@ exports.school_course_invite_teacher = async (
   let link;
   // if (status === "new") {
   //     // This is a new user
-  //     link = process.env.ENV === 'staging' ? `https://my-flow.netlify.app/register?${query}` : `http://localhost:3000/register?${query}`
+  //     link = process.env.ENV === 'staging' ? `https://my-flow-dev/register?${query}` : `http://localhost:3000/register?${query}`
 
   // } else {
   // This is for users that are already registered.
   // They just need to accept and confirm the invitation
   link =
-    process.env.ENV === "production" ? `https://dashboard.flow.ng/invited-educator?${query}` :
+    process.env.ENV === "production" ? `https://flowonline.app/invited-educator?${query}` :
       process.env.ENV === "staging"
-        ? `https://my-flow.netlify.app/invited-educator?${query}`
+        ? `https://my-flow-dev/invited-educator?${query}`
         : `http://localhost:3000/invited-educator?${query}`;
   // }
 
