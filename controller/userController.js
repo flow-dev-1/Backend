@@ -567,7 +567,7 @@ exports.getCourses = async (req, res) => {
       courseEnrollment.progress = progressPercentage;
     }
   } else {
-    courses = await Courses.find({ status: "published", status: "Confirmed" });
+    courses = await Courses.find({ status: "published"});
   }
 
   res.status(StatusCodes.OK).json({ courses });
