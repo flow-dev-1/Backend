@@ -1612,3 +1612,16 @@ exports.addTeachersToEnrolledCourse = async (req, res) => {
     .json({ message: "Educators invited to course successfully!" });
 };
 
+exports.toggleForCourse = async (req, res) => {
+  const course = await StudentEnrollments.updateMany(
+    {
+      course: req.params.id,
+      school: req.user._id
+    },
+    { $set: { status: req.body.status } } 
+  );
+
+  // Send the response with the count of updated enrollments
+  res.status(StatusCodes.OK).json({ message: "Enrollments updated!"});
+};
+
