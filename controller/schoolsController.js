@@ -72,7 +72,7 @@ exports.getSchoolEmailTeam = async (req, res) => {
   res.status(StatusCodes.OK).json({ teams });
 };
 
-xports.getCourses = async (req, res) => {
+exports.getCourses = async (req, res) => {
   const { type } = req.query;
   let courses;
 
