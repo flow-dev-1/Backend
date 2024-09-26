@@ -73,58 +73,15 @@ exports.getSchoolEmailTeam = async (req, res) => {
 };
 
 exports.getCourses = async (req, res) => {
-  const { type } = req.query;
+  let { type } = req.query;
   let courses;
 
   if (type === "Enrolled") {
-    courses = await SchoolCourses.aggregate([
-      {
-        $match: {
-          school: mongoose.Types.ObjectId(req.params.id),
-          status: "Active"
-        }
-      },
-      {
-        $group: {
-          _id: {
-            course: "$course",
-            school: "$school"
-          },
-          courseData: { $first: "$$ROOT" } 
-        }
-      },
-      {
-        $replaceRoot: { newRoot: "$courseData" }
-      },
-      {
-        $lookup: {
-          from: "courses", 
-          localField: "course",
-          foreignField: "_id",
-          as: "course"
-        }
-      },
-      {
-        $unwind: "$course" 
-      },
-      {
-        $project: {
-          _id: 1,
-          enrolledBy: 1,
-          docModel: 1,
-          course: 1,
-          school: 1,
-          status: 1,
-          stdClass: 1,
-          dayOfWeek: 1,
-          startTime: 1,
-          endTime: 1,
-          studentEnrollments: 1,
-          createdAt: 1,
-          updatedAt: 1
-        }
-      }
-    ]).lean();
+    courses = await SchoolCourses.find({
+      school: req.params.id,
+      status: "Active",
+    }).populate("course").lean();
+
   } else {
     courses = await Courses.find({ status: "published" }).lean();
   }
