@@ -131,6 +131,35 @@ exports.getCourselist = async (req, res) => {
   res.status(StatusCodes.OK).json({ course });
 };
 
+exports.getAllEnrolledCourse = async (req, res) => {
+  const { courseId } = req.params;
+
+  const courses = await SchoolCourses.find({
+    school: req.params.id,
+    status: "Active",
+    course: courseId,
+  })
+    .populate("course", "title image")
+    .populate({
+      path: "studentEnrollments",
+      populate: {
+        path: "user",
+        select: "fullName email phone gender DOB",
+      },
+    });
+
+  const filteredCourses = courses.map((course) => {
+    course.studentEnrollments = course.studentEnrollments.filter(
+      (item) => item.status === "Confirmed"
+    );
+    return course;
+  });
+
+  // Respond with the filtered courses
+  res.status(StatusCodes.OK).json({ courses: filteredCourses });
+};
+
+
 exports.getSingleUser = async (req, res) => {
   let { userId } = req.params;
 
