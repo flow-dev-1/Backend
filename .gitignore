@@ -3,3 +3,4 @@
 test.env
 logfile.log
 uncaughtExceptions.log
+courseInviteError.log

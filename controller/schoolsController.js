@@ -26,6 +26,21 @@ const generateId = require("../utils/generateId");
 const { Educator } = require("../models/educators");
 const doesFullNameMatch = require("../utils/fullNameCheck");
 const findStudentByEmailAndFullName = require("../utils/findStudentBymail");
+const winston = require('winston');
+
+// Configure Winston to log errors to the courseInviteError.log file
+const logger = new (winston.Logger)({
+  level: 'error',
+  transports: [
+    new winston.transports.File({
+      filename: 'courseInviteError.log',
+      json: true,
+      timestamp: true // This is how you add a timestamp in Winston 2.x
+    })
+  ]
+});
+
+
 exports.getCurrentSchool = async (req, res) => {
   let school = await Schools.findOne({ _id: req.user._id }).select(
     "-password -isVerified -isDeleted -resetPassword"
@@ -47,9 +62,9 @@ exports.getSingleSchool = async (req, res) => {
 exports.getSchoolAdminTeam = async (req, res) => {
   // Find the school and populate the team field
   const school = await Schools.findOne({ _id: req.params.id })
-    .select("team") 
+    .select("team")
     .populate({
-      path: "team", 
+      path: "team",
       select:
         "fullName email newInvite.school newInvite.schoolAdminStatus newInvite.schoolAdminPermission newInvite.schoolAdminDate", // Select the fields you want from the Educator document
     });
@@ -143,7 +158,7 @@ exports.getAllEnrolledCourse = async (req, res) => {
 exports.getCourselist = async (req, res) => {
   let { enrolledCourseId } = req.params;
 
-  const course = await SchoolCourses.find({ _id: enrolledCourseId, school:req.params.id })
+  const course = await SchoolCourses.find({ _id: enrolledCourseId, school: req.params.id })
     .populate("course", "title image")
     .populate({
       path: "studentEnrollments",
@@ -574,8 +589,8 @@ exports.inviteSchoolAdmin = async (req, res) => {
       schoolAdminPermission: position,
       schoolAdminDate: Date.now(),
     },
-    educatorType:"School",
-    school:school._id,
+    educatorType: "School",
+    school: school._id,
   });
 
   await user.save();
@@ -669,8 +684,8 @@ exports.courseEnrollment = async (req, res) => {
     docModel: req.user.isSchool
       ? "School"
       : req.user.isAdmin
-      ? "Admin"
-      : "User",
+        ? "Admin"
+        : "User",
     course: courseId,
     school: id,
     status: "Active",
@@ -682,91 +697,26 @@ exports.courseEnrollment = async (req, res) => {
   });
 
   for (const item of students) {
-    // Check if this parent exist
-    const existingParent = await Parents.findOne({
-      email: item.email,
-    }).populate("students", "-password");
-    // use this for the work.
-    if (!existingParent) {
-      const newParent = new Parents({
-        fullName: item.guardianFullName,
+
+    try {
+
+      // Check if this parent exist
+      const existingParent = await Parents.findOne({
         email: item.email,
-        phone: "",
-        country: "",
-        state: "",
-        students: [],
-      });
+      }).populate("students", "-password");
+      // use this for the work.
+      if (!existingParent) {
+        const newParent = new Parents({
+          fullName: item.guardianFullName,
+          email: item.email,
+          phone: "",
+          country: "",
+          state: "",
+          students: [],
+        });
 
-      const userId = generateId();
-
-      const newUser = new User({
-        _id: new mongoose.Types.ObjectId(),
-        userId,
-        fullName: item?.fullName,
-        guardianFullName: item.guardianFullName,
-        email: item.email,
-        userType: "School",
-        grade: stdClass.startsWith("Pri")
-          ? "Primary"
-          : stdClass.startsWith("Year")
-          ? "Secondary"
-          : "Educator",
-        newCourseInvite: {
-          school: id,
-        },
-      });
-
-      const newStudentEnrollment = new StudentEnrollments({
-        _id: new mongoose.Types.ObjectId(),
-        course: courseId,
-        school: id,
-        schoolCourseEnrollment: newEnrollment._id,
-        user: newUser._id,
-        checkModel:"User",
-      });
-
-      newEnrollment.studentEnrollments.push(newStudentEnrollment._id);
-      newParent.students = [newUser._id];
-      const token = newUser.generateAuthToken();
-
-      await Promise.all([
-        newStudentEnrollment.save(),
-        newUser.save(),
-        newParent.save(),
-      ]);
-
-      let stdGrade = stdClass.startsWith("Pri")
-        ? "Primary"
-        : stdClass.startsWith("Year")
-        ? "Secondary"
-        : "Educator";
-
-      await school_course_invite(
-        item.guardianFullName,
-        item?.fullName,
-        "new",
-        stdGrade,
-        newStudentEnrollment._id,
-        school.school_name,
-        course.title,
-        item.email,
-        token
-      );
-    } else {
-      // the parent already exist
-      // Check if the child already exist
-      // Function to check if a student's full name matches the given full name with possible swaps
-
-      const student = await findStudentByEmailAndFullName(
-        item.email,
-        item.fullName,
-        existingParent.students
-      );
-
-      // A new student
-      if (!student) {
-        //
         const userId = generateId();
+
         const newUser = new User({
           _id: new mongoose.Types.ObjectId(),
           userId,
@@ -777,8 +727,8 @@ exports.courseEnrollment = async (req, res) => {
           grade: stdClass.startsWith("Pri")
             ? "Primary"
             : stdClass.startsWith("Year")
-            ? "Secondary"
-            : "Educator",
+              ? "Secondary"
+              : "Educator",
           newCourseInvite: {
             school: id,
           },
@@ -791,28 +741,26 @@ exports.courseEnrollment = async (req, res) => {
           schoolCourseEnrollment: newEnrollment._id,
           user: newUser._id,
           checkModel: "User",
-          // status: "Confirmed"
-
         });
 
         newEnrollment.studentEnrollments.push(newStudentEnrollment._id);
-        existingParent.students = [...existingParent.students, newUser._id];
+        newParent.students = [newUser._id];
         const token = newUser.generateAuthToken();
 
         await Promise.all([
           newStudentEnrollment.save(),
           newUser.save(),
-          existingParent.save(),
+          newParent.save(),
         ]);
 
         let stdGrade = stdClass.startsWith("Pri")
           ? "Primary"
           : stdClass.startsWith("Year")
-          ? "Secondary"
-          : "Educator";
+            ? "Secondary"
+            : "Educator";
 
         await school_course_invite(
-          existingParent.fullName,
+          item.guardianFullName,
           item?.fullName,
           "new",
           stdGrade,
@@ -823,48 +771,67 @@ exports.courseEnrollment = async (req, res) => {
           token
         );
       } else {
-        // Old student
+        // the parent already exist
+        // Check if the child already exist
+        // Function to check if a student's full name matches the given full name with possible swaps
 
-        // Check if the student is already enrolled in the course
-        // Check if the user is already enrolled in this course
-        const findStd = await User.findById(student._id);
+        const student = await findStudentByEmailAndFullName(
+          item.email,
+          item.fullName,
+          existingParent.students
+        );
 
-        const studentEnrollment = await StudentEnrollments.findOne({
-          course: courseId, // Assuming you have some course ID here
-          school: id,
-          schoolCourseEnrollment: newEnrollment._id,
-          status: { $ne: "Deactivated" },
-          user: findStd._id,
-        });
-
-        if (!studentEnrollment) {
-          findStd.newCourseInvite = {
-            school: id,
-          };
+        // A new student
+        if (!student) {
+          //
+          const userId = generateId();
+          const newUser = new User({
+            _id: new mongoose.Types.ObjectId(),
+            userId,
+            fullName: item?.fullName,
+            guardianFullName: item.guardianFullName,
+            email: item.email,
+            userType: "School",
+            grade: stdClass.startsWith("Pri")
+              ? "Primary"
+              : stdClass.startsWith("Year")
+                ? "Secondary"
+                : "Educator",
+            newCourseInvite: {
+              school: id,
+            },
+          });
 
           const newStudentEnrollment = new StudentEnrollments({
             _id: new mongoose.Types.ObjectId(),
             course: courseId,
             school: id,
             schoolCourseEnrollment: newEnrollment._id,
-            user: student._id,
+            user: newUser._id,
             checkModel: "User",
+            // status: "Confirmed"
+
           });
 
           newEnrollment.studentEnrollments.push(newStudentEnrollment._id);
+          existingParent.students = [...existingParent.students, newUser._id];
+          const token = newUser.generateAuthToken();
 
-          const token = findStd.generateAuthToken();
-          await Promise.all([newStudentEnrollment.save(), findStd.save()]);
+          await Promise.all([
+            newStudentEnrollment.save(),
+            newUser.save(),
+            existingParent.save(),
+          ]);
 
           let stdGrade = stdClass.startsWith("Pri")
             ? "Primary"
             : stdClass.startsWith("Year")
-            ? "Secondary"
-            : "Educator";
+              ? "Secondary"
+              : "Educator";
 
           await school_course_invite(
             existingParent.fullName,
-            findStd?.fullName,
+            item?.fullName,
             "new",
             stdGrade,
             newStudentEnrollment._id,
@@ -873,9 +840,69 @@ exports.courseEnrollment = async (req, res) => {
             item.email,
             token
           );
+        } else {
+          // Old student
+
+          // Check if the student is already enrolled in the course
+          // Check if the user is already enrolled in this course
+          const findStd = await User.findById(student._id);
+
+          const studentEnrollment = await StudentEnrollments.findOne({
+            course: courseId, // Assuming you have some course ID here
+            school: id,
+            schoolCourseEnrollment: newEnrollment._id,
+            status: { $ne: "Deactivated" },
+            user: findStd._id,
+          });
+
+          if (!studentEnrollment) {
+            findStd.newCourseInvite = {
+              school: id,
+            };
+
+            const newStudentEnrollment = new StudentEnrollments({
+              _id: new mongoose.Types.ObjectId(),
+              course: courseId,
+              school: id,
+              schoolCourseEnrollment: newEnrollment._id,
+              user: student._id,
+              checkModel: "User",
+            });
+
+            newEnrollment.studentEnrollments.push(newStudentEnrollment._id);
+
+            const token = findStd.generateAuthToken();
+            await Promise.all([newStudentEnrollment.save(), findStd.save()]);
+
+            let stdGrade = stdClass.startsWith("Pri")
+              ? "Primary"
+              : stdClass.startsWith("Year")
+                ? "Secondary"
+                : "Educator";
+
+            await school_course_invite(
+              existingParent.fullName,
+              findStd?.fullName,
+              "new",
+              stdGrade,
+              newStudentEnrollment._id,
+              school.school_name,
+              course.title,
+              item.email,
+              token
+            );
+          }
         }
       }
+
+    } catch (error) {
+      // console.log(error)
+      logger.error({
+        message: `Error processing student ${item?.fullName}`,
+        error: error.message,
+      });
     }
+
   }
 
   await newEnrollment.save();
@@ -889,7 +916,7 @@ exports.addStudentsToCourseEnrollment = async (req, res) => {
 
   const existingEnrollment = await SchoolCourses.findOne({
     _id: enrolledCourseId,
-    
+
   })
     .populate("course", "title")
     .populate("school", "school_name");
@@ -901,122 +928,26 @@ exports.addStudentsToCourseEnrollment = async (req, res) => {
   }
 
   for (const item of students) {
-    // Check if this parent exist
-    const existingParent = await Parents.findOne({
-      email: item.email,
-    }).populate("students", "-password");
 
-    if (!existingParent) {
-      const newParent = new Parents({
-        fullName: item.guardianFullName,
+    try {
+
+      // Check if this parent exist
+      const existingParent = await Parents.findOne({
         email: item.email,
-        phone: "N/A",
-        country: "N/A",
-        state: "N/A",
-        students: [],
-      });
+      }).populate("students", "-password");
 
-      const userId = generateId();
+      if (!existingParent) {
+        const newParent = new Parents({
+          fullName: item.guardianFullName,
+          email: item.email,
+          phone: "N/A",
+          country: "N/A",
+          state: "N/A",
+          students: [],
+        });
 
-      const newUser = new User({
-        _id: new mongoose.Types.ObjectId(),
-        userId,
-        fullName: item?.fullName,
-        guardianFullName: item.guardianFullName,
-        email: item.email,
-        userType: "School",
-        grade: stdClass.startsWith("Pri")
-          ? "Primary"
-          : stdClass.startsWith("Year")
-          ? "Secondary"
-          : "Educator",
-        newCourseInvite: {
-          school: id,
-        },
-      });
-
-      const newStudentEnrollment = new StudentEnrollments({
-        _id: new mongoose.Types.ObjectId(),
-        course: existingEnrollment.course._id,
-        school: id,
-        checkModel: "User",
-        schoolCourseEnrollment: existingEnrollment._id,
-        user: newUser._id,
-         checkModel: "User",
-         stdClass,
-         
-      });
-
-      existingEnrollment.studentEnrollments.push(newStudentEnrollment._id);
-      newParent.students = [newUser._id];
-      const token = newUser.generateAuthToken();
-
-      await Promise.all([
-        newStudentEnrollment.save(),
-        newUser.save(),
-        newParent.save(),
-      ]);
-
-      let stdGrade = stdClass.startsWith("Pri")
-        ? "Primary"
-        : stdClass.startsWith("Year")
-        ? "Secondary"
-        : "Educator";
-
-      await school_course_invite(
-        item.guardianFullName,
-        item?.fullName,
-        "new",
-        stdGrade,
-        newStudentEnrollment._id,
-        existingEnrollment.school.school_name,
-        existingEnrollment.course.title,
-        item.email,
-        token
-      );
-    } else {
-      // the parent already exist
-      // Check if the child already exist
-      // Function to check if a student's full name matches the given full name with possible swaps
-      function doesFullNameMatch(studentFullName, fullName) {
-
-
-        const nameParts = fullName.toLowerCase().split(" ");
-        const studentNameParts = studentFullName.toLowerCase().split(" ");
-
-        // Check if all name parts are present in any order
-        return (
-          nameParts.every((part) => studentNameParts.includes(part)) &&
-          studentNameParts.every((part) => nameParts.includes(part))
-        );
-      }
-
-      // Function to find a student by email and full name in an array
-      async function findStudentByEmailAndFullName(email, fullName, students) {
-        const emailLower = email.toLowerCase();
-
-        for (const student of students) {
-          if (
-            student.email.toLowerCase() === emailLower &&
-            doesFullNameMatch(student.fullName, fullName)
-          ) {
-            return student;
-          }
-        }
-
-        return null; // No match found
-      }
-
-      const student = await findStudentByEmailAndFullName(
-        item.email,
-        item.fullName,
-        existingParent.students
-      );
-
-      // A new student
-      if (!student) {
-        //
         const userId = generateId();
+
         const newUser = new User({
           _id: new mongoose.Types.ObjectId(),
           userId,
@@ -1027,8 +958,8 @@ exports.addStudentsToCourseEnrollment = async (req, res) => {
           grade: stdClass.startsWith("Pri")
             ? "Primary"
             : stdClass.startsWith("Year")
-            ? "Secondary"
-            : "Educator",
+              ? "Secondary"
+              : "Educator",
           newCourseInvite: {
             school: id,
           },
@@ -1041,26 +972,29 @@ exports.addStudentsToCourseEnrollment = async (req, res) => {
           checkModel: "User",
           schoolCourseEnrollment: existingEnrollment._id,
           user: newUser._id,
+          checkModel: "User",
+          stdClass,
+
         });
 
         existingEnrollment.studentEnrollments.push(newStudentEnrollment._id);
-        existingParent.students = [...existingParent.students, newUser._id];
+        newParent.students = [newUser._id];
         const token = newUser.generateAuthToken();
 
         await Promise.all([
           newStudentEnrollment.save(),
           newUser.save(),
-          existingParent.save(),
+          newParent.save(),
         ]);
 
         let stdGrade = stdClass.startsWith("Pri")
           ? "Primary"
           : stdClass.startsWith("Year")
-          ? "Secondary"
-          : "Educator";
+            ? "Secondary"
+            : "Educator";
 
         await school_course_invite(
-          existingParent.fullName,
+          item.guardianFullName,
           item?.fullName,
           "new",
           stdGrade,
@@ -1071,24 +1005,64 @@ exports.addStudentsToCourseEnrollment = async (req, res) => {
           token
         );
       } else {
-        // Old student
+        // the parent already exist
+        // Check if the child already exist
+        // Function to check if a student's full name matches the given full name with possible swaps
+        function doesFullNameMatch(studentFullName, fullName) {
 
-        // Check if the student is already enrolled in the course
-        // Check if the user is already enrolled in this course
-        const findStd = await User.findById(student._id);
 
-        const studentEnrollment = await StudentEnrollments.findOne({
-          course: existingEnrollment.course._id, // Assuming you have some course ID here
-          school: id,
-          schoolCourseEnrollment: existingEnrollment._id,
-          status: { $ne: "Deactivated" },
-          user: findStd._id,
-        });
+          const nameParts = fullName.toLowerCase().split(" ");
+          const studentNameParts = studentFullName.toLowerCase().split(" ");
 
-        if (!studentEnrollment) {
-          findStd.newCourseInvite = {
-            school: id,
-          };
+          // Check if all name parts are present in any order
+          return (
+            nameParts.every((part) => studentNameParts.includes(part)) &&
+            studentNameParts.every((part) => nameParts.includes(part))
+          );
+        }
+
+        // Function to find a student by email and full name in an array
+        async function findStudentByEmailAndFullName(email, fullName, students) {
+          const emailLower = email.toLowerCase();
+
+          for (const student of students) {
+            if (
+              student.email.toLowerCase() === emailLower &&
+              doesFullNameMatch(student.fullName, fullName)
+            ) {
+              return student;
+            }
+          }
+
+          return null; // No match found
+        }
+
+        const student = await findStudentByEmailAndFullName(
+          item.email,
+          item.fullName,
+          existingParent.students
+        );
+
+        // A new student
+        if (!student) {
+          //
+          const userId = generateId();
+          const newUser = new User({
+            _id: new mongoose.Types.ObjectId(),
+            userId,
+            fullName: item?.fullName,
+            guardianFullName: item.guardianFullName,
+            email: item.email,
+            userType: "School",
+            grade: stdClass.startsWith("Pri")
+              ? "Primary"
+              : stdClass.startsWith("Year")
+                ? "Secondary"
+                : "Educator",
+            newCourseInvite: {
+              school: id,
+            },
+          });
 
           const newStudentEnrollment = new StudentEnrollments({
             _id: new mongoose.Types.ObjectId(),
@@ -1096,23 +1070,28 @@ exports.addStudentsToCourseEnrollment = async (req, res) => {
             school: id,
             checkModel: "User",
             schoolCourseEnrollment: existingEnrollment._id,
-            user: student._id,
+            user: newUser._id,
           });
 
           existingEnrollment.studentEnrollments.push(newStudentEnrollment._id);
+          existingParent.students = [...existingParent.students, newUser._id];
+          const token = newUser.generateAuthToken();
 
-          const token = findStd.generateAuthToken();
-          await Promise.all([newStudentEnrollment.save(), findStd.save()]);
+          await Promise.all([
+            newStudentEnrollment.save(),
+            newUser.save(),
+            existingParent.save(),
+          ]);
 
           let stdGrade = stdClass.startsWith("Pri")
             ? "Primary"
             : stdClass.startsWith("Year")
-            ? "Secondary"
-            : "Educator";
+              ? "Secondary"
+              : "Educator";
 
           await school_course_invite(
             existingParent.fullName,
-            findStd?.fullName,
+            item?.fullName,
             "new",
             stdGrade,
             newStudentEnrollment._id,
@@ -1121,9 +1100,67 @@ exports.addStudentsToCourseEnrollment = async (req, res) => {
             item.email,
             token
           );
+        } else {
+          // Old student
+
+          // Check if the student is already enrolled in the course
+          // Check if the user is already enrolled in this course
+          const findStd = await User.findById(student._id);
+
+          const studentEnrollment = await StudentEnrollments.findOne({
+            course: existingEnrollment.course._id, // Assuming you have some course ID here
+            school: id,
+            schoolCourseEnrollment: existingEnrollment._id,
+            status: { $ne: "Deactivated" },
+            user: findStd._id,
+          });
+
+          if (!studentEnrollment) {
+            findStd.newCourseInvite = {
+              school: id,
+            };
+
+            const newStudentEnrollment = new StudentEnrollments({
+              _id: new mongoose.Types.ObjectId(),
+              course: existingEnrollment.course._id,
+              school: id,
+              checkModel: "User",
+              schoolCourseEnrollment: existingEnrollment._id,
+              user: student._id,
+            });
+
+            existingEnrollment.studentEnrollments.push(newStudentEnrollment._id);
+
+            const token = findStd.generateAuthToken();
+            await Promise.all([newStudentEnrollment.save(), findStd.save()]);
+
+            let stdGrade = stdClass.startsWith("Pri")
+              ? "Primary"
+              : stdClass.startsWith("Year")
+                ? "Secondary"
+                : "Educator";
+
+            await school_course_invite(
+              existingParent.fullName,
+              findStd?.fullName,
+              "new",
+              stdGrade,
+              newStudentEnrollment._id,
+              existingEnrollment.school.school_name,
+              existingEnrollment.course.title,
+              item.email,
+              token
+            );
+          }
         }
       }
+    } catch (error) {
+      logger.error({
+        message: `Error processing student ${item?.fullName}`,
+        error: error.message,
+      });
     }
+
   }
   await existingEnrollment.save();
 
@@ -1495,7 +1532,7 @@ exports.allGraphData = async (req, res) => {
     active, // Only for students
     notActive, // Only for students
     totalAmount, // Total amount includes both Users and Educators
-    userAmount, 
+    userAmount,
     dataEnrollment: dataEnrollmentArray,
     validGraphData: graphData,
   });
@@ -1576,8 +1613,8 @@ exports.addTeachersToEnrolledCourse = async (req, res) => {
     const stdGrade = stdClass.startsWith("Pri")
       ? "Primary"
       : stdClass.startsWith("Year")
-      ? "Secondary"
-      : "Educator";
+        ? "Secondary"
+        : "Educator";
 
     // Send invite to the educator
     await school_course_invite_teacher(
@@ -1605,10 +1642,10 @@ exports.toggleForCourse = async (req, res) => {
       course: req.params.id,
       school: req.user._id
     },
-    { $set: { status: req.body.status } } 
+    { $set: { status: req.body.status } }
   );
 
   // Send the response with the count of updated enrollments
-  res.status(StatusCodes.OK).json({ message: "Enrollments updated!"});
+  res.status(StatusCodes.OK).json({ message: "Enrollments updated!" });
 };
 

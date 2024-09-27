@@ -129,9 +129,9 @@ router.post(
 
 router.post(
   "/:id/courses/:courseId/enroll",
-  auth,
-  schoolAccess,
-  validate(schoolCourseEnrollmentValidator),
+  // auth,
+  // schoolAccess,
+  // validate(schoolCourseEnrollmentValidator),
   schoolsController.courseEnrollment
 );
 
