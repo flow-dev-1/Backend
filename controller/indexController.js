@@ -5,7 +5,7 @@ const { User } = require("../models/user");
 const StatusCodes = require("../utils/status-codes");
 const bcrypt = require("bcrypt");
 const _ = require("lodash");
-const { Otp_ForgotPassword } = require("../utils/sendmail");
+const { Otp_ForgotPassword, welcome_new_user } = require("../utils/sendmail");
 const otpGenerator = require("otp-generator");
 const Counter = require("../models/counter");
 const { Schools } = require("../models/school");
@@ -329,8 +329,24 @@ exports.verifyAccount = async (req, res) => {
       });
   }
 
+  console.log(model)
+
   // Update the isVerified status for the account
   await model.updateMany({ email }, { isVerified: true });
+  if (otp.checkModel === "User") {
+    const users = await model.find({ email })
+    for (const user of users) {
+      await welcome_new_user(
+        user.fullName, user.userId, email,
+      )
+    }
+  } else {
+    const user = await model.findOne({ email })
+    await welcome_new_user(
+      user.fullName, email, email,
+
+    )
+  }
 
   // Delete the OTP entry once the account is verified
   await OTP.deleteMany({ email, type: otp.type }).exec();

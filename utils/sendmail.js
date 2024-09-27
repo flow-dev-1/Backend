@@ -284,3 +284,54 @@ exports.school_course_invite_teacher = async (
     console.log(error, "email not sent");
   }
 };
+
+exports.welcome_new_user = async (
+  userName,
+  student_id,
+  email // Make sure to include email in the parameters
+) => {
+  let link;
+
+  link =
+    process.env.ENV === "production" ? `https://flowonline.app/invited-educator` :
+      process.env.ENV === "staging"
+        ? `https://my-flow-dev.netlify.app/invited-educator`
+        : `http://localhost:3000/invited-educator`;
+
+  try {
+    const transporter = nodemailer.createTransport({
+      service: EMAIL_USER,
+      secure: true,
+      auth: {
+        pass: EMAIL_PASS,
+        user: EMAIL,
+      },
+    });
+
+    await transporter.sendMail({
+      from: EMAIL,
+      to: email,
+      subject: "Welcome to FLOW! Your Journey Begins Here",
+      html: `
+        <b>Dear ${userName},</b></br>
+        <p>Welcome to FLOW! We’re thrilled to have you as part of our growing community.</p>
+        <p>You can access your page by visiting <a href="https://flowonline.app">flowonline.app</a>.</p>
+        <p>To help you get started, here’s your unique User ID: <b>${student_id}</b>.</p>
+        <p>Please keep this for your records as it will help you easily access your account and any support you may need in the future.</p>
+        <p>We’ve designed FLOW to make learning fun, engaging, and easy for both students and educators. As you explore our platform, feel free to:</p>
+        <ul>
+          <li>Browse through our wide selection of courses</li>
+          <li>Track your learning progress</li>
+          <li>Reach out to our support team if you have any questions or need assistance</li>
+          <li>If you're ever unsure about your next step, we're here to guide you every step of the way!</li>
+        </ul>
+        <p>Once again, welcome to FLOW, and we look forward to supporting your educational journey!</p>
+        <p>Best regards,<br/>Flow Team</p>
+      `,
+    });
+    console.log("Email sent successfully");
+  } catch (error) {
+    console.log(error, "Email not sent");
+  }
+};
+
