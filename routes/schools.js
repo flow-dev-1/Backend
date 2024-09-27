@@ -88,6 +88,20 @@ router.get(
   schoolsController.getSingleUser
 );
 
+router.get(
+  "/student/:userId",
+  auth,
+  schoolAccess,
+  schoolsController.getSingleUser
+);
+
+router.get(
+  "/educator/:userId",
+  auth,
+  schoolAccess,
+  schoolsController.getSingleEducator
+);
+
 router.post(
   "/",
   optionalUpload.single("image"),
