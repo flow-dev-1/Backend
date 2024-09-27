@@ -766,17 +766,17 @@ exports.courseEnrollment = async (req, res) => {
             ? "Secondary"
             : "Educator";
 
-        await school_course_invite(
-          item.guardianFullName,
-          item?.fullName,
-          "new",
-          stdGrade,
-          newStudentEnrollment._id,
-          school.school_name,
-          course.title,
-          item.email,
-          token
-        );
+        // await school_course_invite(
+        //   item.guardianFullName,
+        //   item?.fullName,
+        //   "new",
+        //   stdGrade,
+        //   newStudentEnrollment._id,
+        //   school.school_name,
+        //   course.title,
+        //   item.email,
+        //   token
+        // );
       } else {
         // the parent already exist
         // Check if the child already exist
@@ -836,17 +836,17 @@ exports.courseEnrollment = async (req, res) => {
               ? "Secondary"
               : "Educator";
 
-          await school_course_invite(
-            existingParent.fullName,
-            item?.fullName,
-            "new",
-            stdGrade,
-            newStudentEnrollment._id,
-            school.school_name,
-            course.title,
-            item.email,
-            token
-          );
+          // await school_course_invite(
+          //   existingParent.fullName,
+          //   item?.fullName,
+          //   "new",
+          //   stdGrade,
+          //   newStudentEnrollment._id,
+          //   school.school_name,
+          //   course.title,
+          //   item.email,
+          //   token
+          // );
         } else {
           // Old student
 
@@ -887,17 +887,17 @@ exports.courseEnrollment = async (req, res) => {
                 ? "Secondary"
                 : "Educator";
 
-            await school_course_invite(
-              existingParent.fullName,
-              findStd?.fullName,
-              "new",
-              stdGrade,
-              newStudentEnrollment._id,
-              school.school_name,
-              course.title,
-              item.email,
-              token
-            );
+            // await school_course_invite(
+            //   existingParent.fullName,
+            //   findStd?.fullName,
+            //   "new",
+            //   stdGrade,
+            //   newStudentEnrollment._id,
+            //   school.school_name,
+            //   course.title,
+            //   item.email,
+            //   token
+            // );
           }
         }
       }
@@ -1000,17 +1000,17 @@ exports.addStudentsToCourseEnrollment = async (req, res) => {
             ? "Secondary"
             : "Educator";
 
-        await school_course_invite(
-          item.guardianFullName,
-          item?.fullName,
-          "new",
-          stdGrade,
-          newStudentEnrollment._id,
-          existingEnrollment.school.school_name,
-          existingEnrollment.course.title,
-          item.email,
-          token
-        );
+        // await school_course_invite(
+        //   item.guardianFullName,
+        //   item?.fullName,
+        //   "new",
+        //   stdGrade,
+        //   newStudentEnrollment._id,
+        //   existingEnrollment.school.school_name,
+        //   existingEnrollment.course.title,
+        //   item.email,
+        //   token
+        // );
       } else {
         // the parent already exist
         // Check if the child already exist
@@ -1096,17 +1096,17 @@ exports.addStudentsToCourseEnrollment = async (req, res) => {
               ? "Secondary"
               : "Educator";
 
-          await school_course_invite(
-            existingParent.fullName,
-            item?.fullName,
-            "new",
-            stdGrade,
-            newStudentEnrollment._id,
-            existingEnrollment.school.school_name,
-            existingEnrollment.course.title,
-            item.email,
-            token
-          );
+          // await school_course_invite(
+          //   existingParent.fullName,
+          //   item?.fullName,
+          //   "new",
+          //   stdGrade,
+          //   newStudentEnrollment._id,
+          //   existingEnrollment.school.school_name,
+          //   existingEnrollment.course.title,
+          //   item.email,
+          //   token
+          // );
         } else {
           // Old student
 
@@ -1147,17 +1147,17 @@ exports.addStudentsToCourseEnrollment = async (req, res) => {
                 ? "Secondary"
                 : "Educator";
 
-            await school_course_invite(
-              existingParent.fullName,
-              findStd?.fullName,
-              "new",
-              stdGrade,
-              newStudentEnrollment._id,
-              existingEnrollment.school.school_name,
-              existingEnrollment.course.title,
-              item.email,
-              token
-            );
+            // await school_course_invite(
+            //   existingParent.fullName,
+            //   findStd?.fullName,
+            //   "new",
+            //   stdGrade,
+            //   newStudentEnrollment._id,
+            //   existingEnrollment.school.school_name,
+            //   existingEnrollment.course.title,
+            //   item.email,
+            //   token
+            // );
           }
         }
       }
