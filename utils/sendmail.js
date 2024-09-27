@@ -197,22 +197,20 @@ exports.school_course_invite = async (
         ? `https://my-flow-dev/invited-user?${query}`
         : `http://localhost:3000/invited-user?${query}`;
   // }
+  const transporter = nodemailer.createTransport({
+    service: EMAIL_USER,
+    secure: true,
+    auth: {
+      pass: EMAIL_PASS,
+      user: EMAIL,
+    },
+  });
 
-  try {
-    const transporter = nodemailer.createTransport({
-      service: EMAIL_USER,
-      secure: true,
-      auth: {
-        pass: EMAIL_PASS,
-        user: EMAIL,
-      },
-    });
-
-    await transporter.sendMail({
-      from: EMAIL,
-      to: email,
-      subject: "FLOW For Schools Course Invitation",
-      html: ` <b> Hi!, </b></br>
+  await transporter.sendMail({
+    from: EMAIL,
+    to: email,
+    subject: "FLOW For Schools Course Invitation",
+    html: ` <b> Hi!, </b></br>
               <p><b>${childName}</b> has been invited to enroll in the <b style="color: #2a9d8f;">${course_name}</b> course on FLOW by <b style="color: #264653;">${school_name}</b>.</p><br>
             </br>
             <p>Please click or copy this link to complete your sign up.</p>
@@ -224,11 +222,8 @@ exports.school_course_invite = async (
             <p>Please do not forward this email to others in order to prevent anybody else from accessing your account.</p>   
             </br>
             <p>Kind Regards! </p>`,
-    });
-    console.log("email sent sucessfully");
-  } catch (error) {
-    console.log(error, "email not sent");
-  }
+  });
+
 };
 
 exports.school_course_invite_teacher = async (
