@@ -92,10 +92,16 @@ exports.getCourses = async (req, res) => {
   let courses;
 
   if (type === "Enrolled") {
-    courses = await SchoolCourses.find({
+    let enrolledCourses = await SchoolCourses.find({
       school: req.params.id,
       status: "Active",
     }).populate("course").lean();
+
+    // Filter out duplicate or unwanted courses based on the populated `course`
+    courses = enrolledCourses.filter(
+      (course, index, self) =>
+        index === self.findIndex((c) => c.course._id.toString() === course.course._id.toString())
+    );
 
   } else {
     courses = await Courses.find({ status: "published" }).lean();
@@ -103,6 +109,7 @@ exports.getCourses = async (req, res) => {
 
   res.status(StatusCodes.OK).json({ courses });
 };
+
 
 
 exports.getSingleEnrolledCourse = async (req, res) => {
