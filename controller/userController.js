@@ -562,12 +562,12 @@ exports.getCourses = async (req, res) => {
   if (type === "Enrolled") {
     courses = await CourseEnrollment.find({
       user: req.user._id,
-      status: "Confirmed"
+      status: "Confirmed",
     })
       .populate("course")
       .populate("schoolCourseEnrollment");
 
-    // Filter out courses where the school course enrollment is not active
+    // Filter out courses where `schoolCourseEnrollment` exists but is not active
     courses = courses.filter(
       (courseEnrollment) =>
         !courseEnrollment.schoolCourseEnrollment ||
@@ -590,6 +590,7 @@ exports.getCourses = async (req, res) => {
 
   res.status(StatusCodes.OK).json({ courses });
 };
+
 
 
 exports.activityData = async (req, res) => {
