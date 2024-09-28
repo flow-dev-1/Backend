@@ -465,12 +465,17 @@ exports.getSingleSchool = async (req, res) => {
 };
 
 exports.getSchoolEnrolledCourses = async (req, res) => {
-
     const courses = await SchoolCourses.find({ school: req.params.id, status: "Active" })
-        .populate("course")
+        .populate("course");
 
-    res.status(StatusCodes.OK).json({ courses });
+    const filteredCourses = courses.filter(
+        (course, index, self) =>
+            index === self.findIndex((c) => c.course._id.toString() === course.course._id.toString())
+    );
+
+    res.status(StatusCodes.OK).json({ courses: filteredCourses });
 };
+
 
 
 exports.deleteAdminFromSchool = async (req, res) => {
