@@ -115,6 +115,4 @@ schoolsSchema.methods.generateAuthToken = function () {
 //     this.deletedAt = new Date();
 //     await this.save();
 // };
-const school = mongoose.model("School", schoolsSchema);
-
-exports.Schools = school;
+module.exports = mongoose.model("School", schoolsSchema);

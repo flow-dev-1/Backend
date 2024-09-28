@@ -446,7 +446,7 @@ exports.getUsers = async (req, res) => {
 exports.getSchools = async (req, res) => {
 
     const schools = await Schools.find()
-        .select('-password -isVerified -isDeleted -resetPassword');
+        // .select('-password -isVerified -isDeleted -resetPassword');
     res.status(StatusCodes.OK).json({
         status: 'success',
         schools

@@ -329,8 +329,6 @@ exports.verifyAccount = async (req, res) => {
       });
   }
 
-  console.log(model)
-
   // Update the isVerified status for the account
   await model.updateMany({ email }, { isVerified: true });
   if (otp.checkModel === "User") {
