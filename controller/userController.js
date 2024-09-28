@@ -30,8 +30,9 @@ exports.getLoggedUser = async (req, res) => {
     .populate({
       path: 'newCourseInvite',
       populate: {
-        path: 'school',
-        select: 'school_name' 
+        path: 'school', 
+        model: 'School',
+        select:"school_name"
       }
     });
 
