@@ -11,8 +11,6 @@ const {
   school_course_invite_teacher,
 } = require("../utils/sendmail");
 const otpGenerator = require("otp-generator");
-// const { initiatePaystackPayment } = require("../utils/paystack");
-// const CourseEnrollment = require("../models/courseEnrollment");
 const cloudinary = require("../utils/cloudinary");
 const { User } = require("../models/user");
 const { Schools } = require("../models/school");
@@ -187,11 +185,27 @@ exports.getCourselist = async (req, res) => {
 exports.getSingleUser = async (req, res) => {
   let { userId } = req.params;
 
-  const user = await User.findById(userId).select(
+  const user = await User.findById(userId)
+    .select("-password -isDeleted -resetPassword")
+    .populate({
+      path: 'newCourseInvite',
+      populate: {
+        path: 'school',
+        select: 'school_name'
+      }
+    });
+  res.status(StatusCodes.OK).json({ user });
+};
+
+exports.getSingleEducator = async (req, res) => {
+  let { userId } = req.params;
+
+  const user = await Educator.findById(userId).select(
     "-password -isVerified -isDeleted -resetPassword"
   );
   res.status(StatusCodes.OK).json({ user });
 };
+
 
 exports.registerSchool = async (req, res) => {
   const {
