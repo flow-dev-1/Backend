@@ -1566,6 +1566,5 @@ exports.toggleForCourse = async (req, res) => {
         { $set: { status: req.body.status } }
     );
 
-    // Send the response with the count of updated enrollments
     res.status(StatusCodes.OK).json({ message: "Course updated!" });
 };
