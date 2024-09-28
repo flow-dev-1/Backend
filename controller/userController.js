@@ -25,16 +25,25 @@ const Assesment = require("../models/assessment.model");
 const { courseEnrollment } = require("./schoolsController");
 
 exports.getLoggedUser = async (req, res) => {
-  const user = await User.findById(req.user._id)
+  let userId = req.params.id ? req.params.id : req.user._id
+  const user = await User.findById(userId)
     .select("-password -isDeleted -resetPassword")
     .populate({
       path: 'newCourseInvite',
       populate: {
-        path: 'school', 
+        path: 'school',
         model: 'School',
-        select:"school_name"
+        select: "school_name"
       }
     });
+
+  if (!user.phone || !user.lga) {
+    const parentData = await Parents.findOne({ email: user.email });
+    user.country = parentData.country
+    user.lga = parentData.lga
+    user.phone = parentData.phone
+    user.state = parentData.state
+  }
 
   res.status(StatusCodes.OK).json({ user });
 };
@@ -576,7 +585,7 @@ exports.getCourses = async (req, res) => {
       courseEnrollment.progress = progressPercentage;
     }
   } else {
-    courses = await Courses.find({ status: "published"});
+    courses = await Courses.find({ status: "published" });
   }
 
   res.status(StatusCodes.OK).json({ courses });
