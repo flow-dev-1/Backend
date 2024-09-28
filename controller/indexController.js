@@ -8,7 +8,7 @@ const _ = require("lodash");
 const { Otp_ForgotPassword, welcome_new_user } = require("../utils/sendmail");
 const otpGenerator = require("otp-generator");
 const Counter = require("../models/counter");
-const { Schools } = require("../models/school");
+const  Schools  = require("../models/school");
 
 // Login Route
 exports.login = async (req, res) => {
