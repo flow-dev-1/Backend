@@ -23,6 +23,7 @@ const Payment = require("../models/payment");
 const Activity = require("../models/activity");
 const Assesment = require("../models/assessment.model");
 const { courseEnrollment } = require("./schoolsController");
+const course = require("../models/course");
 
 exports.getLoggedUser = async (req, res) => {
   const user = await User.findById(req.user._id)
@@ -561,8 +562,17 @@ exports.getCourses = async (req, res) => {
   if (type === "Enrolled") {
     courses = await CourseEnrollment.find({
       user: req.user._id,
-      status: "Confirmed"
-    }).populate("course");
+      status: "Confirmed",
+    })
+      .populate("course")
+      .populate("schoolCourseEnrollment");
+
+    // Filter out courses where `schoolCourseEnrollment` exists but is not active
+    courses = courses.filter(
+      (courseEnrollment) =>
+        !courseEnrollment.schoolCourseEnrollment ||
+        courseEnrollment.schoolCourseEnrollment.status === "Active"
+    );
 
     for (let courseEnrollment of courses) {
       let courseId = courseEnrollment.course._id;
@@ -570,17 +580,18 @@ exports.getCourses = async (req, res) => {
         user: req.user._id,
         courseEnrollment: courseId,
       });
-      console.log(courseProgress)
-      let progressPercentage = (courseProgress.length / 5) * 100;
 
+      let progressPercentage = (courseProgress.length / 5) * 100;
       courseEnrollment.progress = progressPercentage;
     }
   } else {
-    courses = await Courses.find({ status: "published"});
+    courses = await Courses.find({ status: "published" });
   }
 
   res.status(StatusCodes.OK).json({ courses });
 };
+
+
 
 exports.activityData = async (req, res) => {
   const { id } = req.params;
