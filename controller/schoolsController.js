@@ -176,7 +176,8 @@ exports.getSingleUser = async (req, res) => {
       path: 'newCourseInvite',
       populate: {
         path: 'school',
-        select: 'school_name'
+        model: 'School',
+        select: "school_name"
       }
     });
   res.status(StatusCodes.OK).json({ user });
