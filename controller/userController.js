@@ -25,11 +25,19 @@ const Assesment = require("../models/assessment.model");
 const { courseEnrollment } = require("./schoolsController");
 
 exports.getLoggedUser = async (req, res) => {
-  const user = await User.findById(req.user._id).select(
-    "-password -isDeleted -resetPassword"
-  );
+  const user = await User.findById(req.user._id)
+    .select("-password -isDeleted -resetPassword")
+    .populate({
+      path: 'newCourseInvite',
+      populate: {
+        path: 'school', 
+        model: 'School' 
+      }
+    });
+
   res.status(StatusCodes.OK).json({ user });
 };
+
 
 exports.getPayments = async (req, res) => {
   const payments = await Payment.find({ user: req.user._id }).select(
