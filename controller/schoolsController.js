@@ -1558,7 +1558,7 @@ exports.addTeachersToEnrolledCourse = async (req, res) => {
 };
 
 exports.toggleForCourse = async (req, res) => {
-    const course = await StudentEnrollments.updateMany(
+  const course = await SchoolCourses.findOne(
         {
             course: req.params.id,
             school: req.user._id,
@@ -1567,5 +1567,5 @@ exports.toggleForCourse = async (req, res) => {
     );
 
     // Send the response with the count of updated enrollments
-    res.status(StatusCodes.OK).json({ message: "Enrollments updated!" });
+    res.status(StatusCodes.OK).json({ message: "Course updated!" });
 };
