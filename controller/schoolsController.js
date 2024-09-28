@@ -170,9 +170,15 @@ exports.getCourselist = async (req, res) => {
 exports.getSingleUser = async (req, res) => {
   let { userId } = req.params;
 
-  const user = await User.findById(userId).select(
-    "-password -isVerified -isDeleted -resetPassword"
-  );
+  const user = await User.findById(userId)
+    .select("-password -isDeleted -resetPassword")
+    .populate({
+      path: 'newCourseInvite',
+      populate: {
+        path: 'school',
+        select: 'school_name'
+      }
+    });
   res.status(StatusCodes.OK).json({ user });
 };
 
