@@ -1558,13 +1558,17 @@ exports.addTeachersToEnrolledCourse = async (req, res) => {
 };
 
 exports.toggleForCourse = async (req, res) => {
-  const course = await SchoolCourses.findOne(
-        {
-            course: req.params.id,
-            school: req.user._id,
-        },
-        { $set: { status: req.body.status } }
-    );
+  const course = await SchoolCourses.findOneAndUpdate(
+    {
+      course: req.params.id,
+      school: req.user._id,
+    },
+    {
+      $set: { status: req.body.status },
+    },
+    { new: true } 
+  );
 
-    res.status(StatusCodes.OK).json({ message: "Course updated!" });
+  res.status(StatusCodes.OK).json({ message: "Course updated!" });
 };
+
