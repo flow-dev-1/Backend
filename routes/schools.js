@@ -33,8 +33,6 @@ router.get(
   schoolsController.allGraphData
 );
 
-
-
 router.get(
   "/enrolled-courses",
   auth,
@@ -179,12 +177,12 @@ router.delete(
   schoolsController.removeEmailAdmin
 );
 
-router.post(
-  "/course-togle/:id/",
-  auth,
-  schoolAccess,
-  schoolsController.toggleForCourse
-);
+// router.post(
+//   "/course-togle/:id/",
+//   auth,
+//   schoolAccess,
+//   schoolsController.toggleForCourse
+// );
 
 router.put("/", auth, schoolAccess, schoolsController.deactivateAccount);
 
