@@ -76,7 +76,7 @@ router.get(
 router.get(
   "/:id/school-courses/enrolled/:courseId",
   auth,
-  schoolAccess || isAdmin,
+  schoolAccess,
   schoolsController.getAllEnrolledCourse
 );
 
