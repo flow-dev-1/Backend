@@ -19,7 +19,7 @@ const paymentSchema = mongoose.Schema(
     email: { type: String },
     checkModel: {
       type: String,
-      enum: ["User", "School", "Educator"],
+      enum: ["User", "School", "Educator", "Admin"],
       required: true,
     },
     status: {

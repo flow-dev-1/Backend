@@ -22,9 +22,12 @@ router.get('/me', auth, isAdmin, adminController.getCurrentAdmin);
 
 router.post('/roles', auth, isAdmin, adminController.createAdminRoles);
 
+router.put('/password', auth, isAdmin, adminController.resetPassword);
+
 router.get('/roles', auth, isAdmin, adminController.getAdminRoles);
 
 router.get('/all', auth, isAdmin, adminController.getAdmins);
+
 
 router.post('/invitation',
     // auth, 
@@ -41,7 +44,6 @@ router.post('/forgot-password', adminController.forgotPassword);
 // //Verify OTP
 router.patch('/verify-token', auth, isAdmin, adminController.verify_otp_forgotPassword)
 
-router.put('/password', auth, isAdmin, adminController.resetPassword);
 
 router.patch('/password', auth, isAdmin, adminController.changePassword);
 
@@ -63,6 +65,16 @@ router.delete('/courses/:id', auth, isAdmin, adminController.deleteCourse);
 router.get('/users', auth, isAdmin, adminController.getUsers);
 
 router.get('/users/:userId', auth, isAdmin, schoolsController.getSingleUser);
+
+router.get('/payments', auth, isAdmin, adminController.getPayments);
+
+router.get("/graph", auth, isAdmin, adminController.allGraphData);
+
+router.get('/get-student/:id', auth, isAdmin, adminController.getSingleUser);
+
+router.get('/get-educator/:id', auth, isAdmin, adminController.getSingleEducator);
+
+router.get('/get-individuals', auth, isAdmin, adminController.getIndividuals);
 
 // router.post('/courses', auth, isAdmin, upload.single('image'), validate(createCourseValidator), adminController.createCourses);
 
