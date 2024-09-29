@@ -13,7 +13,7 @@ const {
 const otpGenerator = require("otp-generator");
 const cloudinary = require("../utils/cloudinary");
 const { User } = require("../models/user");
-const { Schools } = require("../models/school");
+const Schools = require("../models/school");
 const Payment = require("../models/payment");
 const Courses = require("../models/course");
 const SchoolCourses = require("../models/schoolCourseEnrollment");
@@ -117,21 +117,21 @@ exports.getSingleEnrolledCourse = async (req, res) => {
     // console.log(course)
     // Handle students wuthout phone number
 
-   const confirmedEnrollments  = course.studentEnrollments.filter(
+    const confirmedEnrollments = course.studentEnrollments.filter(
         (item) => item.status === "Confirmed"
     );
 
-        // Update phone numbers for students without one
-        await Promise.all(confirmedEnrollments.map(async (student) => {
-          if (!student?.user?.phone) {
-              const parentData = await Parents.findOne({ email: student.user.email });
-              if (parentData) {
-                  student.user.phone = parentData.phone;
-              }
-          }
-      }));
+    // Update phone numbers for students without one
+    await Promise.all(confirmedEnrollments.map(async (student) => {
+        if (!student?.user?.phone) {
+            const parentData = await Parents.findOne({ email: student.user.email });
+            if (parentData) {
+                student.user.phone = parentData.phone;
+            }
+        }
+    }));
 
-      res.status(StatusCodes.OK).json({ course: { ...course.toObject(), studentEnrollments: confirmedEnrollments } });
+    res.status(StatusCodes.OK).json({ course: { ...course.toObject(), studentEnrollments: confirmedEnrollments } });
 };
 
 exports.getAllEnrolledCourse = async (req, res) => {
@@ -696,8 +696,8 @@ exports.courseEnrollment = async (req, res) => {
                     grade: stdClass.startsWith("Pri")
                         ? "Primary"
                         : stdClass.startsWith("Year")
-                        ? "Secondary"
-                        : "Educator",
+                            ? "Secondary"
+                            : "Educator",
                     newCourseInvite: {
                         school: id,
                     },
@@ -721,8 +721,8 @@ exports.courseEnrollment = async (req, res) => {
                 let stdGrade = stdClass.startsWith("Pri")
                     ? "Primary"
                     : stdClass.startsWith("Year")
-                    ? "Secondary"
-                    : "Educator";
+                        ? "Secondary"
+                        : "Educator";
 
                 await school_course_invite(
                     item.guardianFullName,
@@ -760,8 +760,8 @@ exports.courseEnrollment = async (req, res) => {
                         grade: stdClass.startsWith("Pri")
                             ? "Primary"
                             : stdClass.startsWith("Year")
-                            ? "Secondary"
-                            : "Educator",
+                                ? "Secondary"
+                                : "Educator",
                         newCourseInvite: {
                             school: id,
                         },
@@ -790,8 +790,8 @@ exports.courseEnrollment = async (req, res) => {
                     let stdGrade = stdClass.startsWith("Pri")
                         ? "Primary"
                         : stdClass.startsWith("Year")
-                        ? "Secondary"
-                        : "Educator";
+                            ? "Secondary"
+                            : "Educator";
 
                     await school_course_invite(
                         existingParent.fullName,
@@ -841,8 +841,8 @@ exports.courseEnrollment = async (req, res) => {
                         let stdGrade = stdClass.startsWith("Pri")
                             ? "Primary"
                             : stdClass.startsWith("Year")
-                            ? "Secondary"
-                            : "Educator";
+                                ? "Secondary"
+                                : "Educator";
 
                         await school_course_invite(
                             existingParent.fullName,
@@ -917,8 +917,8 @@ exports.addStudentsToCourseEnrollment = async (req, res) => {
                     grade: stdClass.startsWith("Pri")
                         ? "Primary"
                         : stdClass.startsWith("Year")
-                        ? "Secondary"
-                        : "Educator",
+                            ? "Secondary"
+                            : "Educator",
                     newCourseInvite: {
                         school: id,
                     },
@@ -944,8 +944,8 @@ exports.addStudentsToCourseEnrollment = async (req, res) => {
                 let stdGrade = stdClass.startsWith("Pri")
                     ? "Primary"
                     : stdClass.startsWith("Year")
-                    ? "Secondary"
-                    : "Educator";
+                        ? "Secondary"
+                        : "Educator";
 
                 await school_course_invite(
                     item.guardianFullName,
@@ -1009,8 +1009,8 @@ exports.addStudentsToCourseEnrollment = async (req, res) => {
                         grade: stdClass.startsWith("Pri")
                             ? "Primary"
                             : stdClass.startsWith("Year")
-                            ? "Secondary"
-                            : "Educator",
+                                ? "Secondary"
+                                : "Educator",
                         newCourseInvite: {
                             school: id,
                         },
@@ -1038,8 +1038,8 @@ exports.addStudentsToCourseEnrollment = async (req, res) => {
                     let stdGrade = stdClass.startsWith("Pri")
                         ? "Primary"
                         : stdClass.startsWith("Year")
-                        ? "Secondary"
-                        : "Educator";
+                            ? "Secondary"
+                            : "Educator";
 
                     await school_course_invite(
                         existingParent.fullName,
@@ -1089,8 +1089,8 @@ exports.addStudentsToCourseEnrollment = async (req, res) => {
                         let stdGrade = stdClass.startsWith("Pri")
                             ? "Primary"
                             : stdClass.startsWith("Year")
-                            ? "Secondary"
-                            : "Educator";
+                                ? "Secondary"
+                                : "Educator";
 
                         await school_course_invite(
                             existingParent.fullName,
@@ -1536,8 +1536,8 @@ exports.addTeachersToEnrolledCourse = async (req, res) => {
         const stdGrade = stdClass.startsWith("Pri")
             ? "Primary"
             : stdClass.startsWith("Year")
-            ? "Secondary"
-            : "Educator";
+                ? "Secondary"
+                : "Educator";
 
         // Send invite to the educator
         await school_course_invite_teacher(
@@ -1558,17 +1558,17 @@ exports.addTeachersToEnrolledCourse = async (req, res) => {
 };
 
 exports.toggleForCourse = async (req, res) => {
-  const course = await SchoolCourses.findOneAndUpdate(
-    {
-      course: req.params.id,
-      school: req.user._id,
-    },
-    {
-      $set: { status: req.body.status },
-    },
-    { new: true } 
-  );
+    const course = await SchoolCourses.findOneAndUpdate(
+        {
+            course: req.params.id,
+            school: req.user._id,
+        },
+        {
+            $set: { status: req.body.status },
+        },
+        { new: true }
+    );
 
-  res.status(StatusCodes.OK).json({ message: "Course updated!" });
+    res.status(StatusCodes.OK).json({ message: "Course updated!" });
 };
 
