@@ -30,12 +30,9 @@ exports.getLoggedUser = async (req, res) => {
   const user = await User.findById(userId)
     .select("-password -isDeleted -resetPassword")
     .populate({
-      path: 'newCourseInvite',
-      populate: {
-        path: 'school',
-        model: 'School',
-        select: "school_name"
-      }
+      path: 'school',
+      model: 'School',
+      select: "school_name"
     });
 
   if (!user.phone || !user.lga) {
@@ -568,8 +565,6 @@ exports.getCourses = async (req, res) => {
   let { type } = req.query;
   let courses;
 
-  console.log(req.user._id)
-
   if (type === "Enrolled") {
     courses = await CourseEnrollment.find({
       user: req.user._id,
@@ -653,7 +648,7 @@ exports.getactivityData = async (req, res) => {
     user,
     week: week
   });
-  console.log({ courseEnrollment: id, user, week: week });
+
   if (!activity) {
     return res.status(StatusCodes.NOT_FOUND).json({
       status: "failed",
@@ -669,7 +664,6 @@ exports.assessmentData = async (req, res) => {
   const user = req.user._id;
   const email = req.user.email;
   const checkModel = "User";
-  console.log(id, "Id")
 
   const assessmentData = {
     user: user,
@@ -699,8 +693,6 @@ exports.assessmentData = async (req, res) => {
       path: "course",
       select: "weeks"
     });
-
-  console.log(course, "here")
 
   course.course.progress += 100 / course?.course?.weeks
 

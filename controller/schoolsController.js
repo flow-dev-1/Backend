@@ -124,7 +124,7 @@ exports.getSingleEnrolledCourse = async (req, res) => {
     // Update phone numbers for students without one
     await Promise.all(confirmedEnrollments.map(async (student) => {
         if (!student?.user?.phone) {
-            const parentData = await Parents.findOne({ email: student.user.email });
+            const parentData = await Parents.findOne({ email: student?.user?.email });
             if (parentData) {
                 student.user.phone = parentData.phone;
             }
