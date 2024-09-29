@@ -13,6 +13,8 @@ const Courses = require("../models/course");
 const SchoolCourses = require("../models/schoolCourseEnrollment");
 const StudentEnrollments = require("../models/courseEnrollment")
 const { User } = require("../models/user");
+const { Educator } = require("../models/educators");
+const Payment = require("../models/payment");
 
 exports.createAdminRoles = async (req, res) => {
     const { type } = req.body
@@ -446,7 +448,7 @@ exports.getUsers = async (req, res) => {
 exports.getSchools = async (req, res) => {
 
     const schools = await Schools.find()
-        // .select('-password -isVerified -isDeleted -resetPassword');
+    // .select('-password -isVerified -isDeleted -resetPassword');
     res.status(StatusCodes.OK).json({
         status: 'success',
         schools
@@ -532,3 +534,166 @@ exports.deleteEmailFromSchool = async (req, res) => {
         message: "You have successfully deleted this email from receiving notification."
     });
 };
+
+exports.allGraphData = async (req, res) => {
+
+    // Fetch necessary data from your models
+    const totalTeac = await Educator.find({ isVerified: true });
+    const totalPupils = await User.find({ isVerified: true });
+    const schoolTotal = await Schools.find({ isVerified: true });
+    const income = await Payment.find({ status: "Confirmed" });
+    const enrollments = await SchoolCourses.find({ status: "Active" })
+        .populate("course")
+        .populate("school")
+        .populate("enrolledBy");
+
+    let totalStudents = totalPupils.length;
+    let totalTeachers = totalTeac.length; // From Educators model
+    let totalSchools = schoolTotal.length;
+    let totalAmount = 0;
+    let active = 0;
+    let notActive = 0;
+    let totalMales = 0;
+    let totalFemales = 0;
+    let busyDays = {};
+    let busyHours = {};
+    const courseEngagement = {};
+    const locationStats = {};
+
+    // Enrollment data for line graph
+    const dataEnrollment = {};
+
+    // Gender analysis from Users model
+    totalPupils.forEach(user => {
+        if (user.gender === "male") {
+            totalMales++;
+        } else if (user.gender === "female") {
+            totalFemales++;
+        }
+    });
+
+    // Process each enrollment entry
+    for (const enrollment of enrollments) {
+        const { enrolledBy, course, status, dayOfWeek, startTime } = enrollment;
+        const docModel = enrollment.docModel;
+
+        if (status === "Active") {
+            if (docModel === "User") {
+                // Count students
+                active++;
+
+                // Location stats
+                const locationKey = `${enrolledBy.country}-${enrolledBy.state}-${enrolledBy.lga}`;
+                locationStats[locationKey] = (locationStats[locationKey] || 0) + 1;
+
+                // Course engagement
+                if (course && course.title) {
+                    if (dataEnrollment[course.title]) {
+                        dataEnrollment[course.title] += 1;
+                    } else {
+                        dataEnrollment[course.title] = 1;
+                    }
+                }
+            }
+
+            // Busy days (Pie chart)
+            busyDays[dayOfWeek] = (busyDays[dayOfWeek] || 0) + 1;
+
+            // Busy hours (Line chart)
+            const hour = startTime.split(':')[0]; // Get the hour from startTime
+            busyHours[hour] = (busyHours[hour] || 0) + 1;
+
+            // Total income from courses
+            if (course && course.cost) {
+                totalAmount += course.cost;
+            }
+        } else {
+            notActive++;
+        }
+    }
+
+    // Prepare data for the charts
+    const genderAnalysis = [
+        { name: "Male", value: totalMales },
+        { name: "Female", value: totalFemales },
+    ];
+
+    const courseEngagementArray = Object.keys(dataEnrollment).map((key) => ({
+        name: key,
+        value: dataEnrollment[key],
+    }));
+
+    const locationArray = Object.keys(locationStats).map((key) => ({
+        name: key,
+        value: locationStats[key],
+    }));
+
+    const busyDaysArray = Object.keys(busyDays).map((key) => ({
+        name: key,
+        value: busyDays[key],
+    }));
+
+    const busyHoursArray = Object.keys(busyHours).map((key) => ({
+        hour: key,
+        value: busyHours[key],
+    }));
+
+    // Send the response with calculated values
+    res.status(200).json({
+        status: "success",
+        totalStudents,
+        totalTeachers,
+        totalSchools,
+        totalAmount,
+        dataEnrollment,
+        genderAnalysis,
+        courseEngagement: courseEngagementArray,
+        locationStats: locationArray,
+        busyDays: busyDaysArray,
+        busyHours: busyHoursArray,
+    });
+};
+
+
+exports.getPayments = async (req, res) => {
+    const payments = await Payment.find({ user: req.user._id }).select(
+        "-paymentDetails"
+    );
+    res.status(StatusCodes.OK).json({ payments });
+};
+
+exports.getIndividuals = async (req, res) => {
+    const individual = await User.find({ userType: "Individual" });;
+    const educator = await Educator.find({userType:"Individual"});
+
+    const combinedUsers = [...individual, ...educator];
+
+    res.status(StatusCodes.OK).json({
+        status: 'success',
+        users: combinedUsers,
+    });
+};
+
+exports.getSingleEducator = async (req, res) => {
+    const educator = await Educator.findById(req.params.id)
+        .select('-password -isVerified -isDeleted -resetPassword')
+        .populate("school", "name address")
+        .populate("courses", "title description");
+
+    res.status(StatusCodes.OK).json({
+        status: 'success',
+        educator
+    });
+};
+
+exports.getSingleUser = async (req, res) => {
+    const user = await User.findById(req.params.id)
+        .select('-password -isVerified -isDeleted -resetPassword')
+        .populate("school", "name address")
+        .populate("courses", "title description");
+    res.status(StatusCodes.OK).json({
+        status: 'success',
+        user
+    });
+};
+
