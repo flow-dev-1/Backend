@@ -677,8 +677,14 @@ exports.getIndividuals = async (req, res) => {
 exports.getSingleEducator = async (req, res) => {
     const educator = await Educator.findById(req.params.id)
         .select('-password -isVerified -isDeleted -resetPassword')
-        .populate("school", "name address")
-        .populate("courses", "title description");
+        .populate({
+            path: 'newCourseInvite',
+            populate: {
+                path: 'school',
+                model: 'School',
+                select: "school_name"
+            }
+        });
 
     res.status(StatusCodes.OK).json({
         status: 'success',
@@ -688,9 +694,15 @@ exports.getSingleEducator = async (req, res) => {
 
 exports.getSingleUser = async (req, res) => {
     const user = await User.findById(req.params.id)
-        .select('-password -isVerified -isDeleted -resetPassword')
-        .populate("school", "name address")
-        .populate("courses", "title description");
+        .select("-password -isDeleted -resetPassword")
+        .populate({
+            path: 'newCourseInvite',
+            populate: {
+                path: 'school',
+                model: 'School',
+                select: "school_name"
+            }
+        });
     res.status(StatusCodes.OK).json({
         status: 'success',
         user
