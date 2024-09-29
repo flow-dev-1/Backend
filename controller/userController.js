@@ -568,6 +568,8 @@ exports.getCourses = async (req, res) => {
   let { type } = req.query;
   let courses;
 
+  console.log(req.user._id)
+
   if (type === "Enrolled") {
     courses = await CourseEnrollment.find({
       user: req.user._id,
@@ -667,6 +669,7 @@ exports.assessmentData = async (req, res) => {
   const user = req.user._id;
   const email = req.user.email;
   const checkModel = "User";
+  console.log(id, "Id")
 
   const assessmentData = {
     user: user,
@@ -682,7 +685,8 @@ exports.assessmentData = async (req, res) => {
     email,
     week: req.body.week,
     courseEnrollment: id
-  });
+  })
+
 
   if (existingAssessment) {
     return res.status(StatusCodes.CONFLICT).json({
@@ -690,9 +694,21 @@ exports.assessmentData = async (req, res) => {
       message: "You have already taken the assessment"
     });
   }
+  const course = await CourseEnrollment.findById(id)
+    .populate({
+      path: "course",
+      select: "weeks"
+    });
 
-  // Create a new assessment if none exists
-  const assessment = await Assesment.create(assessmentData);
+  console.log(course, "here")
+
+  course.course.progress += 100 / course?.course?.weeks
+
+  // Save course progress and create assessment in parallel
+  const [savedCourse, assessment] = await Promise.all([
+    course.save(),
+    Assesment.create(assessmentData)
+  ]);
 
   res.status(StatusCodes.OK).json({ assessment });
 };

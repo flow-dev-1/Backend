@@ -27,6 +27,7 @@ const courseSchema = mongoose.Schema(
     description: { type: String, required: true },
     cost: { type: Number, required: true },
     currency: { type: String, required: true },
+    weeks: { type: Number, default: 5 },
     status: { type: String, required: true, enum: ["draft", "published"] },
     grade: {
       type: String,

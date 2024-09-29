@@ -8,7 +8,8 @@ const _ = require("lodash");
 const { Otp_ForgotPassword, welcome_new_user } = require("../utils/sendmail");
 const otpGenerator = require("otp-generator");
 const Counter = require("../models/counter");
-const  Schools  = require("../models/school");
+const Schools = require("../models/school");
+const CourseEnrollment = require("../models/courseEnrollment");
 
 // Login Route
 exports.login = async (req, res) => {
@@ -334,7 +335,21 @@ exports.verifyAccount = async (req, res) => {
   await model.updateMany({ email }, { isVerified: true });
   if (otp.checkModel === "User") {
     const users = await model.find({ email })
+
     for (const user of users) {
+      if (user.newCourseInvite) {
+        const school = user.newCourseInvite.school
+        await CourseEnrollment.findOneAndUpdate({
+          school,
+          status: "Pending",
+          user: user._id
+        }, {
+          $set: { status: "Confirmed" }
+        })
+      }
+
+      user.newCourseInvite = null
+      await user.save()
       await welcome_new_user(
         user.fullName, user.userId, email,
       )
