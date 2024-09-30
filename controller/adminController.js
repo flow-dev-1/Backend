@@ -536,8 +536,6 @@ exports.deleteEmailFromSchool = async (req, res) => {
 };
 
 exports.allGraphDataAdmin = async (req, res) => {
-
-    // Fetch necessary data from your models
     const totalTeac = await Educator.find({ isVerified: true });
     const totalPupils = await User.find({ isVerified: true });
     const schoolTotal = await Schools.find({ isVerified: true });
@@ -557,11 +555,8 @@ exports.allGraphDataAdmin = async (req, res) => {
     let totalFemales = 0;
     let busyDays = {};
     let busyHours = {};
-    const courseEngagement = {};
-    const locationStats = {};
-
-    // Enrollment data for line graph
     const dataEnrollment = {};
+    const locationStats = {};
 
     // Gender analysis from Users model
     totalPupils.forEach(user => {
@@ -579,7 +574,6 @@ exports.allGraphDataAdmin = async (req, res) => {
 
         if (status === "Active") {
             if (docModel === "User") {
-                // Count students
                 active++;
 
                 // Location stats
@@ -600,7 +594,7 @@ exports.allGraphDataAdmin = async (req, res) => {
             busyDays[dayOfWeek] = (busyDays[dayOfWeek] || 0) + 1;
 
             // Busy hours (Line chart)
-            const hour = startTime.split(':')[0]; // Get the hour from startTime
+            const hour = startTime.split(':')[0];
             busyHours[hour] = (busyHours[hour] || 0) + 1;
 
             // Total income from courses
@@ -620,22 +614,22 @@ exports.allGraphDataAdmin = async (req, res) => {
 
     const courseEngagementArray = Object.keys(dataEnrollment).map((key) => ({
         name: key,
-        value: dataEnrollment[key],
+        students: dataEnrollment[key], // Changed to "students"
     }));
 
     const locationArray = Object.keys(locationStats).map((key) => ({
         name: key,
-        value: locationStats[key],
+        students: locationStats[key], // Changed to "students"
     }));
 
     const busyDaysArray = Object.keys(busyDays).map((key) => ({
         name: key,
-        value: busyDays[key],
+        students: busyDays[key], // Changed to "students"
     }));
 
     const busyHoursArray = Object.keys(busyHours).map((key) => ({
-        hour: key,
-        value: busyHours[key],
+        name: `${key} ${key < 12 ? 'AM' : 'PM'}`, // Formatting the hour to match the example data (e.g., "7 AM")
+        students: busyHours[key], // Changed to "students"
     }));
 
     // Send the response with calculated values
@@ -645,7 +639,7 @@ exports.allGraphDataAdmin = async (req, res) => {
         totalTeachers,
         totalSchools,
         totalAmount,
-        dataEnrollment,
+        income,
         genderAnalysis,
         courseEngagement: courseEngagementArray,
         locationStats: locationArray,
@@ -653,6 +647,7 @@ exports.allGraphDataAdmin = async (req, res) => {
         busyHours: busyHoursArray,
     });
 };
+
 
 
 exports.getPayments = async (req, res) => {
