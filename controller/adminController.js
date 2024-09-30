@@ -546,7 +546,7 @@ exports.allGraphDataAdmin = async (req, res) => {
         .populate("enrolledBy");
 
     let totalStudents = totalPupils.length;
-    let totalTeachers = totalTeac.length; // From Educators model
+    let totalTeachers = totalTeac.length;
     let totalSchools = schoolTotal.length;
     let totalAmount = 0;
     let active = 0;
@@ -558,7 +558,6 @@ exports.allGraphDataAdmin = async (req, res) => {
     const dataEnrollment = {};
     const locationStats = {};
 
-    // Gender analysis from Users model
     totalPupils.forEach(user => {
         if (user.gender === "male") {
             totalMales++;
@@ -567,7 +566,6 @@ exports.allGraphDataAdmin = async (req, res) => {
         }
     });
 
-    // Process each enrollment entry
     for (const enrollment of enrollments) {
         const { enrolledBy, course, status, dayOfWeek, startTime } = enrollment;
         const docModel = enrollment.docModel;
@@ -575,29 +573,19 @@ exports.allGraphDataAdmin = async (req, res) => {
         if (status === "Active") {
             if (docModel === "User") {
                 active++;
-
-                // Location stats
                 const locationKey = `${enrolledBy.country}-${enrolledBy.state}-${enrolledBy.lga}`;
                 locationStats[locationKey] = (locationStats[locationKey] || 0) + 1;
 
-                // Course engagement
                 if (course && course.title) {
-                    if (dataEnrollment[course.title]) {
-                        dataEnrollment[course.title] += 1;
-                    } else {
-                        dataEnrollment[course.title] = 1;
-                    }
+                    dataEnrollment[course.title] = (dataEnrollment[course.title] || 0) + 1;
                 }
             }
 
-            // Busy days (Pie chart)
             busyDays[dayOfWeek] = (busyDays[dayOfWeek] || 0) + 1;
 
-            // Busy hours (Line chart)
             const hour = startTime.split(':')[0];
             busyHours[hour] = (busyHours[hour] || 0) + 1;
 
-            // Total income from courses
             if (course && course.cost) {
                 totalAmount += course.cost;
             }
@@ -606,7 +594,6 @@ exports.allGraphDataAdmin = async (req, res) => {
         }
     }
 
-    // Prepare data for the charts
     const genderAnalysis = [
         { name: "Male", value: totalMales },
         { name: "Female", value: totalFemales },
@@ -614,25 +601,33 @@ exports.allGraphDataAdmin = async (req, res) => {
 
     const courseEngagementArray = Object.keys(dataEnrollment).map((key) => ({
         name: key,
-        students: dataEnrollment[key], // Changed to "students"
+        students: dataEnrollment[key],
     }));
 
     const locationArray = Object.keys(locationStats).map((key) => ({
         name: key,
-        students: locationStats[key], // Changed to "students"
+        students: locationStats[key],
     }));
 
     const busyDaysArray = Object.keys(busyDays).map((key) => ({
         name: key,
-        students: busyDays[key], // Changed to "students"
+        students: busyDays[key],
     }));
+
+    for (const enrollment of enrollments) {
+        const { startTime } = enrollment;
+        const hour = parseInt(startTime.split(':')[0]);
+        const period = hour < 12 ? 'AM' : 'PM';
+        const formattedHour = hour % 12 === 0 ? 12 : hour % 12;
+        const hourKey = `${formattedHour} ${period}`;
+        busyHours[hourKey] = (busyHours[hourKey] || 0) + 1;
+    }
 
     const busyHoursArray = Object.keys(busyHours).map((key) => ({
-        name: `${key} ${key < 12 ? 'AM' : 'PM'}`, // Formatting the hour to match the example data (e.g., "7 AM")
-        students: busyHours[key], // Changed to "students"
+        name: key,
+        students: busyHours[key],
     }));
 
-    // Send the response with calculated values
     res.status(200).json({
         status: "success",
         totalStudents,
@@ -647,6 +642,7 @@ exports.allGraphDataAdmin = async (req, res) => {
         busyHours: busyHoursArray,
     });
 };
+
 
 
 
