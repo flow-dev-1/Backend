@@ -567,6 +567,14 @@ exports.allGraphDataAdmin = async (req, res) => {
         }
     });
 
+    // Build location statistics based on lga from Schools
+    schoolTotal.forEach((school) => {
+        const { lga } = school;
+        if (lga) {
+            locationStats[lga] = (locationStats[lga] || 0) + 1;
+        }
+    });
+
     // Process enrollments
     for (const enrollment of enrollments) {
         const { enrolledBy, course, status, dayOfWeek, startTime } = enrollment;
@@ -575,10 +583,6 @@ exports.allGraphDataAdmin = async (req, res) => {
         if (status === "Active") {
             if (docModel === "User") {
                 active++;
-
-                // Build location statistics
-                const locationKey = `${enrolledBy.country}-${enrolledBy.state}-${enrolledBy.lga}`;
-                locationStats[locationKey] = (locationStats[locationKey] || 0) + 1;
 
                 // Build course engagement data
                 if (course && course.title) {
@@ -627,7 +631,7 @@ exports.allGraphDataAdmin = async (req, res) => {
         students: dataEnrollment[key],
     }));
 
-    // Convert location statistics to array
+    // Convert location statistics to array (based on Schools' lga)
     const locationArray = Object.keys(locationStats).map((key) => ({
         name: key,
         students: locationStats[key],
@@ -676,6 +680,7 @@ exports.allGraphDataAdmin = async (req, res) => {
         busyHours: busyHoursArray,
     });
 };
+
 
 
 
