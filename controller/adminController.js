@@ -709,3 +709,112 @@ exports.getSingleUser = async (req, res) => {
     });
 };
 
+
+exports.allGraphData = async (req, res) => {
+    const school = req.params.id;
+    // Fetch the graph data with necessary fields populated
+    const graphData = await StudentEnrollments.find({
+        school,
+        status: { $ne: "Deactivated" },
+    }).populate([
+        {
+            path: "course",
+            select: "title status cost currency",
+        },
+        {
+            path: "schoolCourseEnrollment",
+            select: "status studentEnrollments",
+        },
+        {
+            path: "user",
+            select: "gender fullName email",
+        },
+    ]);
+
+    // Initialize counters and result holders
+    let totalStudents = 0;
+    let totalMales = 0;
+    let totalFemales = 0;
+    let totalTeachers = 0; // Counter for teachers
+    let completed = 0;
+    let remaining = 0;
+    let active = 0;
+    let notActive = 0;
+    let totalAmount = 0; // Total amount includes both Users and Educators
+    let userAmount = 0; // Total amount specifically for users
+    const dataEnrollment = {};
+
+    // Process each entry in the graph data
+    for (const entry of graphData) {
+        const { user, course, progress, schoolCourseEnrollment, checkModel, status } = entry;
+
+        if (status === "Confirmed") {
+            // Accumulate total cost for courses, regardless of the checkModel
+            if (course && course.cost) {
+                totalAmount += course.cost;
+                totalStudents++;
+                active++;
+            }
+
+            if (checkModel === "User") {
+                // Count gender for students
+                if (user && user.gender) {
+                    if (user.gender === "male") {
+                        totalMales++;
+                    } else if (user.gender === "female") {
+                        totalFemales++;
+                    }
+                }
+
+                // Count completion status for students
+                if (progress === 100) {
+                    completed++;
+                } else {
+                    remaining++;
+                }
+
+                // Count students per course
+                if (course && course.title) {
+                    if (dataEnrollment[course.title]) {
+                        dataEnrollment[course.title] += 1;
+                    } else {
+                        dataEnrollment[course.title] = 1;
+                    }
+                }
+
+                // // Accumulate total cost for users
+                // if (course && course.cost) {
+                //     userAmount += course.cost;
+                // }
+            } else if (checkModel === "Educator") {
+                // Count educators only
+                totalTeachers++;
+            }
+        } else {
+            notActive++;
+        }
+    }
+
+    // Convert dataEnrollment object to an array
+    const dataEnrollmentArray = Object.keys(dataEnrollment).map((key) => ({
+        name: key,
+        value: dataEnrollment[key],
+    }));
+
+    // Send the response with calculated values
+    res.status(200).json({
+        status: "success",
+        totalMales,
+        totalFemales,
+        totalStudents,
+        totalTeachers,
+        completed, // Only for students
+        remaining, // Only for students
+        active, // Only for students
+        notActive, // Only for students
+        totalAmount, 
+        // userAmount,
+        dataEnrollment: dataEnrollmentArray,
+        validGraphData: graphData,
+    });
+};
