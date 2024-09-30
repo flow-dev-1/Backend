@@ -68,7 +68,7 @@ router.get('/users/:userId', auth, isAdmin, schoolsController.getSingleUser);
 
 router.get('/payments', auth, isAdmin, adminController.getPayments);
 
-router.get("/graph", auth, isAdmin, adminController.allGraphData);
+router.get("/graph", auth, isAdmin, adminController.allGraphDataAdmin);
 
 router.get('/get-student/:id', auth, isAdmin, adminController.getSingleUser);
 
