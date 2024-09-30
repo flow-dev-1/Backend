@@ -535,7 +535,7 @@ exports.deleteEmailFromSchool = async (req, res) => {
     });
 };
 
-exports.allGraphData = async (req, res) => {
+exports.allGraphDataAdmin = async (req, res) => {
 
     // Fetch necessary data from your models
     const totalTeac = await Educator.find({ isVerified: true });
