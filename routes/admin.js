@@ -86,6 +86,13 @@ router.get('/get-individuals', auth, isAdmin, adminController.getIndividuals);
 /********************** Schools Routes *********************/
 router.get('/schools', auth, isAdmin, adminController.getSchools);
 
+router.get(
+    "/school/graph/:id",
+    auth,
+    isAdmin,
+    adminController.allGraphData
+);
+
 router.get('/schools/:id', auth, isAdmin, adminController.getSingleSchool);
 
 router.get('/schools/:id/courses', auth, isAdmin, adminController.getSchoolEnrolledCourses);
