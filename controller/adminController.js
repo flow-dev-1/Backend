@@ -539,6 +539,7 @@ exports.allGraphDataAdmin = async (req, res) => {
     const totalTeac = await Educator.find({ isVerified: true });
     const totalPupils = await User.find({ isVerified: true });
     const schoolTotal = await Schools.find({ isVerified: true });
+    const courseActivities = await StudentEnrollments.find().populate('studentEnrollments');
     const CourseTotal = await Courses.find();
     const income = await Payment.find({ status: "Confirmed" });
     const enrollments = await SchoolCourses.find({ status: "Active" })
@@ -558,6 +559,43 @@ exports.allGraphDataAdmin = async (req, res) => {
     let busyHours = {};
     const dataEnrollment = {};
     const locationStats = {};
+    
+    const daysOfWeek = ['Mon', 'Tues', 'Wed', 'Thurs', 'Fri'];
+
+    // Initialize an object to keep track of student counts for each day
+    const studentCountByDay = {
+        Mon: 0,
+        Tues: 0,
+        Wed: 0,
+        Thurs: 0,
+        Fri: 0
+    };
+
+    // Loop through all course activities and count the students per day
+    courseActivities.forEach((activity) => {
+        // Map full day names to abbreviations
+        const dayMapping = {
+            Monday: 'Mon',
+            Tuesday: 'Tues',
+            Wednesday: 'Wed',
+            Thursday: 'Thurs',
+            Friday: 'Fri'
+        };
+
+        const dayAbbreviation = dayMapping[activity.dayOfWeek]; // Get the corresponding abbreviation
+
+        if (daysOfWeek.includes(dayAbbreviation)) {
+            studentCountByDay[dayAbbreviation] += activity.studentEnrollments.length;
+        }
+    });
+
+    // Convert the result into an array
+    const studentEnrollmentByDay = daysOfWeek.map((day) => ({
+        name: day,
+        students: studentCountByDay[day],
+    }));
+
+
 
     // Count males and females
     totalPupils.forEach(user => {
@@ -844,7 +882,7 @@ exports.allGraphData = async (req, res) => {
         active, // Only for students
         notActive, // Only for students
         totalAmount, 
-        // userAmount,
+        courseActivity: studentEnrollmentByDay,
         dataEnrollment: dataEnrollmentArray,
         validGraphData: graphData,
     });
