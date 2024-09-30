@@ -93,6 +93,13 @@ router.get(
     adminController.allGraphData
 );
 
+router.get(
+    "/school/payments/:id",
+    auth,
+    isAdmin,
+    adminController.getPayments
+);
+
 router.get('/schools/:id', auth, isAdmin, adminController.getSingleSchool);
 
 router.get('/schools/:id/courses', auth, isAdmin, adminController.getSchoolEnrolledCourses);

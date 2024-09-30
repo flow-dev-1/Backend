@@ -818,3 +818,10 @@ exports.allGraphData = async (req, res) => {
         validGraphData: graphData,
     });
 };
+
+exports.getPayments = async (req, res) => {
+    const payments = await Payment.find({ user: req.params.id }).select(
+        "-paymentDetails"
+    );
+    res.status(StatusCodes.OK).json({ payments });
+};
