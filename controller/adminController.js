@@ -539,10 +539,7 @@ exports.allGraphDataAdmin = async (req, res) => {
     const totalTeac = await Educator.find({ isVerified: true });
     const totalPupils = await User.find({ isVerified: true });
     const schoolTotal = await Schools.find({ isVerified: true });
-    const CourseTotal = await Courses.find()
-
-    console.log(courseEngagementArray);
-
+    const CourseTotal = await Courses.find();
     const income = await Payment.find({ status: "Confirmed" });
     const enrollments = await SchoolCourses.find({ status: "Active" })
         .populate("course")
