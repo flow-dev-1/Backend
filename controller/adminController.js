@@ -636,7 +636,7 @@ exports.allGraphDataAdmin = async (req, res) => {
     // Convert busy days to array
     const busyDaysArray = Object.keys(busyDays).map((key) => ({
         name: key,
-        students: busyDays[key],
+        value: busyDays[key],
     }));
 
     // Sort and convert busy hours to array
