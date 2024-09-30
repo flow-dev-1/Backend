@@ -539,7 +539,7 @@ exports.allGraphDataAdmin = async (req, res) => {
     const totalTeac = await Educator.find({ isVerified: true });
     const totalPupils = await User.find({ isVerified: true });
     const schoolTotal = await Schools.find({ isVerified: true });
-    const courseActivities = await StudentEnrollments.find().populate('studentEnrollments');
+    const courseActivities = await StudentEnrollments.find();
     const CourseTotal = await Courses.find();
     const income = await Payment.find({ status: "Confirmed" });
     const enrollments = await SchoolCourses.find({ status: "Active" })
@@ -714,6 +714,7 @@ exports.allGraphDataAdmin = async (req, res) => {
         income,
         genderAnalysis,
         courseEngagement: courseEngagementArray,
+        courseActivity: studentEnrollmentByDay,
         locationStats: locationArray,
         busyDays: busyDaysArray,
         busyHours: busyHoursArray,
@@ -882,7 +883,7 @@ exports.allGraphData = async (req, res) => {
         active, // Only for students
         notActive, // Only for students
         totalAmount, 
-        courseActivity: studentEnrollmentByDay,
+        // userAmount,
         dataEnrollment: dataEnrollmentArray,
         validGraphData: graphData,
     });
