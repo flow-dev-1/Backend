@@ -539,6 +539,10 @@ exports.allGraphDataAdmin = async (req, res) => {
     const totalTeac = await Educator.find({ isVerified: true });
     const totalPupils = await User.find({ isVerified: true });
     const schoolTotal = await Schools.find({ isVerified: true });
+    const CourseTotal = await Courses.find()
+
+    console.log(courseEngagementArray);
+
     const income = await Payment.find({ status: "Confirmed" });
     const enrollments = await SchoolCourses.find({ status: "Active" })
         .populate("course")
@@ -626,9 +630,9 @@ exports.allGraphDataAdmin = async (req, res) => {
     ];
 
     // Convert course engagement data to array
-    const courseEngagementArray = Object.keys(dataEnrollment).map((key) => ({
-        name: key,
-        students: dataEnrollment[key],
+    const courseEngagementArray = CourseTotal.map((course) => ({
+        name: course.title, 
+        students: course.courseEnrollment.length,
     }));
 
     // Convert location statistics to array (based on Schools' lga)
@@ -772,7 +776,6 @@ exports.allGraphData = async (req, res) => {
     let active = 0;
     let notActive = 0;
     let totalAmount = 0; // Total amount includes both Users and Educators
-    let userAmount = 0; // Total amount specifically for users
     const dataEnrollment = {};
 
     // Process each entry in the graph data
