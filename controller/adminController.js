@@ -582,9 +582,10 @@ exports.allGraphDataAdmin = async (req, res) => {
             Friday: 'Fri'
         };
 
-        const dayAbbreviation = dayMapping[activity.dayOfWeek]; // Get the corresponding abbreviation
+        const dayAbbreviation = dayMapping[activity.dayOfWeek];
 
         if (daysOfWeek.includes(dayAbbreviation)) {
+            // Use the length of studentEnrollments array as the number of students
             studentCountByDay[dayAbbreviation] += activity.studentEnrollments.length;
         }
     });
@@ -594,7 +595,6 @@ exports.allGraphDataAdmin = async (req, res) => {
         name: day,
         students: studentCountByDay[day],
     }));
-
 
 
     // Count males and females
