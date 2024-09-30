@@ -558,6 +558,7 @@ exports.allGraphDataAdmin = async (req, res) => {
     const dataEnrollment = {};
     const locationStats = {};
 
+    // Count males and females
     totalPupils.forEach(user => {
         if (user.gender === "male") {
             totalMales++;
@@ -566,6 +567,7 @@ exports.allGraphDataAdmin = async (req, res) => {
         }
     });
 
+    // Process enrollments
     for (const enrollment of enrollments) {
         const { enrolledBy, course, status, dayOfWeek, startTime } = enrollment;
         const docModel = enrollment.docModel;
@@ -573,19 +575,38 @@ exports.allGraphDataAdmin = async (req, res) => {
         if (status === "Active") {
             if (docModel === "User") {
                 active++;
+
+                // Build location statistics
                 const locationKey = `${enrolledBy.country}-${enrolledBy.state}-${enrolledBy.lga}`;
                 locationStats[locationKey] = (locationStats[locationKey] || 0) + 1;
 
+                // Build course engagement data
                 if (course && course.title) {
                     dataEnrollment[course.title] = (dataEnrollment[course.title] || 0) + 1;
                 }
             }
 
+            // Track busiest days
             busyDays[dayOfWeek] = (busyDays[dayOfWeek] || 0) + 1;
 
-            const hour = startTime.split(':')[0];
-            busyHours[hour] = (busyHours[hour] || 0) + 1;
+            // Process start time to AM/PM format
+            const hour = parseInt(startTime.split(':')[0], 10);
+            let period = 'AM';
+            let formattedHour = hour;
 
+            if (hour === 0) {
+                formattedHour = 12; // Midnight, so it's 12 AM
+            } else if (hour === 12) {
+                period = 'PM'; // Noon, so it's 12 PM
+            } else if (hour > 12) {
+                formattedHour = hour - 12; // Convert to PM
+                period = 'PM';
+            }
+
+            const hourKey = `${formattedHour} ${period}`;
+            busyHours[hourKey] = (busyHours[hourKey] || 0) + 1;
+
+            // Sum total course cost
             if (course && course.cost) {
                 totalAmount += course.cost;
             }
@@ -594,40 +615,53 @@ exports.allGraphDataAdmin = async (req, res) => {
         }
     }
 
+    // Gender analysis array
     const genderAnalysis = [
         { name: "Male", value: totalMales },
         { name: "Female", value: totalFemales },
     ];
 
+    // Convert course engagement data to array
     const courseEngagementArray = Object.keys(dataEnrollment).map((key) => ({
         name: key,
         students: dataEnrollment[key],
     }));
 
+    // Convert location statistics to array
     const locationArray = Object.keys(locationStats).map((key) => ({
         name: key,
         students: locationStats[key],
     }));
 
+    // Convert busy days to array
     const busyDaysArray = Object.keys(busyDays).map((key) => ({
         name: key,
         students: busyDays[key],
     }));
 
-    for (const enrollment of enrollments) {
-        const { startTime } = enrollment;
-        const hour = parseInt(startTime.split(':')[0]);
-        const period = hour < 12 ? 'AM' : 'PM';
-        const formattedHour = hour % 12 === 0 ? 12 : hour % 12;
-        const hourKey = `${formattedHour} ${period}`;
-        busyHours[hourKey] = (busyHours[hourKey] || 0) + 1;
+    // Sort and convert busy hours to array
+    const busyHoursArray = Object.keys(busyHours)
+        .map((key) => ({
+            name: key,
+            students: busyHours[key],
+        }))
+        .sort((a, b) => timeTo24Hour(a.name) - timeTo24Hour(b.name)); // Sort by time
+
+    // Helper function to convert 12-hour AM/PM to 24-hour time for sorting
+    function timeTo24Hour(timeStr) {
+        const [hour, period] = timeStr.split(' '); // Split into hour and AM/PM
+        let hourNumber = parseInt(hour, 10);
+
+        if (period === 'PM' && hourNumber !== 12) {
+            hourNumber += 12; // Convert PM hours to 24-hour format (except 12 PM)
+        } else if (period === 'AM' && hourNumber === 12) {
+            hourNumber = 0; // Midnight (12 AM) is 00:00 in 24-hour format
+        }
+
+        return hourNumber;
     }
 
-    const busyHoursArray = Object.keys(busyHours).map((key) => ({
-        name: key,
-        students: busyHours[key],
-    }));
-
+    // Send response
     res.status(200).json({
         status: "success",
         totalStudents,
@@ -642,6 +676,7 @@ exports.allGraphDataAdmin = async (req, res) => {
         busyHours: busyHoursArray,
     });
 };
+
 
 
 
