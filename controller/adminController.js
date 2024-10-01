@@ -895,3 +895,37 @@ exports.getPayments = async (req, res) => {
     );
     res.status(StatusCodes.OK).json({ payments });
 };
+
+exports.getStudentCourses = async (req, res) => {
+    let { type } = req.query;
+    let courses;
+
+    if (type === "Enrolled") {
+        courses = await CourseEnrollment.find({
+            user: req.params.id,
+            status: "Confirmed",
+        })
+            .populate("course")
+            .populate("schoolCourseEnrollment");
+        courses = courses.filter(
+            (courseEnrollment) =>
+                !courseEnrollment.schoolCourseEnrollment ||
+                courseEnrollment.schoolCourseEnrollment.status === "Active"
+        );
+
+        for (let courseEnrollment of courses) {
+            let courseId = courseEnrollment.course._id;
+            let courseProgress = await Activity.find({
+                user: req.user._id,
+                courseEnrollment: courseId,
+            });
+
+            let progressPercentage = (courseProgress.length / 5) * 100;
+            courseEnrollment.progress = progressPercentage;
+        }
+    } else {
+        courses = await Courses.find({ status: "published" });
+    }
+
+    res.status(StatusCodes.OK).json({ courses });
+};
