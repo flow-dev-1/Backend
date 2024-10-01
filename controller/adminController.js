@@ -912,7 +912,7 @@ exports.getStudentCourses = async (req, res) => {
 
         for (let courseEnrollment of courses) {
             let courseId = courseEnrollment.course._id;
-            let user = courseEnrollment.user
+            let user = req.params.id
             let courseProgress = await Activity.find({
                 user,
                 courseEnrollment: courseId,

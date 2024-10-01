@@ -120,7 +120,7 @@ router.delete('/schools/:enrolledCourseId/users/:userId/enrollment/:userEnrollme
 
 // student routes
 
-router.get('/courses/:id?type=enrolled', auth, adminController.getStudentCourses);
+router.get('/courses/:id', auth, adminController.getStudentCourses);
 
 router.get(
   "/course-enrollment/:id/get-assesment/:week/:userId",
