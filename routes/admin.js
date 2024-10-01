@@ -125,10 +125,10 @@ router.get('/courses/:id?type=enrolled', auth, adminController.getStudentCourses
 router.get(
   "/course-enrollment/:id/get-assesment/:week/:userId",
   auth,
-  userController.getAssessmentData
+  adminController.getAssessmentData
 );
 
-router.get("/course-enrollment/:id/get-activity/:week/:userId", auth, userController.getactivityData);
+router.get("/course-enrollment/:id/get-activity/:week/:userId", auth, adminController.getactivityData);
 
 
 module.exports = router; 
