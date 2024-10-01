@@ -964,7 +964,7 @@ exports.getAssessmentData = async (req, res) => {
 
     // Return 404 if no assessment found
     res.status(StatusCodes.NOT_FOUND).json({
-        status: "failed", // For consistency, use 'status' instead of 'success'
+        status: "failed", 
         message: "No assessment found for the given criteria"
     });
 };
