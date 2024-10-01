@@ -15,6 +15,7 @@ const StudentEnrollments = require("../models/courseEnrollment")
 const { User } = require("../models/user");
 const { Educator } = require("../models/educators");
 const Payment = require("../models/payment");
+const Activity = require("../models/activity");
 
 exports.createAdminRoles = async (req, res) => {
     const { type } = req.body
@@ -907,11 +908,6 @@ exports.getStudentCourses = async (req, res) => {
         })
             .populate("course")
             .populate("schoolCourseEnrollment");
-        courses = courses.filter(
-            (courseEnrollment) =>
-                !courseEnrollment.schoolCourseEnrollment ||
-                courseEnrollment.schoolCourseEnrollment.status === "Active"
-        );
 
         for (let courseEnrollment of courses) {
             let courseId = courseEnrollment.course._id;
