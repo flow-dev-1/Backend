@@ -118,4 +118,9 @@ router.delete('/schools/:id/emails/:emailId', auth, isAdmin, adminController.del
 
 router.delete('/schools/:enrolledCourseId/users/:userId/enrollment/:userEnrollmentId', auth, isAdmin, schoolsController.deleteStudentFromCourseEnrollment);
 
+// student routes
+
+router.get('/courses/:id', auth, adminController.getStudentCourses);
+
+
 module.exports = router; 
