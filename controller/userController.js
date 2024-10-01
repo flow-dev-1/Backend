@@ -643,10 +643,12 @@ exports.activityData = async (req, res) => {
 exports.getactivityData = async (req, res) => {
   const { id, week } = req.params;
   const user = req.user._id;
+  const email = req.user.email;
   const activity = await Activity.findOne({
     courseEnrollment: id,
     user,
-    week: week
+    week,
+    email
   });
 
   if (!activity) {
@@ -714,7 +716,8 @@ exports.getAssessmentData = async (req, res) => {
   const existingAssessment = await Assesment.findOne({
     user,
     email,
-    week
+    week,
+    courseEnrollment: id,
   });
 
   if (existingAssessment) {
