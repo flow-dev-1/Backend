@@ -16,6 +16,7 @@ const { User } = require("../models/user");
 const { Educator } = require("../models/educators");
 const Payment = require("../models/payment");
 const Activity = require("../models/activity");
+const Assesment = require("../models/assessment.model");
 
 exports.createAdminRoles = async (req, res) => {
     const { type } = req.body
@@ -911,17 +912,59 @@ exports.getStudentCourses = async (req, res) => {
 
         for (let courseEnrollment of courses) {
             let courseId = courseEnrollment.course._id;
+            let user = courseEnrollment.user
             let courseProgress = await Activity.find({
-                user: req.user._id,
+                user,
                 courseEnrollment: courseId,
             });
 
             let progressPercentage = (courseProgress.length / 5) * 100;
             courseEnrollment.progress = progressPercentage;
         }
-    } else {
-        courses = await Courses.find({ status: "published" });
+    } 
+    res.status(StatusCodes.OK).json({ courses });
+};
+
+// Get Activity Data
+exports.getactivityData = async (req, res) => {
+    const { id, week } = req.params; 
+    const user = req.params.userId; 
+
+    const activity = await Activity.findOne({
+        courseEnrollment: id,
+        user,
+        week
+    });
+
+    if (!activity) {
+        return res.status(StatusCodes.NOT_FOUND).json({
+            status: "failed",
+            message: "No activity for this student"
+        });
     }
 
-    res.status(StatusCodes.OK).json({ courses });
+    res.status(StatusCodes.OK).json({ activity });
+};
+
+// Get Assessment Data
+exports.getAssessmentData = async (req, res) => {
+    const { week } = req.params;
+    const user = req.params.userId; 
+    const courseEnrollment = req.params.id; 
+
+    const existingAssessment = await Assesment.findOne({
+        user,
+        courseEnrollment,
+        week
+    });
+
+    if (existingAssessment) {
+        return res.status(StatusCodes.OK).json({ existingAssessment });
+    }
+
+    // Return 404 if no assessment found
+    res.status(StatusCodes.NOT_FOUND).json({
+        status: "failed", // For consistency, use 'status' instead of 'success'
+        message: "No assessment found for the given criteria"
+    });
 };
