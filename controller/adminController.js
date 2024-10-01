@@ -907,11 +907,6 @@ exports.getStudentCourses = async (req, res) => {
         })
             .populate("course")
             .populate("schoolCourseEnrollment");
-        courses = courses.filter(
-            (courseEnrollment) =>
-                !courseEnrollment.schoolCourseEnrollment ||
-                courseEnrollment.schoolCourseEnrollment.status === "Active"
-        );
 
         for (let courseEnrollment of courses) {
             let courseId = courseEnrollment.course._id;
