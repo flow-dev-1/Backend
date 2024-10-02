@@ -15,6 +15,8 @@ const StudentEnrollments = require("../models/courseEnrollment")
 const { User } = require("../models/user");
 const { Educator } = require("../models/educators");
 const Payment = require("../models/payment");
+const Activity = require("../models/activity");
+const Assesment = require("../models/assessment.model");
 
 exports.createAdminRoles = async (req, res) => {
     const { type } = req.body
@@ -535,12 +537,12 @@ exports.deleteEmailFromSchool = async (req, res) => {
     });
 };
 
-exports.allGraphData = async (req, res) => {
-
-    // Fetch necessary data from your models
+exports.allGraphDataAdmin = async (req, res) => {
     const totalTeac = await Educator.find({ isVerified: true });
     const totalPupils = await User.find({ isVerified: true });
     const schoolTotal = await Schools.find({ isVerified: true });
+    const courseActivities = await StudentEnrollments.find();
+    const CourseTotal = await Courses.find();
     const income = await Payment.find({ status: "Confirmed" });
     const enrollments = await SchoolCourses.find({ status: "Active" })
         .populate("course")
@@ -548,7 +550,7 @@ exports.allGraphData = async (req, res) => {
         .populate("enrolledBy");
 
     let totalStudents = totalPupils.length;
-    let totalTeachers = totalTeac.length; // From Educators model
+    let totalTeachers = totalTeac.length;
     let totalSchools = schoolTotal.length;
     let totalAmount = 0;
     let active = 0;
@@ -557,13 +559,47 @@ exports.allGraphData = async (req, res) => {
     let totalFemales = 0;
     let busyDays = {};
     let busyHours = {};
-    const courseEngagement = {};
-    const locationStats = {};
-
-    // Enrollment data for line graph
     const dataEnrollment = {};
+    const locationStats = {};
+    
+    const daysOfWeek = ['Mon', 'Tues', 'Wed', 'Thurs', 'Fri'];
 
-    // Gender analysis from Users model
+    // Initialize an object to keep track of student counts for each day
+    const studentCountByDay = {
+        Mon: 0,
+        Tues: 0,
+        Wed: 0,
+        Thurs: 0,
+        Fri: 0
+    };
+
+    // Loop through all course activities and count the students per day
+    courseActivities.forEach((activity) => {
+        // Map full day names to abbreviations
+        const dayMapping = {
+            Monday: 'Mon',
+            Tuesday: 'Tues',
+            Wednesday: 'Wed',
+            Thursday: 'Thurs',
+            Friday: 'Fri'
+        };
+
+        const dayAbbreviation = dayMapping[activity.dayOfWeek];
+
+        if (daysOfWeek.includes(dayAbbreviation)) {
+            // Use the length of studentEnrollments array as the number of students
+            studentCountByDay[dayAbbreviation] += activity.studentEnrollments.length;
+        }
+    });
+
+    // Convert the result into an array
+    const studentEnrollmentByDay = daysOfWeek.map((day) => ({
+        name: day,
+        students: studentCountByDay[day],
+    }));
+
+
+    // Count males and females
     totalPupils.forEach(user => {
         if (user.gender === "male") {
             totalMales++;
@@ -572,38 +608,50 @@ exports.allGraphData = async (req, res) => {
         }
     });
 
-    // Process each enrollment entry
+    // Build location statistics based on lga from Schools
+    schoolTotal.forEach((school) => {
+        const { lga } = school;
+        if (lga) {
+            locationStats[lga] = (locationStats[lga] || 0) + 1;
+        }
+    });
+
+    // Process enrollments
     for (const enrollment of enrollments) {
         const { enrolledBy, course, status, dayOfWeek, startTime } = enrollment;
         const docModel = enrollment.docModel;
 
         if (status === "Active") {
             if (docModel === "User") {
-                // Count students
                 active++;
 
-                // Location stats
-                const locationKey = `${enrolledBy.country}-${enrolledBy.state}-${enrolledBy.lga}`;
-                locationStats[locationKey] = (locationStats[locationKey] || 0) + 1;
-
-                // Course engagement
+                // Build course engagement data
                 if (course && course.title) {
-                    if (dataEnrollment[course.title]) {
-                        dataEnrollment[course.title] += 1;
-                    } else {
-                        dataEnrollment[course.title] = 1;
-                    }
+                    dataEnrollment[course.title] = (dataEnrollment[course.title] || 0) + 1;
                 }
             }
 
-            // Busy days (Pie chart)
+            // Track busiest days
             busyDays[dayOfWeek] = (busyDays[dayOfWeek] || 0) + 1;
 
-            // Busy hours (Line chart)
-            const hour = startTime.split(':')[0]; // Get the hour from startTime
-            busyHours[hour] = (busyHours[hour] || 0) + 1;
+            // Process start time to AM/PM format
+            const hour = parseInt(startTime.split(':')[0], 10);
+            let period = 'AM';
+            let formattedHour = hour;
 
-            // Total income from courses
+            if (hour === 0) {
+                formattedHour = 12; // Midnight, so it's 12 AM
+            } else if (hour === 12) {
+                period = 'PM'; // Noon, so it's 12 PM
+            } else if (hour > 12) {
+                formattedHour = hour - 12; // Convert to PM
+                period = 'PM';
+            }
+
+            const hourKey = `${formattedHour} ${period}`;
+            busyHours[hourKey] = (busyHours[hourKey] || 0) + 1;
+
+            // Sum total course cost
             if (course && course.cost) {
                 totalAmount += course.cost;
             }
@@ -612,47 +660,72 @@ exports.allGraphData = async (req, res) => {
         }
     }
 
-    // Prepare data for the charts
+    // Gender analysis array
     const genderAnalysis = [
         { name: "Male", value: totalMales },
         { name: "Female", value: totalFemales },
     ];
 
-    const courseEngagementArray = Object.keys(dataEnrollment).map((key) => ({
-        name: key,
-        value: dataEnrollment[key],
+    // Convert course engagement data to array
+    const courseEngagementArray = CourseTotal.map((course) => ({
+        name: course.title, 
+        students: course.courseEnrollment.length,
     }));
 
+    // Convert location statistics to array (based on Schools' lga)
     const locationArray = Object.keys(locationStats).map((key) => ({
         name: key,
-        value: locationStats[key],
+        students: locationStats[key],
     }));
 
+    // Convert busy days to array
     const busyDaysArray = Object.keys(busyDays).map((key) => ({
         name: key,
         value: busyDays[key],
     }));
 
-    const busyHoursArray = Object.keys(busyHours).map((key) => ({
-        hour: key,
-        value: busyHours[key],
-    }));
+    // Sort and convert busy hours to array
+    const busyHoursArray = Object.keys(busyHours)
+        .map((key) => ({
+            name: key,
+            students: busyHours[key],
+        }))
+        .sort((a, b) => timeTo24Hour(a.name) - timeTo24Hour(b.name)); // Sort by time
 
-    // Send the response with calculated values
+    // Helper function to convert 12-hour AM/PM to 24-hour time for sorting
+    function timeTo24Hour(timeStr) {
+        const [hour, period] = timeStr.split(' '); // Split into hour and AM/PM
+        let hourNumber = parseInt(hour, 10);
+
+        if (period === 'PM' && hourNumber !== 12) {
+            hourNumber += 12; // Convert PM hours to 24-hour format (except 12 PM)
+        } else if (period === 'AM' && hourNumber === 12) {
+            hourNumber = 0; // Midnight (12 AM) is 00:00 in 24-hour format
+        }
+
+        return hourNumber;
+    }
+
+    // Send response
     res.status(200).json({
         status: "success",
         totalStudents,
         totalTeachers,
         totalSchools,
         totalAmount,
-        dataEnrollment,
+        income,
         genderAnalysis,
         courseEngagement: courseEngagementArray,
+        courseActivity: studentEnrollmentByDay,
         locationStats: locationArray,
         busyDays: busyDaysArray,
         busyHours: busyHoursArray,
     });
 };
+
+
+
+
 
 
 exports.getPayments = async (req, res) => {
@@ -741,7 +814,6 @@ exports.allGraphData = async (req, res) => {
     let active = 0;
     let notActive = 0;
     let totalAmount = 0; // Total amount includes both Users and Educators
-    let userAmount = 0; // Total amount specifically for users
     const dataEnrollment = {};
 
     // Process each entry in the graph data
@@ -816,5 +888,83 @@ exports.allGraphData = async (req, res) => {
         // userAmount,
         dataEnrollment: dataEnrollmentArray,
         validGraphData: graphData,
+    });
+};
+
+exports.getPayments = async (req, res) => {
+    const payments = await Payment.find({ user: req.params.id }).select(
+        "-paymentDetails"
+    );
+    res.status(StatusCodes.OK).json({ payments });
+};
+
+exports.getStudentCourses = async (req, res) => {
+    let { type } = req.query;
+    let courses;
+
+    if (type === "Enrolled") {
+        courses = await CourseEnrollment.find({
+            user: req.params.id,
+            status: "Confirmed",
+        })
+            .populate("course")
+            .populate("schoolCourseEnrollment");
+
+        for (let courseEnrollment of courses) {
+            let courseId = courseEnrollment.course._id;
+            let user = req.params.id
+            let courseProgress = await Activity.find({
+                user,
+                courseEnrollment: courseId,
+            });
+
+            let progressPercentage = (courseProgress.length / 5) * 100;
+            courseEnrollment.progress = progressPercentage;
+        }
+    } 
+    res.status(StatusCodes.OK).json({ courses });
+};
+
+// Get Activity Data
+exports.getactivityData = async (req, res) => {
+    const { id, week } = req.params; 
+    const user = req.params.userId; 
+
+    const activity = await Activity.findOne({
+        courseEnrollment: id,
+        user,
+        week
+    });
+
+    if (!activity) {
+        return res.status(StatusCodes.NOT_FOUND).json({
+            status: "failed",
+            message: "No activity for this student"
+        });
+    }
+
+    res.status(StatusCodes.OK).json({ activity });
+};
+
+// Get Assessment Data
+exports.getAssessmentData = async (req, res) => {
+    const { week } = req.params;
+    const user = req.params.userId; 
+    const courseEnrollment = req.params.id; 
+
+    const existingAssessment = await Assesment.findOne({
+        user,
+        courseEnrollment,
+        week
+    });
+
+    if (existingAssessment) {
+        return res.status(StatusCodes.OK).json({ existingAssessment });
+    }
+
+    // Return 404 if no assessment found
+    res.status(StatusCodes.NOT_FOUND).json({
+        status: "failed", 
+        message: "No assessment found for the given criteria"
     });
 };
