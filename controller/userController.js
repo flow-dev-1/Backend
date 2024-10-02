@@ -573,12 +573,12 @@ exports.getCourses = async (req, res) => {
       .populate("course")
       .populate("schoolCourseEnrollment");
 
-    // Filter out courses where `schoolCourseEnrollment` exists but is not active
-    courses = courses.filter(
-      (courseEnrollment) =>
-        !courseEnrollment.schoolCourseEnrollment ||
-        courseEnrollment.schoolCourseEnrollment.status === "Active"
-    );
+    // // Filter out courses where `schoolCourseEnrollment` exists but is not active
+    // courses = courses.filter(
+    //   (courseEnrollment) =>
+    //     !courseEnrollment.schoolCourseEnrollment ||
+    //     courseEnrollment.schoolCourseEnrollment.status === "Active"
+    // );
 
     for (let courseEnrollment of courses) {
       let courseId = courseEnrollment.course._id;
@@ -598,6 +598,14 @@ exports.getCourses = async (req, res) => {
 };
 
 
+exports.getCompletedWeeks = async (req, res) => {
+  let weeks = await Assesment.distinct("week", {
+    user: req.user._id,
+    courseEnrollment: req.params.id
+  });
+
+  res.status(StatusCodes.OK).json({ weeks });
+};
 
 exports.activityData = async (req, res) => {
   const { id } = req.params;
@@ -694,7 +702,7 @@ exports.assessmentData = async (req, res) => {
       select: "weeks"
     });
 
-  course.course.progress += 100 / course?.course?.weeks
+  course.progress += 100 / course?.course?.weeks
 
   // Save course progress and create assessment in parallel
   const [savedCourse, assessment] = await Promise.all([
