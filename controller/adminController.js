@@ -975,16 +975,19 @@ exports.activityUpdateData = async (req, res) => {
     const activity = await Activity.findOne({ courseEnrollment: id, week, user });
 
     if (!activity) {
-        res.status(StatusCodes.NOT_FOUND).json({
+        return res.status(StatusCodes.NOT_FOUND).json({
             status: "failed",
             message: "No activity found for the given criteria"
         });
     }
 
-    await Activity.updateOne({ _id: activity._id }, { activities: req.body.activities });
+    // Update the activity's activities field
+    await Activity.updateOne({ _id: activity._id }, req.body );
 
+    // Respond with success after updating
     return res.status(StatusCodes.OK).json({
         success: "true",
         message: "Activity data has been updated successfully."
     });
 };
+
