@@ -948,13 +948,12 @@ exports.getactivityData = async (req, res) => {
 
 // Get Assessment Data
 exports.getAssessmentData = async (req, res) => {
-    const { week } = req.params;
+    const { week, id } = req.params;
     const user = req.params.userId; 
-    const courseEnrollment = req.params.id; 
 
     const existingAssessment = await Assesment.findOne({
         user,
-        courseEnrollment,
+        courseEnrollment:id,
         week
     });
 
@@ -966,5 +965,26 @@ exports.getAssessmentData = async (req, res) => {
     res.status(StatusCodes.NOT_FOUND).json({
         status: "failed", 
         message: "No assessment found for the given criteria"
+    });
+};
+
+exports.activityUpdateData = async (req, res) => {
+    const { id, week } = req.params;
+    const user = req.params.userId;
+
+    const activity = await Activity.findOne({ courseEnrollment: id, week, user });
+
+    if (!activity) {
+        res.status(StatusCodes.NOT_FOUND).json({
+            status: "failed",
+            message: "No activity found for the given criteria"
+        });
+    }
+
+    await Activity.updateOne({ _id: activity._id }, req.body);
+
+    return res.status(StatusCodes.OK).json({
+        success: "true",
+        message: "Activity data has been updated successfully."
     });
 };
