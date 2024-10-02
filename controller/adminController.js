@@ -981,7 +981,7 @@ exports.activityUpdateData = async (req, res) => {
         });
     }
 
-    await Activity.updateOne({ _id: activity._id }, req.body);
+    await Activity.updateOne({ _id: activity._id }, {req.body);
 
     return res.status(StatusCodes.OK).json({
         success: "true",
