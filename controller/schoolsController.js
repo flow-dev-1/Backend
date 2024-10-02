@@ -83,7 +83,7 @@ exports.getCourses = async (req, res) => {
     if (type === "Enrolled") {
         let enrolledCourses = await SchoolCourses.find({
             school: req.params.id,
-            status: "Active",
+            // status: "Active",
         })
             .populate("course")
             .lean();
@@ -1397,6 +1397,7 @@ exports.allGraphData = async (req, res) => {
     for (const entry of graphData) {
         const { user, course, progress, schoolCourseEnrollment, checkModel, status } = entry;
 
+
         if (status === "Confirmed") {
             // Accumulate total cost for courses, regardless of the checkModel
             if (course && course.cost) {
@@ -1414,7 +1415,7 @@ exports.allGraphData = async (req, res) => {
                         totalFemales++;
                     }
                 }
-
+                console.log(progress,user)
                 // Count completion status for students
                 if (progress === 100) {
                     completed++;
@@ -1558,7 +1559,7 @@ exports.addTeachersToEnrolledCourse = async (req, res) => {
 };
 
 exports.toggleForCourse = async (req, res) => {
-    const course = await SchoolCourses.findOneAndUpdate(
+    const course = await SchoolCourses.updateMany(
         {
             course: req.params.id,
             school: req.user._id,
@@ -1568,6 +1569,7 @@ exports.toggleForCourse = async (req, res) => {
         },
         { new: true }
     );
+
 
     res.status(StatusCodes.OK).json({ message: "Course updated!" });
 };
