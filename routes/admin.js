@@ -68,7 +68,7 @@ router.get('/users/:userId', auth, isAdmin, schoolsController.getSingleUser);
 
 router.get('/payments', auth, isAdmin, adminController.getPayments);
 
-router.get("/graph", auth, isAdmin, adminController.allGraphData);
+router.get("/graph", auth, isAdmin, adminController.allGraphDataAdmin);
 
 router.get('/get-student/:id', auth, isAdmin, adminController.getSingleUser);
 
@@ -93,6 +93,13 @@ router.get(
     adminController.allGraphData
 );
 
+router.get(
+    "/school/payments/:id",
+    auth,
+    isAdmin,
+    adminController.getPayments
+);
+
 router.get('/schools/:id', auth, isAdmin, adminController.getSingleSchool);
 
 router.get('/schools/:id/courses', auth, isAdmin, adminController.getSchoolEnrolledCourses);
@@ -110,5 +117,18 @@ router.delete('/schools/:id/teams/:userId', auth, isAdmin, adminController.delet
 router.delete('/schools/:id/emails/:emailId', auth, isAdmin, adminController.deleteEmailFromSchool);
 
 router.delete('/schools/:enrolledCourseId/users/:userId/enrollment/:userEnrollmentId', auth, isAdmin, schoolsController.deleteStudentFromCourseEnrollment);
+
+// student routes
+
+router.get('/courses/:id', auth, adminController.getStudentCourses);
+
+router.get(
+  "/course-enrollment/:id/get-assesment/:week/:userId",
+  auth,
+  adminController.getAssessmentData
+);
+
+router.get("/course-enrollment/:id/get-activity/:week/:userId", auth, adminController.getactivityData);
+
 
 module.exports = router; 
