@@ -461,7 +461,7 @@ exports.getSingleSchool = async (req, res) => {
 
     const school = await Schools.findById(req.params.id)
         .select('-password -isVerified -isDeleted -resetPassword')
-        .populate("team", "first_name last_name email school schoolAdminStatus schoolAdminPermission schoolAdminDate newInvite");
+        .populate("team");
     res.status(StatusCodes.OK).json({
         status: 'success',
         school
