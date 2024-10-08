@@ -376,3 +376,46 @@ exports.welcome_new_user = async (
   }
 };
 
+exports.flow_course_reminder = async (
+  emailArray,
+  course_name
+) => {
+
+  let link;
+
+  link =
+    process.env.ENV === "production" ? `https://flowonline.app` :
+      process.env.ENV === "staging"
+        ? `https://my-flow-dev`
+        : `http://localhost:3000`;
+
+  try {
+    const transporter = nodemailer.createTransport({
+      service: EMAIL_USER,
+      secure: true,
+      auth: {
+        pass: EMAIL_PASS,
+        user: EMAIL,
+      },
+    });
+
+    await transporter.sendMail({
+      from: EMAIL,
+      to: "jossyojih@gmail.com",
+      subject: "FLOW For Schools Course Reminder",
+      html: `<b>Hi there,</b><br><br>
+              <p>This is a reminder that you are enrolled in the <b style="color: #2a9d8f;">${course_name}</b> course on FLOW. Don't forget to log in today and complete your lessons!</p><br>
+              <p>To continue or review your progress, click the link below:</p><br>
+              <b><a href="${link}">${link}</a></b><br><br>
+              <p>If you have any questions or need assistance, feel free to reach out to us.</p><br>
+              <p>Best regards,</p>
+              <p>The FLOW Team</p>`,
+    });
+    console.log("Email sent successfully");
+  } catch (error) {
+    console.log(error)
+  }
+
+
+
+};
