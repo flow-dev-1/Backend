@@ -2,7 +2,7 @@ const axios = require('axios');
 const { User } = require("../../models/user");
 const SchoolCourseEnrollment = require("../../models/schoolCourseEnrollment");
 const CourseEnrollment = require('../../models/courseEnrollment');
-const { flow_course_reminder } = require('../sendmail');
+const { flow_course_reminder, welcome_new_user } = require('../sendmail');
 
 const courseReminder = async () => {
 
@@ -43,6 +43,11 @@ const courseReminder = async () => {
             // Send email for this specific course to the list of emails
             if (emailList.length > 0) {
                 await flow_course_reminder(emailList, courseTitle); // Pass the email list and course title
+                await welcome_new_user(
+                    "Jossy",
+                    "FLS1234",
+                    "jossyojih@gmail.com"
+                );
                 console.log(`Reminder sent for course: ${courseTitle}`);
             }
         }

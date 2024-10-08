@@ -7,12 +7,18 @@ const path = require("path");
 exports.Otp_VerifyAccount = async (email, name, otp) => {
   try {
     const transporter = nodemailer.createTransport({
-      service: EMAIL_USER,
-      secure: true,
+      service: 'gmail',
+      port: 465,
+      secure: true, // true for 465, false for other ports
+      debug: true,
+      secureConnection: false,
       auth: {
-        pass: EMAIL_PASS,
-        user: EMAIL,
+        user: "dev@flow.ng",
+        pass: process.env.EMAIL_PASS,
       },
+      tls: {
+        rejectUnAuthorized: true
+      }
     });
 
     await transporter.sendMail({
@@ -43,14 +49,19 @@ exports.Otp_ForgotPassword = async (name, email, otp, token) => {
 
   try {
     const transporter = nodemailer.createTransport({
-      service: EMAIL_USER,
-      secure: true,
+      service: 'gmail',
+      port: 465,
+      secure: true, // true for 465, false for other ports
+      debug: true,
+      secureConnection: false,
       auth: {
-        pass: EMAIL_PASS,
-        user: EMAIL,
+        user: "dev@flow.ng",
+        pass: process.env.EMAIL_PASS,
       },
+      tls: {
+        rejectUnAuthorized: true
+      }
     });
-
     await transporter.sendMail({
       from: EMAIL,
       to: email,
@@ -83,12 +94,18 @@ exports.admin_invite = async (name, email, token) => {
 
   try {
     const transporter = nodemailer.createTransport({
-      service: EMAIL_USER,
-      secure: true,
+      service: 'gmail',
+      port: 465,
+      secure: true, // true for 465, false for other ports
+      debug: true,
+      secureConnection: false,
       auth: {
-        pass: EMAIL_PASS,
-        user: EMAIL,
+        user: "dev@flow.ng",
+        pass: process.env.EMAIL_PASS,
       },
+      tls: {
+        rejectUnAuthorized: true
+      }
     });
 
     await transporter.sendMail({
@@ -123,12 +140,18 @@ exports.Admin_Otp_ForgotPassword = async (name, email, otp, token) => {
 
   try {
     const transporter = nodemailer.createTransport({
-      service: EMAIL_USER,
-      secure: true,
+      service: 'gmail',
+      port: 465,
+      secure: true, // true for 465, false for other ports
+      debug: true,
+      secureConnection: false,
       auth: {
-        pass: EMAIL_PASS,
-        user: EMAIL,
+        user: "dev@flow.ng",
+        pass: process.env.EMAIL_PASS,
       },
+      tls: {
+        rejectUnAuthorized: true
+      }
     });
 
     await transporter.sendMail({
@@ -181,12 +204,18 @@ exports.school_admin_invite = async (
 
   try {
     const transporter = nodemailer.createTransport({
-      service: EMAIL_USER,
-      secure: true,
+      service: 'gmail',
+      port: 465,
+      secure: true, // true for 465, false for other ports
+      debug: true,
+      secureConnection: false,
       auth: {
-        pass: EMAIL_PASS,
-        user: EMAIL,
+        user: "dev@flow.ng",
+        pass: process.env.EMAIL_PASS,
       },
+      tls: {
+        rejectUnAuthorized: true
+      }
     });
 
     await transporter.sendMail({
@@ -239,12 +268,18 @@ exports.school_course_invite = async (
         : `http://localhost:3000/invited-user?${query}`;
   // }
   const transporter = nodemailer.createTransport({
-    service: EMAIL_USER,
-    secure: true,
+    service: 'gmail',
+    port: 465,
+    secure: true, // true for 465, false for other ports
+    debug: true,
+    secureConnection: false,
     auth: {
-      pass: EMAIL_PASS,
-      user: EMAIL,
+      user: "dev@flow.ng",
+      pass: process.env.EMAIL_PASS,
     },
+    tls: {
+      rejectUnAuthorized: true
+    }
   });
 
   await transporter.sendMail({
@@ -295,14 +330,20 @@ exports.school_course_invite_teacher = async (
 
   try {
     const transporter = nodemailer.createTransport({
-      service: EMAIL_USER,
-      secure: true,
+      service: 'gmail',
+      port: 465,
+      secure: true, // true for 465, false for other ports
+      debug: true,
+      secureConnection: false,
       auth: {
-        pass: EMAIL_PASS,
-        user: EMAIL,
+        user: "dev@flow.ng",
+        pass: process.env.EMAIL_PASS,
       },
+      tls: {
+        rejectUnAuthorized: true
+      }
     });
-
+    
     await transporter.sendMail({
       from: EMAIL,
       to: email,
@@ -341,12 +382,18 @@ exports.welcome_new_user = async (
 
   try {
     const transporter = nodemailer.createTransport({
-      service: EMAIL_USER,
-      secure: true,
+      service: 'gmail',
+      port: 465,
+      secure: true, // true for 465, false for other ports
+      debug: true,
+      secureConnection: false,
       auth: {
-        pass: EMAIL_PASS,
-        user: EMAIL,
+        user: "dev@flow.ng",
+        pass: process.env.EMAIL_PASS,
       },
+      tls: {
+        rejectUnAuthorized: true
+      }
     });
 
     await transporter.sendMail({
@@ -385,12 +432,18 @@ exports.flow_course_reminder = async (
 
   try {
     const transporter = nodemailer.createTransport({
-      service: EMAIL_USER,
-      secure: true,
+      service: 'gmail',
+      port: 465,
+      secure: true, // true for 465, false for other ports
+      debug: true,
+      secureConnection: false,
       auth: {
-        pass: EMAIL_PASS,
-        user: EMAIL,
+        user: "dev@flow.ng",
+        pass: process.env.EMAIL_PASS,
       },
+      tls: {
+        rejectUnAuthorized: true
+      }
     });
 
     await transporter.sendMail({
