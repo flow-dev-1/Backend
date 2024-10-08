@@ -130,5 +130,7 @@ router.get(
 
 router.get("/course-enrollment/:id/get-activity/:week/:userId", auth, adminController.getactivityData);
 
+router.patch("/course-enrollment/:id/post-activity/:week/:userId", auth, adminController.activityUpdateData);
+
 
 module.exports = router; 

@@ -461,7 +461,7 @@ exports.getSingleSchool = async (req, res) => {
 
     const school = await Schools.findById(req.params.id)
         .select('-password -isVerified -isDeleted -resetPassword')
-        .populate("team", "first_name last_name email school schoolAdminStatus schoolAdminPermission schoolAdminDate newInvite");
+        .populate("team");
     res.status(StatusCodes.OK).json({
         status: 'success',
         school
@@ -948,13 +948,12 @@ exports.getactivityData = async (req, res) => {
 
 // Get Assessment Data
 exports.getAssessmentData = async (req, res) => {
-    const { week } = req.params;
+    const { week, id } = req.params;
     const user = req.params.userId; 
-    const courseEnrollment = req.params.id; 
 
     const existingAssessment = await Assesment.findOne({
         user,
-        courseEnrollment,
+        courseEnrollment:id,
         week
     });
 
@@ -968,3 +967,27 @@ exports.getAssessmentData = async (req, res) => {
         message: "No assessment found for the given criteria"
     });
 };
+
+exports.activityUpdateData = async (req, res) => {
+    const { id, week } = req.params;
+    const user = req.params.userId;
+
+    const activity = await Activity.findOne({ courseEnrollment: id, week, user });
+
+    if (!activity) {
+        return res.status(StatusCodes.NOT_FOUND).json({
+            status: "failed",
+            message: "No activity found for the given criteria"
+        });
+    }
+
+    // Update the activity's activities field
+    await Activity.updateOne({ _id: activity._id }, req.body );
+
+    // Respond with success after updating
+    return res.status(StatusCodes.OK).json({
+        success: "true",
+        message: "Activity data has been updated successfully."
+    });
+};
+
