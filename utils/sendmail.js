@@ -401,7 +401,7 @@ exports.flow_course_reminder = async (
 
     await transporter.sendMail({
       from: EMAIL,
-      to: "jossyojih@gmail.com",
+      to: emailArray.join(','),
       subject: "FLOW For Schools Course Reminder",
       html: `<b>Hi there,</b><br><br>
               <p>This is a reminder that you are enrolled in the <b style="color: #2a9d8f;">${course_name}</b> course on FLOW. Don't forget to log in today and complete your lessons!</p><br>
