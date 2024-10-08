@@ -5,7 +5,7 @@ const OTP = require("../models/OTP");
 const StatusCodes = require("../utils/status-codes");
 const bcrypt = require("bcrypt");
 const _ = require("lodash");
-const { Otp_VerifyAccount, Otp_ForgotPassword, admin_invite } = require("../utils/sendmail");
+const { Otp_VerifyAccount, Otp_ForgotPassword, admin_invite, Admin_Otp_ForgotPassword } = require("../utils/sendmail");
 const otpGenerator = require("otp-generator");
 const CourseEnrollment = require("../models/courseEnrollment");
 const cloudinary = require("../utils/cloudinary");
@@ -170,7 +170,7 @@ exports.forgotPassword = async (req, res) => {
 
     await otp.save();
     const token = await admin.generateAuthToken();
-    await Otp_ForgotPassword(admin.first_name, admin.email, code, token);
+    await Admin_Otp_ForgotPassword(admin.first_name, admin.email, code, token);
 
 
     res.status(StatusCodes.OK).json({ message: `Please enter the code sent to ${email}` });
