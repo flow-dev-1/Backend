@@ -381,13 +381,7 @@ exports.flow_course_reminder = async (
   course_name
 ) => {
 
-  let link;
-
-  link =
-    process.env.ENV === "production" ? `https://flowonline.app` :
-      process.env.ENV === "staging"
-        ? `https://my-flow-dev`
-        : `http://localhost:3000`;
+  let link = `https://flowonline.app`;
 
   try {
     const transporter = nodemailer.createTransport({
