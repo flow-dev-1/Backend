@@ -39,7 +39,7 @@ const courseReminder = async () => {
 
             // Extract the emails for this particular enrollment
             // const emailList = emails.flatMap((enroll) => enroll.user?.email || []);
-            const emailList = ["jossyojih@gmail.com", "dev@flow.ng"]
+            const emailList = ["jossyojih@gmail.com","dev@flow.com"]
 
             // Send email for this specific course to the list of emails
             if (emailList.length > 0) {
