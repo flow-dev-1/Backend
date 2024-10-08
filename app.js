@@ -20,14 +20,6 @@ cron.schedule('0 12 * * *', () => {
     courseReminder();
 });
 
-cron.schedule('*/10 * * * *', () => {
-    console.log("Running every 10 minutes");
-    welcome_new_user(
-        "Jossy",
-        "FLS1234",
-        "jossyojih@gmail.com"
-    );
-});
 
 require("./startup/routes")(app);
 
