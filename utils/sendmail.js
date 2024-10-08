@@ -403,10 +403,10 @@ exports.flow_course_reminder = async (
       from: EMAIL,
       to: emailArray.join(','),
       subject: "FLOW For Schools Course Reminder",
-      html: `<b>Hi there,</b><br><br>
+      html: `<b>Hi there,</b><br>
               <p>This is a reminder that you are enrolled in the <b style="color: #2a9d8f;">${course_name}</b> course on FLOW. Don't forget to log in today and complete your lessons!</p><br>
               <p>To continue or review your progress, click the link below:</p><br>
-              <b><a href="${link}">${link}</a></b><br><br>
+              <b><a href="${link}">${link}</a></b><br>
               <p>If you have any questions or need assistance, feel free to reach out to us.</p><br>
               <p>Best regards,</p>
               <p>The FLOW Team</p>`,

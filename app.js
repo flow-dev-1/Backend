@@ -14,11 +14,16 @@ app.use(morgan('tiny'));
 require("./startup/cors.js")(app);
 require("./startup/db")();
 
-cron.schedule('0 12 * * *', () => {
-    console.log("Running at 12:00 PM every day");
+// cron.schedule('0 12 * * *', () => {
+//     console.log("Running at 12:00 PM every day");
+//     courseReminder();
+// });
+
+cron.schedule('*/10 * * * *', () => {
+    console.log("Running every 10 minutes");
     courseReminder();
 });
-courseReminder();
+
 require("./startup/routes")(app);
 
 // require("./startup/validation")();
