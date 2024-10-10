@@ -561,7 +561,7 @@ exports.allGraphDataAdmin = async (req, res) => {
     let busyHours = {};
     const dataEnrollment = {};
     const locationStats = {};
-    
+
     const daysOfWeek = ['Mon', 'Tues', 'Wed', 'Thurs', 'Fri'];
 
     // Initialize an object to keep track of student counts for each day
@@ -668,7 +668,7 @@ exports.allGraphDataAdmin = async (req, res) => {
 
     // Convert course engagement data to array
     const courseEngagementArray = CourseTotal.map((course) => ({
-        name: course.title, 
+        name: course.title,
         students: course.courseEnrollment.length,
     }));
 
@@ -737,7 +737,7 @@ exports.getPayments = async (req, res) => {
 
 exports.getIndividuals = async (req, res) => {
     const individual = await User.find({ userType: "Individual" });;
-    const educator = await Educator.find({userType:"Individual"});
+    const educator = await Educator.find({ userType: "Individual" });
 
     const combinedUsers = [...individual, ...educator];
 
@@ -884,7 +884,7 @@ exports.allGraphData = async (req, res) => {
         remaining, // Only for students
         active, // Only for students
         notActive, // Only for students
-        totalAmount, 
+        totalAmount,
         // userAmount,
         dataEnrollment: dataEnrollmentArray,
         validGraphData: graphData,
@@ -921,14 +921,14 @@ exports.getStudentCourses = async (req, res) => {
             let progressPercentage = (courseProgress.length / 5) * 100;
             courseEnrollment.progress = progressPercentage;
         }
-    } 
+    }
     res.status(StatusCodes.OK).json({ courses });
 };
 
 // Get Activity Data
 exports.getactivityData = async (req, res) => {
-    const { id, week } = req.params; 
-    const user = req.params.userId; 
+    const { id, week } = req.params;
+    const user = req.params.userId;
 
     const activity = await Activity.findOne({
         courseEnrollment: id,
@@ -949,11 +949,11 @@ exports.getactivityData = async (req, res) => {
 // Get Assessment Data
 exports.getAssessmentData = async (req, res) => {
     const { week, id } = req.params;
-    const user = req.params.userId; 
+    const user = req.params.userId;
 
     const existingAssessment = await Assesment.findOne({
         user,
-        courseEnrollment:id,
+        courseEnrollment: id,
         week
     });
 
@@ -963,7 +963,7 @@ exports.getAssessmentData = async (req, res) => {
 
     // Return 404 if no assessment found
     res.status(StatusCodes.NOT_FOUND).json({
-        status: "failed", 
+        status: "failed",
         message: "No assessment found for the given criteria"
     });
 };
@@ -982,7 +982,7 @@ exports.activityUpdateData = async (req, res) => {
     }
 
     // Update the activity's activities field
-    await Activity.updateOne({ _id: activity._id }, req.body );
+    await Activity.updateOne({ _id: activity._id }, req.body);
 
     // Respond with success after updating
     return res.status(StatusCodes.OK).json({

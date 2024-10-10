@@ -81,14 +81,19 @@ exports.registerAdminValidator = function (req) {
 exports.validateAdminUpdate = function validateAdminUpdate(req) {
 
     const schema = Joi.object({
-        fullName: Joi.string()
+        first_name: Joi.string()
             .min(2)
             .max(300)
             .required()
-            .pattern(/^[a-zA-Z]+ [a-zA-Z]+$/)
-            .message(
-                "Full name must contain at least a first name and a last name separated by a space."
-            ),
+            .pattern(/^[a-zA-Z]+$/)
+            .message("First name must contain only letters."),
+        last_name: Joi.string()
+            .min(2)
+            .max(300)
+            .required()
+            .pattern(/^[a-zA-Z]+$/)
+            .message("Last name must contain only letters."),
+
         phone: Joi.string()
             .pattern(new RegExp(/^\+[1-9]\d{1,14}$/))
             .message("Please enter a valid phone number in international format")
