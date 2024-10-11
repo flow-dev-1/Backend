@@ -872,148 +872,69 @@ exports.courseEnrollment = async (req, res) => {
     res.status(StatusCodes.OK).json({ message: "Course enrolled successfully!" });
 };
 
+const doesFullNameMatch = (studentFullName, fullName) => {
+    const nameParts = fullName.toLowerCase().split(" ");
+    const studentNameParts = studentFullName.toLowerCase().split(" ");
+
+    return (
+        nameParts.every((part) => studentNameParts.includes(part)) &&
+        studentNameParts.every((part) => nameParts.includes(part))
+    );
+};
+
+const findStudentByEmailAndFullName = async (email, fullName, students) => {
+    const emailLower = email.toLowerCase();
+    for (const student of students) {
+        if (
+            student.email.toLowerCase() === emailLower &&
+            doesFullNameMatch(student.fullName, fullName)
+        ) {
+            return student;
+        }
+    }
+    return null; // No match found
+};
+
 exports.addStudentsToCourseEnrollment = async (req, res) => {
     const { stdClass, students } = req.body;
     const { id, enrolledCourseId } = req.params;
 
-    const existingEnrollment = await SchoolCourses.findOne({
-        _id: enrolledCourseId,
-    })
-        .populate("course", "title")
-        .populate("school", "school_name");
+    try {
+        // Check if enrollment exists
+        const existingEnrollment = await SchoolCourses.findOne({ _id: enrolledCourseId })
+            .populate("course", "title")
+            .populate("school", "school_name");
 
-    if (!existingEnrollment) {
-        return res
-            .status(StatusCodes.UNPROCESSABLE_ENTITY)
-            .json({ message: "You are not enrolled in this course!" });
-    }
+        if (!existingEnrollment) {
+            return res.status(StatusCodes.NOT_FOUND).json({ message: "You are not enrolled in this course!" });
+        }
 
-    for (const item of students) {
-        try {
-            // Check if this parent exist
-            const existingParent = await Parents.findOne({
-                email: item.email,
-            }).populate("students", "-password");
+        for (const item of students) {
+            try {
+                // Check if the parent exists
+                let existingParent = await Parents.findOne({ email: item.email }).populate("students", "-password");
 
-            if (!existingParent) {
-                const newParent = new Parents({
-                    fullName: item.guardianFullName,
-                    email: item.email,
-                    phone: "N/A",
-                    country: "N/A",
-                    state: "N/A",
-                    students: [],
-                });
+                if (!existingParent) {
+                    // If parent doesn't exist, create a new parent, user, and enrollment
+                    const newParent = new Parents({
+                        fullName: item.guardianFullName,
+                        email: item.email,
+                        phone: "N/A",
+                        country: "N/A",
+                        state: "N/A",
+                        students: [],
+                    });
 
-                const userId = generateId();
-
-                const newUser = new User({
-                    _id: new mongoose.Types.ObjectId(),
-                    userId,
-                    fullName: item?.fullName,
-                    guardianFullName: item.guardianFullName,
-                    email: item.email,
-                    userType: "School",
-                    grade: stdClass.startsWith("Pri")
-                        ? "Primary"
-                        : stdClass.startsWith("Year")
-                            ? "Secondary"
-                            : "Educator",
-                    newCourseInvite: {
-                        school: id,
-                    },
-                });
-
-                const newStudentEnrollment = new StudentEnrollments({
-                    _id: new mongoose.Types.ObjectId(),
-                    course: existingEnrollment.course._id,
-                    school: id,
-                    checkModel: "User",
-                    schoolCourseEnrollment: existingEnrollment._id,
-                    user: newUser._id,
-                    checkModel: "User",
-                    stdClass,
-                });
-
-                existingEnrollment.studentEnrollments.push(newStudentEnrollment._id);
-                newParent.students = [newUser._id];
-                const token = newUser.generateAuthToken();
-
-                await Promise.all([newStudentEnrollment.save(), newUser.save(), newParent.save()]);
-
-                let stdGrade = stdClass.startsWith("Pri")
-                    ? "Primary"
-                    : stdClass.startsWith("Year")
-                        ? "Secondary"
-                        : "Educator";
-
-                await school_course_invite(
-                    item.guardianFullName,
-                    item?.fullName,
-                    "new",
-                    stdGrade,
-                    newStudentEnrollment._id,
-                    existingEnrollment.school.school_name,
-                    existingEnrollment.course.title,
-                    item.email,
-                    token
-                );
-            } else {
-                // the parent already exist
-                // Check if the child already exist
-                // Function to check if a student's full name matches the given full name with possible swaps
-                function doesFullNameMatch(studentFullName, fullName) {
-                    const nameParts = fullName.toLowerCase().split(" ");
-                    const studentNameParts = studentFullName.toLowerCase().split(" ");
-
-                    // Check if all name parts are present in any order
-                    return (
-                        nameParts.every((part) => studentNameParts.includes(part)) &&
-                        studentNameParts.every((part) => nameParts.includes(part))
-                    );
-                }
-
-                // Function to find a student by email and full name in an array
-                async function findStudentByEmailAndFullName(email, fullName, students) {
-                    const emailLower = email.toLowerCase();
-
-                    for (const student of students) {
-                        if (
-                            student.email.toLowerCase() === emailLower &&
-                            doesFullNameMatch(student.fullName, fullName)
-                        ) {
-                            return student;
-                        }
-                    }
-
-                    return null; // No match found
-                }
-
-                const student = await findStudentByEmailAndFullName(
-                    item.email,
-                    item.fullName,
-                    existingParent.students
-                );
-
-                // A new student
-                if (!student) {
-                    //
                     const userId = generateId();
                     const newUser = new User({
                         _id: new mongoose.Types.ObjectId(),
                         userId,
-                        fullName: item?.fullName,
+                        fullName: item.fullName,
                         guardianFullName: item.guardianFullName,
                         email: item.email,
                         userType: "School",
-                        grade: stdClass.startsWith("Pri")
-                            ? "Primary"
-                            : stdClass.startsWith("Year")
-                                ? "Secondary"
-                                : "Educator",
-                        newCourseInvite: {
-                            school: id,
-                        },
+                        grade: getStudentGrade(stdClass),
+                        newCourseInvite: { school: id },
                     });
 
                     const newStudentEnrollment = new StudentEnrollments({
@@ -1023,29 +944,20 @@ exports.addStudentsToCourseEnrollment = async (req, res) => {
                         checkModel: "User",
                         schoolCourseEnrollment: existingEnrollment._id,
                         user: newUser._id,
+                        stdClass,
                     });
 
                     existingEnrollment.studentEnrollments.push(newStudentEnrollment._id);
-                    existingParent.students = [...existingParent.students, newUser._id];
+                    newParent.students.push(newUser._id);
                     const token = newUser.generateAuthToken();
 
-                    await Promise.all([
-                        newStudentEnrollment.save(),
-                        newUser.save(),
-                        existingParent.save(),
-                    ]);
-
-                    let stdGrade = stdClass.startsWith("Pri")
-                        ? "Primary"
-                        : stdClass.startsWith("Year")
-                            ? "Secondary"
-                            : "Educator";
+                    await Promise.all([newStudentEnrollment.save(), newUser.save(), newParent.save()]);
 
                     await school_course_invite(
-                        existingParent.fullName,
-                        item?.fullName,
+                        item.guardianFullName,
+                        item.fullName,
                         "new",
-                        stdGrade,
+                        getStudentGrade(stdClass),
                         newStudentEnrollment._id,
                         existingEnrollment.school.school_name,
                         existingEnrollment.course.title,
@@ -1053,24 +965,22 @@ exports.addStudentsToCourseEnrollment = async (req, res) => {
                         token
                     );
                 } else {
-                    // Old student
+                    // Parent exists, check for existing student
+                    const student = await findStudentByEmailAndFullName(item.email, item.fullName, existingParent.students);
 
-                    // Check if the student is already enrolled in the course
-                    // Check if the user is already enrolled in this course
-                    const findStd = await User.findById(student._id);
-
-                    const studentEnrollment = await StudentEnrollments.findOne({
-                        course: existingEnrollment.course._id, // Assuming you have some course ID here
-                        school: id,
-                        schoolCourseEnrollment: existingEnrollment._id,
-                        status: { $ne: "Deactivated" },
-                        user: findStd._id,
-                    });
-
-                    if (!studentEnrollment) {
-                        findStd.newCourseInvite = {
-                            school: id,
-                        };
+                    if (!student) {
+                        // New student creation
+                        const userId = generateId();
+                        const newUser = new User({
+                            _id: new mongoose.Types.ObjectId(),
+                            userId,
+                            fullName: item.fullName,
+                            guardianFullName: item.guardianFullName,
+                            email: item.email,
+                            userType: "School",
+                            grade: getStudentGrade(stdClass),
+                            newCourseInvite: { school: id },
+                        });
 
                         const newStudentEnrollment = new StudentEnrollments({
                             _id: new mongoose.Types.ObjectId(),
@@ -1078,45 +988,89 @@ exports.addStudentsToCourseEnrollment = async (req, res) => {
                             school: id,
                             checkModel: "User",
                             schoolCourseEnrollment: existingEnrollment._id,
-                            user: student._id,
+                            user: newUser._id,
                         });
 
                         existingEnrollment.studentEnrollments.push(newStudentEnrollment._id);
+                        existingParent.students.push(newUser._id);
+                        const token = newUser.generateAuthToken();
 
-                        const token = findStd.generateAuthToken();
-                        await Promise.all([newStudentEnrollment.save(), findStd.save()]);
-
-                        let stdGrade = stdClass.startsWith("Pri")
-                            ? "Primary"
-                            : stdClass.startsWith("Year")
-                                ? "Secondary"
-                                : "Educator";
+                        await Promise.all([newStudentEnrollment.save(), newUser.save(), existingParent.save()]);
 
                         await school_course_invite(
                             existingParent.fullName,
-                            findStd?.fullName,
+                            item.fullName,
                             "new",
-                            stdGrade,
+                            getStudentGrade(stdClass),
                             newStudentEnrollment._id,
                             existingEnrollment.school.school_name,
                             existingEnrollment.course.title,
                             item.email,
                             token
                         );
+                    } else {
+                        // Existing student, check for enrollment
+                        const studentEnrollment = await StudentEnrollments.findOne({
+                            course: existingEnrollment.course._id,
+                            school: id,
+                            schoolCourseEnrollment: existingEnrollment._id,
+                            status: { $ne: "Deactivated" },
+                            user: student._id,
+                        });
+
+                        if (!studentEnrollment) {
+                            student.newCourseInvite = { school: id };
+
+                            const newStudentEnrollment = new StudentEnrollments({
+                                _id: new mongoose.Types.ObjectId(),
+                                course: existingEnrollment.course._id,
+                                school: id,
+                                checkModel: "User",
+                                schoolCourseEnrollment: existingEnrollment._id,
+                                user: student._id,
+                            });
+
+                            existingEnrollment.studentEnrollments.push(newStudentEnrollment._id);
+                            const token = student.generateAuthToken();
+
+                            await Promise.all([newStudentEnrollment.save(), student.save()]);
+
+                            await school_course_invite(
+                                existingParent.fullName,
+                                student.fullName,
+                                "new",
+                                getStudentGrade(stdClass),
+                                newStudentEnrollment._id,
+                                existingEnrollment.school.school_name,
+                                existingEnrollment.course.title,
+                                item.email,
+                                token
+                            );
+                        }
                     }
                 }
+            } catch (error) {
+                logger.error({
+                    message: `Error processing student ${item.fullName}`,
+                    error: error.message,
+                });
             }
-        } catch (error) {
-            logger.error({
-                message: `Error processing student ${item?.fullName}`,
-                error: error.message,
-            });
         }
-    }
-    await existingEnrollment.save();
 
-    res.status(StatusCodes.OK).json({ message: "Students invited to course successfully!" });
+        await existingEnrollment.save();
+        res.status(StatusCodes.OK).json({ message: "Students invited to course successfully!" });
+    } catch (error) {
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: "An error occurred during the enrollment process.", error: error.message });
+    }
 };
+
+// Helper function to get student grade
+const getStudentGrade = (stdClass) => {
+    if (stdClass.startsWith("Pri")) return "Primary";
+    if (stdClass.startsWith("Year")) return "Secondary";
+    return "Educator";
+};
+
 
 exports.removeSchoolAdmin = async (req, res) => {
     // Find the school by ID
