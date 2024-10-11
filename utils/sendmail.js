@@ -76,7 +76,7 @@ exports.Otp_ForgotPassword = async (name, email, otp, token) => {
 
 exports.admin_invite = async (name, email, token) => {
   let link =
-    process.env.ENV === "production" ? `https://flowonline.app/sign-up?t=${token}&email=${email}` :
+    process.env.ENV === "production" ? `https://flow-admin.flowonline.app/sign-up?t=${token}&email=${email}` :
       process.env.ENV === "staging"
         ? `https://admin-flow.netlify.app/sign-up?t=${token}&email=${email}`
         : ` http://localhost:5173/sign-up?t=${token}&email=${email}`;
@@ -113,6 +113,47 @@ exports.admin_invite = async (name, email, token) => {
     console.log(error, "email not sent");
   }
 };
+
+exports.Admin_Otp_ForgotPassword = async (name, email, otp, token) => {
+  let link =
+    process.env.ENV === "production" ? `https://flow-admin.flowonline.app/forgot-password?t=${token}&c=${otp}` :
+      process.env.ENV === "staging"
+        ? `https://my-flow-dev/forgot-password?t=${token}&c=${otp}`
+        : `http://localhost:3000/forgot-password?t=${token}&c=${otp}`;
+
+  try {
+    const transporter = nodemailer.createTransport({
+      service: EMAIL_USER,
+      secure: true,
+      auth: {
+        pass: EMAIL_PASS,
+        user: EMAIL,
+      },
+    });
+
+    await transporter.sendMail({
+      from: EMAIL,
+      to: email,
+      subject: " FLOW Reset Password",
+      html: ` <b> Hi ${name} </b></br>
+            <p>We recieved a request to reset the Password on your FLOW Account.</p>
+            </br>
+            <p>Please click or copy this link to complete password reset.</p>
+            </br>
+            </br>
+            <b><a href="${link}">${link}</a></b>
+            </br>
+            </br>
+            <p>Please do not forward this email to others in order to prevent anybody else from accessing your account.</p>   
+            </br>
+            <p>Thanks for helping us keep your account secure. </p>`,
+    });
+    console.log("email sent sucessfully");
+  } catch (error) {
+    console.log(error, "email not sent");
+  }
+};
+
 
 exports.school_admin_invite = async (
   status,
@@ -335,3 +376,39 @@ exports.welcome_new_user = async (
   }
 };
 
+exports.flow_course_reminder = async (
+  emailArray,
+  course_name
+) => {
+
+  let link = `https://flowonline.app`
+  try {
+    const transporter = nodemailer.createTransport({
+      service: EMAIL_USER,
+      secure: true,
+      auth: {
+        pass: EMAIL_PASS,
+        user: EMAIL,
+      },
+    });
+
+    await transporter.sendMail({
+      from: EMAIL,
+      to: emailArray.join(','),
+      subject: "FLOW For Schools Course Reminder",
+      html: `<b>Hi there,</b><br><br>
+              <p>This is a reminder that you are enrolled in the <b style="color: #2a9d8f;">${course_name}</b> course on FLOW. Don't forget to log in today and complete your lessons!</p><br>
+              <p>To continue or review your progress, click the link below:</p><br>
+              <b><a href="${link}">${link}</a></b><br><br>
+              <p>If you have any questions or need assistance, feel free to reach out to us.</p><br>
+              <p>Best regards,</p>
+              <p>The FLOW Team</p>`,
+    });
+    console.log("Email sent successfully");
+  } catch (error) {
+    console.log(error)
+  }
+
+
+
+};

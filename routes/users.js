@@ -18,6 +18,8 @@ router.get('/parent', auth, userController.getParentWithNewCourseInvite);
 
 router.get('/courses', auth, userController.getCourses);
 
+router.get('/courses/:id/completed', auth, userController.getCompletedWeeks);
+
 router.get('/payments', auth, userController.getPayments);
 
 router.post('/register', validate(validateUser), userController.registerUser);
