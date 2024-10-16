@@ -3,7 +3,6 @@ const express = require("express");
 const morgan = require('morgan');
 const cron = require('node-cron');
 const courseReminder = require("./utils/cronJobs/courseReminder.js");
-const { welcome_new_user, flow_course_reminder } = require("./utils/sendmail.js");
 
 require('dotenv').config();
 require("./startup/logging")();
@@ -21,6 +20,14 @@ cron.schedule('0 12 * * *', () => {
 });
 
 
+// cron.schedule('*/10 * * * *', () => {
+//     console.log("Running every 10 minutes");
+//     welcome_new_user(
+//         "Jossy",
+//         "FLS1234",
+//         "jossyojih@gmail.com"
+//     );
+// });
 
 require("./startup/routes")(app);
 
