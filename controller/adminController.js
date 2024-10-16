@@ -542,6 +542,7 @@ exports.allGraphDataAdmin = async (req, res) => {
     const totalPupils = await User.find({ isVerified: true });
     const schoolTotal = await Schools.find({ isVerified: true });
     const courseActivities = await StudentEnrollments.find();
+    const Outstanding = await Payment.find({ user: req.user._id });
     const CourseTotal = await Courses.find();
     const income = await Payment.find({ status: "Confirmed" });
     const enrollments = await SchoolCourses.find({ status: "Active" })
@@ -552,7 +553,14 @@ exports.allGraphDataAdmin = async (req, res) => {
     let totalStudents = totalPupils.length;
     let totalTeachers = totalTeac.length;
     let totalSchools = schoolTotal.length;
+
+    // Calculate totalAmount from Outstanding payments
     let totalAmount = 0;
+    if (Outstanding.length > 0) {
+        totalAmount = Outstanding.reduce((sum, payment) => sum + (payment.amount || 0), 0);
+    }
+
+    let totalOutstanding = 0;
     let active = 0;
     let notActive = 0;
     let totalMales = 0;
@@ -564,42 +572,33 @@ exports.allGraphDataAdmin = async (req, res) => {
 
     const daysOfWeek = ['Mon', 'Tues', 'Wed', 'Thurs', 'Fri'];
 
-    // Initialize an object to keep track of student counts for each day
     const studentCountByDay = {
         Mon: 0,
         Tues: 0,
         Wed: 0,
         Thurs: 0,
-        Fri: 0
+        Fri: 0,
     };
 
-    // Loop through all course activities and count the students per day
     courseActivities.forEach((activity) => {
-        // Map full day names to abbreviations
         const dayMapping = {
             Monday: 'Mon',
             Tuesday: 'Tues',
             Wednesday: 'Wed',
             Thursday: 'Thurs',
-            Friday: 'Fri'
+            Friday: 'Fri',
         };
-
         const dayAbbreviation = dayMapping[activity.dayOfWeek];
-
         if (daysOfWeek.includes(dayAbbreviation)) {
-            // Use the length of studentEnrollments array as the number of students
             studentCountByDay[dayAbbreviation] += activity.studentEnrollments.length;
         }
     });
 
-    // Convert the result into an array
     const studentEnrollmentByDay = daysOfWeek.map((day) => ({
         name: day,
         students: studentCountByDay[day],
     }));
 
-
-    // Count males and females
     totalPupils.forEach(user => {
         if (user.gender === "male") {
             totalMales++;
@@ -608,7 +607,6 @@ exports.allGraphDataAdmin = async (req, res) => {
         }
     });
 
-    // Build location statistics based on lga from Schools
     schoolTotal.forEach((school) => {
         const { lga } = school;
         if (lga) {
@@ -616,7 +614,6 @@ exports.allGraphDataAdmin = async (req, res) => {
         }
     });
 
-    // Process enrollments
     for (const enrollment of enrollments) {
         const { enrolledBy, course, status, dayOfWeek, startTime } = enrollment;
         const docModel = enrollment.docModel;
@@ -624,89 +621,77 @@ exports.allGraphDataAdmin = async (req, res) => {
         if (status === "Active") {
             if (docModel === "User") {
                 active++;
-
-                // Build course engagement data
                 if (course && course.title) {
                     dataEnrollment[course.title] = (dataEnrollment[course.title] || 0) + 1;
                 }
             }
 
-            // Track busiest days
             busyDays[dayOfWeek] = (busyDays[dayOfWeek] || 0) + 1;
 
-            // Process start time to AM/PM format
             const hour = parseInt(startTime.split(':')[0], 10);
             let period = 'AM';
             let formattedHour = hour;
 
             if (hour === 0) {
-                formattedHour = 12; // Midnight, so it's 12 AM
+                formattedHour = 12;
             } else if (hour === 12) {
-                period = 'PM'; // Noon, so it's 12 PM
+                period = 'PM';
             } else if (hour > 12) {
-                formattedHour = hour - 12; // Convert to PM
+                formattedHour = hour - 12;
                 period = 'PM';
             }
 
             const hourKey = `${formattedHour} ${period}`;
             busyHours[hourKey] = (busyHours[hourKey] || 0) + 1;
 
-            // Sum total course cost
             if (course && course.cost) {
-                totalAmount += course.cost;
+                totalOutstanding += course.cost;
             }
         } else {
             notActive++;
         }
     }
 
-    // Gender analysis array
     const genderAnalysis = [
         { name: "Male", value: totalMales },
         { name: "Female", value: totalFemales },
     ];
 
-    // Convert course engagement data to array
     const courseEngagementArray = CourseTotal.map((course) => ({
         name: course.title,
         students: course.courseEnrollment.length,
     }));
 
-    // Convert location statistics to array (based on Schools' lga)
     const locationArray = Object.keys(locationStats).map((key) => ({
         name: key,
         students: locationStats[key],
     }));
 
-    // Convert busy days to array
     const busyDaysArray = Object.keys(busyDays).map((key) => ({
         name: key,
         value: busyDays[key],
     }));
 
-    // Sort and convert busy hours to array
     const busyHoursArray = Object.keys(busyHours)
         .map((key) => ({
             name: key,
             students: busyHours[key],
         }))
-        .sort((a, b) => timeTo24Hour(a.name) - timeTo24Hour(b.name)); // Sort by time
+        .sort((a, b) => timeTo24Hour(a.name) - timeTo24Hour(b.name));
 
-    // Helper function to convert 12-hour AM/PM to 24-hour time for sorting
     function timeTo24Hour(timeStr) {
-        const [hour, period] = timeStr.split(' '); // Split into hour and AM/PM
+        const [hour, period] = timeStr.split(' ');
         let hourNumber = parseInt(hour, 10);
 
         if (period === 'PM' && hourNumber !== 12) {
-            hourNumber += 12; // Convert PM hours to 24-hour format (except 12 PM)
+            hourNumber += 12;
         } else if (period === 'AM' && hourNumber === 12) {
-            hourNumber = 0; // Midnight (12 AM) is 00:00 in 24-hour format
+            hourNumber = 0;
         }
 
         return hourNumber;
     }
 
-    // Send response
     res.status(200).json({
         status: "success",
         totalStudents,
@@ -714,6 +699,7 @@ exports.allGraphDataAdmin = async (req, res) => {
         totalSchools,
         totalAmount,
         income,
+        totalOutstanding,
         genderAnalysis,
         courseEngagement: courseEngagementArray,
         courseActivity: studentEnrollmentByDay,
@@ -722,6 +708,7 @@ exports.allGraphDataAdmin = async (req, res) => {
         busyHours: busyHoursArray,
     });
 };
+
 
 
 
