@@ -14,6 +14,7 @@ const {
   schoolCourseAddTeachersValidator,
 } = require("../middleware/validate");
 const schoolsController = require("../controller/schoolsController");
+const adminController = require("../controller/adminController");
 const optionalUpload = require("../utils/optionalUpload");
 const schoolAccess = require("../middleware/schoolAccess"); //This middleware allows users with access 2 a school
 
@@ -194,6 +195,13 @@ router.delete(
   schoolsController.deleteStudentFromCourseEnrollment
 );
 
+router.get(
+  "/course-enrollment/:id/get-assesment/:week/:userId",
+  auth,
+  adminController.getAssessmentData
+);
+
+router.get("/course-enrollment/:id/get-activity/:week/:userId", auth, adminController.getactivityData);
 // router.delete('/:id', [auth, schoolAccess], schoolsController.deleteAdmin);
 
 router.get("/payments", auth, schoolAccess, schoolsController.getPayments);
