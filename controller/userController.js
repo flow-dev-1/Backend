@@ -84,6 +84,7 @@ exports.registerUser = async (req, res) => {
       phone,
       country,
       state,
+      lga,
       students: []
     });
   }

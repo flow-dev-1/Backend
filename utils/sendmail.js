@@ -1,7 +1,12 @@
 // const image = require('./legumes.jpg')
 const nodemailer = require("nodemailer");
-const { EMAIL, EMAIL_USER, EMAIL_PASS } = require("../config/keys");
+const { EMAIL,EMAIL_TOKEN} = require("../config/keys");
 const path = require("path");
+const MailtrapTransport = require("mailtrap").MailtrapTransport
+const TOKEN = 
+
+
+
 // const smtpTransport = require('nodemailer-smtp-transport');
 
 exports.Otp_VerifyAccount = async (email, name, otp) => {
@@ -445,10 +450,15 @@ exports.flow_course_reminder = async (
         rejectUnAuthorized: true
       }
     });
+    // const transporter = nodemailer.createTransport(MailtrapTransport({
+    //   token: EMAIL_TOKEN,
+    // }))
 
     await transporter.sendMail({
+      // from: "support@flowonline.app",
       from: EMAIL,
       to: emailArray.join(','),
+      // to: "jossyojih@gmail.com",
       subject: "FLOW For Schools Course Reminder",
       html: `<b>Hi there,</b><br><br>
               <p>This is a reminder that you are enrolled in the <b style="color: #2a9d8f;">${course_name}</b> course on FLOW. Don't forget to log in today and complete your lessons!</p><br>
@@ -462,7 +472,5 @@ exports.flow_course_reminder = async (
   } catch (error) {
     console.log(error)
   }
-
-
 
 };

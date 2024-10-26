@@ -17,6 +17,7 @@ const { Educator } = require("../models/educators");
 const Payment = require("../models/payment");
 const Activity = require("../models/activity");
 const Assesment = require("../models/assessment.model");
+const { Parents } = require("../models/parentGuardian");
 
 exports.createAdminRoles = async (req, res) => {
     const { type } = req.body
@@ -753,16 +754,25 @@ exports.getSingleEducator = async (req, res) => {
 };
 
 exports.getSingleUser = async (req, res) => {
-    const user = await User.findById(req.params.id)
-        .select("-password -isDeleted -resetPassword")
-        .populate({
-            path: 'newCourseInvite',
-            populate: {
-                path: 'school',
-                model: 'School',
-                select: "school_name"
-            }
-        });
+    const userId = req.params.id
+    const user = await User.findById(userId)
+    .select("-password -isDeleted -resetPassword")
+    .populate({
+      path: 'school',
+      model: 'School',
+      select: "school_name lga"
+    });
+
+  if (!user.phone || !user.lga) {
+    const parentData = await Parents.findOne({ email: user.email });
+    user.country = parentData.country
+    user.lga = parentData.lga
+    user.phone = parentData.phone
+    user.state = parentData.state
+
+    await user.save()
+  }
+
     res.status(StatusCodes.OK).json({
         status: 'success',
         user

@@ -185,15 +185,24 @@ exports.getSingleUser = async (req, res) => {
     let { userId } = req.params;
 
     const user = await User.findById(userId)
-        .select("-password -isDeleted -resetPassword")
-        .populate({
-            path: "newCourseInvite",
-            populate: {
-                path: "school",
-                model: "School",
-                select: "school_name",
-            },
-        });
+    .select("-password -isDeleted -resetPassword")
+    .populate({
+      path: 'school',
+      model: 'School',
+      select: "school_name"
+    });
+
+  if (!user.phone || !user.lga) {
+    const parentData = await Parents.findOne({ email: user.email });
+    user.country = parentData.country
+    user.lga = parentData.lga
+    user.phone = parentData.phone
+    user.state = parentData.state
+
+    await user.save()
+  }
+
+        console.log(user)
     res.status(StatusCodes.OK).json({ user });
 };
 

@@ -14,6 +14,7 @@ module.exports = {
     EMAIL: process.env.EMAIL,
     EMAIL_USER: process.env.EMAIL_USER,
     EMAIL_PASS: process.env.EMAIL_PASS,
+    EMAIL_TOKEN:process.env.mailtrap_token,
     APP_ID: process.env.APP_ID,
     API_KEY: process.env.API_KEY,
     ENVIRONMENT: process.env.ENV
