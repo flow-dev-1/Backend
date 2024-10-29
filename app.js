@@ -19,7 +19,6 @@ cron.schedule('0 12 * * *', () => {
     courseReminder();
 });
 
-courseReminder();
 // cron.schedule('*/10 * * * *', () => {
 //     console.log("Running every 10 minutes");
 //     welcome_new_user(

@@ -470,7 +470,7 @@ exports.getSingleSchool = async (req, res) => {
 };
 
 exports.getSchoolEnrolledCourses = async (req, res) => {
-    const courses = await SchoolCourses.find({ school: req.params.id, status: "Active" })
+    const courses = await SchoolCourses.find({ school: req.params.id})
         .populate("course");
 
     const filteredCourses = courses.filter(
@@ -486,7 +486,6 @@ exports.getSchoolEnrolledCourses = async (req, res) => {
 exports.deleteAdminFromSchool = async (req, res) => {
 
     const { id, userId } = req.params
-    console.log(id, userId)
 
     const school = await Schools.findById(id)
         .select('-password -isVerified -isDeleted -resetPassword')

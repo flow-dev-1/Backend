@@ -48,8 +48,4 @@ router.get(
 
 router.get("/course-enrollment/:id/get-activity/:week", auth, userController.getactivityData);
 
-
-
-
-
 module.exports = router; 

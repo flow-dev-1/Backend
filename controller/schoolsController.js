@@ -114,7 +114,6 @@ exports.getSingleEnrolledCourse = async (req, res) => {
             },
         });
 
-    // console.log(course)
     // Handle students wuthout phone number
 
     const confirmedEnrollments = course.studentEnrollments.filter(
@@ -185,24 +184,23 @@ exports.getSingleUser = async (req, res) => {
     let { userId } = req.params;
 
     const user = await User.findById(userId)
-    .select("-password -isDeleted -resetPassword")
-    .populate({
-      path: 'school',
-      model: 'School',
-      select: "school_name"
-    });
+        .select("-password -isDeleted -resetPassword")
+        .populate({
+            path: 'school',
+            model: 'School',
+            select: "school_name"
+        });
 
-  if (!user.phone || !user.lga) {
-    const parentData = await Parents.findOne({ email: user.email });
-    user.country = parentData.country
-    user.lga = parentData.lga
-    user.phone = parentData.phone
-    user.state = parentData.state
+    if (!user.phone || !user.lga) {
+        const parentData = await Parents.findOne({ email: user.email });
+        user.country = parentData.country
+        user.lga = parentData.lga
+        user.phone = parentData.phone
+        user.state = parentData.state
 
-    await user.save()
-  }
+        await user.save()
+    }
 
-        console.log(user)
     res.status(StatusCodes.OK).json({ user });
 };
 
@@ -1446,7 +1444,7 @@ exports.allGraphData = async (req, res) => {
 exports.addTeachersToEnrolledCourse = async (req, res) => {
     const { stdClass, educators } = req.body;
     const { id, enrolledCourseId } = req.params;
-    console.log(enrolledCourseId);
+
     // Find the existing course enrollment
     const existingEnrollment = await SchoolCourses.findOne({
         school: id,
@@ -1533,15 +1531,18 @@ exports.addTeachersToEnrolledCourse = async (req, res) => {
 };
 
 exports.toggleForCourse = async (req, res) => {
+    const schoolId = req.params.schoolId ? req.params.schoolId : req.user._id
+
     const course = await SchoolCourses.findOneAndUpdate(
         {
             course: req.params.id,
-            school: req.user._id,
+            school: schoolId,
         },
         {
             $set: { status: req.body.status },
         },
         { new: true }
+
     );
 
     res.status(StatusCodes.OK).json({ message: "Course updated!" });

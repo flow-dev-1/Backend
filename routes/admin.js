@@ -122,10 +122,16 @@ router.delete('/schools/:enrolledCourseId/users/:userId/enrollment/:userEnrollme
 
 router.get('/courses/:id', auth, adminController.getStudentCourses);
 
+router.post(
+    "/schools/:schoolId/course-togle/:id",
+    auth,
+    schoolsController.toggleForCourse
+);
+
 router.get(
-  "/course-enrollment/:id/get-assesment/:week/:userId",
-  auth,
-  adminController.getAssessmentData
+    "/course-enrollment/:id/get-assesment/:week/:userId",
+    auth,
+    adminController.getAssessmentData
 );
 
 router.get("/course-enrollment/:id/get-activity/:week/:userId", auth, adminController.getactivityData);

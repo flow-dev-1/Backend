@@ -30,7 +30,6 @@ exports.login = async (req, res) => {
   let accountType = "";
 
   if (isEmail(usernameOrEmail)) {
-    console.log("Checking emails");
 
     // Search for a School by email
     const school = await findUser(Schools, {
