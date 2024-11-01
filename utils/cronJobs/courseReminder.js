@@ -2,7 +2,7 @@ const axios = require('axios');
 const { User } = require("../../models/user");
 const SchoolCourseEnrollment = require("../../models/schoolCourseEnrollment");
 const CourseEnrollment = require('../../models/courseEnrollment');
-const { flow_course_reminder, welcome_new_user } = require('../sendmail');
+const { flow_course_reminder } = require('../sendmail');
 
 const courseReminder = async () => {
 
