@@ -90,7 +90,7 @@ adminSchema.methods.generateAuthToken = async function () {
         },
         process.env.JWT,
         {
-            expiresIn: "1d",
+            expiresIn: "7d",
         }
     );
     return token;
