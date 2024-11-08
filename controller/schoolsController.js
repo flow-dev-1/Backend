@@ -1033,7 +1033,7 @@ exports.addStudentsToCourseEnrollment = async (req, res) => {
                         status: { $ne: "Deactivated" },
                         user: findStd._id,
                     });
-
+                    // Student has not accepted invite
                     if (!studentEnrollment) {
                         findStd.newCourseInvite = {
                             school: id,
@@ -1072,10 +1072,33 @@ exports.addStudentsToCourseEnrollment = async (req, res) => {
                         );
 
                         result.success = true;
+                    } else if(studentEnrollment?.status !== "Confirmed") {
+                  
+                        // Re-send Email
+                        let stdGrade = stdClass.startsWith("Pri")
+                            ? "Primary"
+                            : stdClass.startsWith("Year")
+                                ? "Secondary"
+                                : "Educator";
+
+                        const token = findStd.generateAuthToken();
+                        await school_course_invite(
+                            existingParent.fullName,
+                            findStd?.fullName,
+                            "new",
+                            stdGrade,
+                            studentEnrollment._id,
+                            existingEnrollment.school.school_name,
+                            existingEnrollment.course.title,
+                            item.email,
+                            token
+                        );
+                        console.log(`email sent to ${item.email} sucessfully`);
                     }
                 }
             }
         } catch (error) {
+            console.log(error, "Catch error")
             result.error = error.message;
         }
 

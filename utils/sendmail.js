@@ -312,7 +312,7 @@ exports.school_course_invite_teacher = async (
             </br>
             <p>Kind Regards! </p>`,
     });
-    console.log("email sent sucessfully");
+    console.log(`email sent to ${email} sucessfully`);
   } catch (error) {
     console.log(error, "email not sent");
   }
