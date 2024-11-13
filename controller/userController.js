@@ -616,6 +616,7 @@ exports.activityData = async (req, res) => {
 
   req.body.user = user;
   const week = req.body.week;
+
   req.body.email = email;
   req.body.checkModel = req.user.isSchool
     ? "School"
@@ -639,12 +640,16 @@ exports.activityData = async (req, res) => {
   if (!activity) {
     const newActivity = new Activity(req.body);
     await newActivity.save();
-    return res.status(StatusCodes.OK).json({ newActivity });
+    return res.status(StatusCodes.OK).json({
+      success: true,
+      message: "Your progress has been successfully saved!",
+      newActivity
+    });
   }
 
   // If an activity is found, respond with a conflict
-  return res.status(StatusCodes.CONFLICT).json({
-    success: "failed",
+  return res.status(StatusCodes.OK).json({
+    success: true,
     message: "You have already taken the activity"
   });
 };
@@ -695,8 +700,8 @@ exports.assessmentData = async (req, res) => {
 
   if (existingAssessment) {
     return res.status(StatusCodes.CONFLICT).json({
-      success: "failed",
-      message: "You have already taken the assessment"
+      status: "failed",
+      message: "You have already taken the Quiz"
     });
   }
   const course = await CourseEnrollment.findById(id)
@@ -713,7 +718,10 @@ exports.assessmentData = async (req, res) => {
     Assesment.create(assessmentData)
   ]);
 
-  res.status(StatusCodes.OK).json({ assessment });
+  res.status(StatusCodes.OK).json({
+    status: "success",
+    message: "Quiz submited successfully!", assessment
+  });
 };
 
 exports.getAssessmentData = async (req, res) => {
