@@ -24,7 +24,7 @@ router.get('/payments', auth, userController.getPayments);
 
 router.post('/register', validate(validateUser), userController.registerUser);
 
-router.post('/invited-user', auth, validate(validateInvitedUser), userController.registerInvitedUser);
+router.post('/invited-user', validate(validateInvitedUser), userController.registerInvitedUser);
 
 router.post('/invited-school-admin', auth, validate(validateInvitedUser), userController.registerSchoolInvitedAdmin);
 
