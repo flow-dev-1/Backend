@@ -532,6 +532,8 @@ exports.courseEnrollment = async (req, res) => {
 exports.getParentWithNewCourseInvite = async (req, res) => {
   const { email } = req.user;
 
+  console.log(email)
+
   const parent = await Parents.findOne({ email });
 
   if (!parent) {
@@ -658,6 +660,7 @@ exports.getactivityData = async (req, res) => {
   const { id, week } = req.params;
   const user = req.user._id;
   const email = req.user.email;
+  
   const activity = await Activity.findOne({
     courseEnrollment: id,
     user,
@@ -677,6 +680,7 @@ exports.getactivityData = async (req, res) => {
 
 exports.assessmentData = async (req, res) => {
   const { id } = req.params;
+  const {enrollmentId} = req.query
   const user = req.user._id;
   const email = req.user.email;
   const checkModel = "User";
@@ -704,11 +708,13 @@ exports.assessmentData = async (req, res) => {
       message: "You have already taken the Quiz"
     });
   }
-  const course = await CourseEnrollment.findById(id)
+
+  const course = await CourseEnrollment.findById(enrollmentId)
     .populate({
       path: "course",
       select: "weeks"
     });
+
 
   course.progress += 100 / course?.course?.weeks
 
