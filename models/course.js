@@ -51,6 +51,9 @@ const courseSchema = mongoose.Schema(
     likes: [
       { type: mongoose.Schema.Types.ObjectId, required: true, ref: "User" },
     ],
+    dislikes: [
+      { type: mongoose.Schema.Types.ObjectId, required: true, ref: "User" },
+    ],
     isDeleted: { type: Boolean, default: false },
     deletedAt: { type: Date, default: null },
   },

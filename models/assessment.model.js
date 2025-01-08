@@ -9,9 +9,16 @@ const assesmentSchema = new mongoose.Schema(
       refPath: "checkModel"
     },
     email: { type: String },
+    // This is for selfAwareness course
     courseEnrollment: {
       type: mongoose.Schema.Types.ObjectId,
-      required: true,
+      required: false,
+      ref: "CourseEnrollment"
+    },
+    // This is for other courses
+    courseEnrollmentId: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: false,
       ref: "CourseEnrollment"
     },
     checkModel: {
@@ -29,7 +36,7 @@ const assesmentSchema = new mongoose.Schema(
     assessments: { type: [Schema.Types.Mixed], default: [], required: true },
     rating: {
       type: String,
-      required: true
+      required: false
     },
     text: { type: [String] },
     isDeleted: { type: Boolean, default: false },
@@ -40,6 +47,6 @@ const assesmentSchema = new mongoose.Schema(
   }
 );
 
-const Assesment = mongoose.model("assessments", assesmentSchema);
+const Assesment = mongoose.model("Assessments", assesmentSchema);
 
 module.exports = Assesment;

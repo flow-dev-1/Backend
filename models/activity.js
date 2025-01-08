@@ -19,10 +19,16 @@ const ActivitiesSchema = new mongoose.Schema(
       required: true
     },
     activities: { type: [Schema.Types.Mixed], default: [], required: true },
+    // This is for self-awareness course alone
     courseEnrollment: {
       type: mongoose.Schema.Types.ObjectId,
-      required: true,
+      required: false,
       ref: "Course"
+    },
+    courseEnrollmentId: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: false,
+      ref: "CourseEnrollment"
     },
     isDeleted: { type: Boolean, default: false },
     deletedAt: { type: Date, default: null }

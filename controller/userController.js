@@ -532,8 +532,6 @@ exports.courseEnrollment = async (req, res) => {
 exports.getParentWithNewCourseInvite = async (req, res) => {
   const { email } = req.user;
 
-  console.log(email)
-
   const parent = await Parents.findOne({ email });
 
   if (!parent) {
@@ -577,22 +575,21 @@ exports.getCourses = async (req, res) => {
       .populate("schoolCourseEnrollment");
 
     // // Filter out courses where `schoolCourseEnrollment` exists but is not active
-    // courses = courses.filter(
-    //   (courseEnrollment) =>
-    //     !courseEnrollment.schoolCourseEnrollment ||
-    //     courseEnrollment.schoolCourseEnrollment.status === "Active"
-    // );
+    // Filter the courses to include only those where the schoolCourseEnrollment is either non-existent or has an "Active" status
+    courses = courses.filter(
+      (courseEnrollment) => !courseEnrollment.schoolCourseEnrollment || courseEnrollment.schoolCourseEnrollment.status === "Active"
+    );
 
-    for (let courseEnrollment of courses) {
-      let courseId = courseEnrollment.course._id;
-      let courseProgress = await Activity.find({
-        user: req.user._id,
-        courseEnrollment: courseId,
-      });
+    // for (let courseEnrollment of courses) {
+    //   let courseId = courseEnrollment.course._id;
+    //   let courseProgress = await Activity.find({
+    //     user: req.user._id,
+    //     courseEnrollment: courseId,
+    //   });
 
-      let progressPercentage = (courseProgress.length / 5) * 100;
-      courseEnrollment.progress = progressPercentage;
-    }
+    //   let progressPercentage = (courseProgress.length / 5) * 100;
+    //   courseEnrollment.progress = progressPercentage;
+    // }
   } else {
     courses = await Courses.find({ status: "published" });
   }
@@ -608,6 +605,136 @@ exports.getCompletedWeeks = async (req, res) => {
   });
 
   res.status(StatusCodes.OK).json({ weeks });
+};
+
+exports.submitUserCourseData = async (req, res) => {
+  const user = req.user._id;
+  const email = req.user.email;
+  const week = req.body.week;
+
+  req.body.user = user;
+  req.body.email = email;
+  req.body.checkModel = req.user.educatorType
+    ? "Educator"
+    : "User";
+
+  // const activities = req.body.activities;
+  // const assesment = req.body.assesment;
+
+  const courseEnrollmentForActivity = await CourseEnrollment.findOne({
+    _id: req.body.courseEnrollmentId,
+    user,
+  }).populate({
+    path: "course",
+    select: "weeks"
+  });
+  ;
+
+  if (!courseEnrollmentForActivity) {
+    return res
+      .status(StatusCodes.BAD_REQUEST)
+      .json({ message: "Student not enrolled in course!" });
+  }
+
+
+  // Check if Activity and Assessment for this course already exist
+  // Look for the existing activity
+  const [existingActivity, existingAssessment] = await Promise.all([
+    Activity.findOne({ courseEnrollmentId: req.body.courseEnrollmentId, week, user }),
+    Assesment.findOne({
+      user,
+      email,
+      week: req.body.week,
+      courseEnrollmentId: req.body.courseEnrollmentId
+    })
+  ]);
+
+  if (existingActivity && existingAssessment) {
+    return res.status(StatusCodes.OK).json({
+      success: false,
+      message: "You have already taken the activity and assessment"
+    });
+  }
+  // The current code does prevent the assessment from saving if the activity fails.
+  // This is because the `newActivity.save()` operation is awaited, and if it throws an error,
+  // the catch block will handle it and return a response with an error message.
+  // The code for saving the assessment (`newAssessment.save()`) is only reached if the activity is successfully saved.
+  // Therefore, if the activity fails to save, the assessment will not be attempted to be saved.
+  if (!existingActivity && !existingAssessment) {
+    const newActivity = new Activity(req.body);
+    await newActivity.save();
+    const newAssessment = new Assesment(req.body);
+    await newAssessment.save()
+      .then(async () => {
+        // Increase the progress
+        courseEnrollmentForActivity.progress += 100 / courseEnrollmentForActivity?.course?.weeks
+        await courseEnrollmentForActivity.save()
+        return res.status(StatusCodes.OK).json({
+          success: true,
+          message: "Activity and Assessment have been successfully saved!",
+          newAssessment,
+          newActivity
+        });
+      })
+      .catch((error) => {
+
+        console.log(error)
+        return res.status(StatusCodes.SERVER_ERROR).json({
+          success: false,
+          message: "Failed to save assessment after activity was saved",
+          error: error.message
+        });
+      });
+  }
+
+  if (existingActivity) {
+    const newAssessment = new Assesment(req.body);
+    await newAssessment.save();
+    // Increase course progress
+    courseEnrollmentForActivity.progress += 100 / courseEnrollmentForActivity?.course?.weeks
+    await courseEnrollmentForActivity.save()
+    return res.status(StatusCodes.OK).json({
+      success: true,
+      message: "Activity already exists. Assessment has been successfully saved!",
+      newAssessment
+    });
+  }
+
+  if (existingAssessment) {
+    const newActivity = new Activity(req.body);
+    await newActivity.save();
+    return res.status(StatusCodes.OK).json({
+      success: true,
+      message: "Assessment already exists. Activity has been successfully saved!",
+      newActivity
+    });
+  }
+
+};
+
+exports.getUserCourseData = async (req, res) => {
+  const { id, week } = req.params;
+  // Find the assessment and activity for the user
+  const [assessment, activity] = await Promise.all([
+    Assesment.findOne({
+      week,
+      courseEnrollmentId: id,
+    }),
+    Activity.findOne({
+      courseEnrollmentId: id,
+      week
+    })
+  ]);
+
+  if (!assessment || !activity) {
+    return res.status(StatusCodes.NOT_FOUND).json({
+      status: "failed",
+      message: "No assessment or activity for this student"
+    });
+  }
+
+  res.status(StatusCodes.OK).json({ assessment, activity });
+
 };
 
 exports.activityData = async (req, res) => {
@@ -660,7 +787,7 @@ exports.getactivityData = async (req, res) => {
   const { id, week } = req.params;
   const user = req.user._id;
   const email = req.user.email;
-  
+
   const activity = await Activity.findOne({
     courseEnrollment: id,
     user,
@@ -680,7 +807,7 @@ exports.getactivityData = async (req, res) => {
 
 exports.assessmentData = async (req, res) => {
   const { id } = req.params;
-  const {enrollmentId} = req.query
+  const { enrollmentId } = req.query
   const user = req.user._id;
   const email = req.user.email;
   const checkModel = "User";
@@ -753,3 +880,41 @@ exports.getAssessmentData = async (req, res) => {
     message: "No assessment found for the given criteria"
   });
 };
+
+exports.endOfCourseReaction = async (req, res) => {
+  const { reaction } = req.query;
+  const { courseId } = req.params; // Assuming courseId is passed as a URL parameter
+  const userId = req.user._id; // Assuming `req.user` contains the authenticated user's details
+
+  // Find the course by ID
+  const course = await Courses.findById(courseId);
+
+  if (!course) {
+    return res.status(404).json({ message: "Course not found" });
+  }
+
+  if (reaction === "neutral") {
+    return res.status(200).json({ message: "Success" });
+  }
+
+  if (!["like", "dislike"].includes(reaction)) {
+    return res.status(400).json({ message: "Invalid reaction" });
+  }
+
+  // Remove the userId from both arrays to ensure no duplicates
+  course.likes = course.likes.filter((id) => id.toString() !== userId.toString());
+  course.dislikes = course.dislikes.filter((id) => id.toString() !== userId.toString());
+
+  // Add the userId to the appropriate array
+  if (reaction === "like") {
+    course.likes.push(userId);
+  } else if (reaction === "dislike") {
+    course.dislikes.push(userId);
+  }
+
+  // Save the updated course
+  await course.save();
+
+  res.status(200).json({ message: "Reaction updated successfully" });
+
+}

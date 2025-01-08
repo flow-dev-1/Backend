@@ -284,3 +284,22 @@ exports.schoolCourseAddTeachersValidator = function (req) {
 
   return schema.validate(req);
 };
+
+exports.courseSubmissionValidator = function (req) {
+    const schema = Joi.object({
+        courseEnrollmentId: Joi.string()
+            .pattern(/^[0-9a-fA-F]{24}$/) // Validates MongoDB ObjectId format
+            .required(),
+        week: Joi.number()
+            .positive()
+            .required(),
+        activities: Joi.array()
+            .min(1) // Ensures the array is not empty
+            .required(),
+        assessments: Joi.array()
+            .min(1) // Ensures the array is not empty
+            .required(),
+    });
+
+    return schema.validate(req);
+};

@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 const express = require('express');
 const router = express.Router();
 const userController = require("../controller/userController");
-const { loginValidator, validate, } = require("../middleware/validate");
+const { loginValidator,courseSubmissionValidator, validate, } = require("../middleware/validate");
 const { validateUser, validateUserUpdate, validateInvitedUser } = require('../models/user');
 const auth = require("../middleware/auth")
 // const upload = require("../utils/multer");
@@ -32,14 +32,17 @@ router.patch('/profile', auth, validate(validateUserUpdate), userController.upda
 
 router.post('/courses/:id/enroll', auth, userController.courseEnrollment);
 
-router.put("/course-enrollment/:id/activity", auth, userController.activityData);
+// End of course feedback. Likes or dislikes
+router.put("/courses/:id/reaction", auth, userController.activityData);
 
+/********************************These APIs work for Self Awarenes course alone until they are modifed to use the general APIs. Find General once Below these ************/
+
+router.put("/course-enrollment/:id/activity", auth, userController.activityData);
 router.post(
   "/course-enrollment/:id/assesment",
   auth,
   userController.assessmentData
 );
-
 router.get(
   "/course-enrollment/:id/get-assesment/:week",
   auth,
@@ -48,4 +51,11 @@ router.get(
 
 router.get("/course-enrollment/:id/get-activity/:week", auth, userController.getactivityData);
 
+// ***********************************************************************************************************************************/
+
+// APIS for Getting Other courses
+router.get("/course-enrollment/:id/:week", auth, userController.getUserCourseData);
+
+// APIS for updating student course Activities and Assessment
+router.post("/course/submission", auth, validate(courseSubmissionValidator), userController.submitUserCourseData);
 module.exports = router; 

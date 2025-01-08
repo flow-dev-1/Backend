@@ -14,6 +14,7 @@ module.exports = function (req, res, next) {
         // console.log(decoded)
         next();
     } catch (ex) {
+        console.log(ex)
         res.status(StatusCodes.UNAUTHORIZED).send("Invalid token.");
     }
 };

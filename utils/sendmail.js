@@ -47,6 +47,8 @@ exports.Otp_ForgotPassword = async (name, email, otp, token) => {
         pass: process.env.MAILTRAP_TOKEN
       }
     });
+
+    console.log(email)
     await transporter.sendMail({
       from: EMAIL,
       to: email,
@@ -228,7 +230,7 @@ exports.school_course_invite = async (
   link =
     process.env.ENV === "production" ? `https://flowonline.app/invited-user?${query}` :
       process.env.ENV === "staging"
-        ? `https://my-flow-dev/invited-user?${query}`
+        ? `https://my-flow-dev.netlify.app/invited-user?${query}`
         : `http://localhost:3000/invited-user?${query}`;
   // }
   const transporter = nodemailer.createTransport({
@@ -281,7 +283,7 @@ exports.school_course_invite_teacher = async (
   link =
     process.env.ENV === "production" ? `https://flowonline.app/invited-educator?${query}` :
       process.env.ENV === "staging"
-        ? `https://my-flow-dev/invited-educator?${query}`
+        ? `https://my-flow-dev.netlify.app/invited-educator?${query}`
         : `http://localhost:3000/invited-educator?${query}`;
   // }
 
@@ -323,6 +325,13 @@ exports.welcome_new_user = async (
   student_id,
   email // Make sure to include email in the parameters
 ) => {
+  const baseUrl = process.env.ENV === "production" 
+    ? "https://flowonline.app" 
+    : process.env.ENV === "staging"
+      ? "https://my-flow-dev.netlify.app"
+      : "http://localhost:3000";
+
+  const link = baseUrl;
 
   try {
     const transporter = nodemailer.createTransport({
@@ -340,7 +349,7 @@ exports.welcome_new_user = async (
       html: `
         <b>Dear ${userName},</b></br>
         <p>Welcome to FLOW! We’re thrilled to have you as part of our growing community.</p>
-        <p>You can access your page by visiting <a href="https://flowonline.app">flowonline.app</a>.</p>
+        <p>You can access your page by visiting <a href="${baseUrl}">${baseUrl}</a>.</p>
         <p>To help you get started, here’s your unique User ID: <b>${student_id}</b></p>
         <p>Please keep this for your records as it will help you easily access your account and any support you may need in the future.</p>
         <p>We’ve designed FLOW to make learning fun, engaging, and easy for both students and educators. As you explore our platform, feel free to:</p>
