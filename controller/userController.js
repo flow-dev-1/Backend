@@ -541,10 +541,11 @@ exports.getParentWithNewCourseInvite = async (req, res) => {
     });
   }
 
+  // toDo we need to modify this to indicate the student to send to.
   const studentsWithInvite = await User.find({
     email: email,
     newCourseInvite: { $exists: true, $ne: null },
-    isVerified: false
+    // isVerified: false
   });
 
   if (!studentsWithInvite.length) {
