@@ -185,8 +185,9 @@ function validateUser(user) {
 
 
 function validateInvitedUser(user) {
+  console.log(user);
   const studentSchema = Joi.object({
-    userId: Joi.string().optional(),
+    userId: Joi.string().required(),
     fullName: Joi.string()
       .min(2)
       .max(300)
@@ -194,12 +195,19 @@ function validateInvitedUser(user) {
       .message(
         "Full name must contain at least two names separated by a space."
       )
-      .optional(),
-    grade: Joi.string().optional(),
-    gender: Joi.string().valid("male", "female").optional(),
-    DOB: Joi.date().optional(),
+      .required(),
+    grade: Joi.string().required(),
+    gender: Joi.string().valid("male", "female").required(),
+    DOB: Joi.date().required(),
     password: Joi.string().min(0).max(1024).optional(),
-  }).optional();
+    phone: Joi.string()
+      .pattern(/^\+[1-9]\d{1,14}$/)
+      .message("Please enter a valid phone number in international format")
+      .required(),
+    country: Joi.string().min(2).max(255).required(),
+    state: Joi.string().min(2).max(255).required(),
+    lga: Joi.string().min(2).max(255).required(),
+  }).required();
 
   const schema = Joi.object({
     guardianFullName: Joi.string()
@@ -209,18 +217,18 @@ function validateInvitedUser(user) {
       .message(
         "Guardian's full name must contain at least a first name and a last name separated by a space."
       )
-      .optional(),
+      .required(),
     phone: Joi.string()
       .pattern(/^\+[1-9]\d{1,14}$/)
       .message("Please enter a valid phone number in international format")
-      .optional(),
-    email: Joi.string().min(5).max(255).email().optional(),
-    country: Joi.string().min(2).max(255).optional(),
-    state: Joi.string().min(2).max(255).optional(),
-    lga: Joi.string().min(2).max(255).optional(),
-    students: Joi.array().items(studentSchema).min(0).optional(),
+      .required(),
+    email: Joi.string().min(5).max(255).email().required(),
+    country: Joi.string().min(2).max(255).required(),
+    state: Joi.string().min(2).max(255).required(),
+    lga: Joi.string().min(2).max(255).required(),
+    students: Joi.array().items(studentSchema).min(1).required(),
   })
-    .optional()
+    .required()
     .unknown(true); // Allow data that is not defined in the schema
 
   return schema.validate(user);
