@@ -903,9 +903,9 @@ exports.addStudentsToCourseEnrollment = async (req, res) => {
                 const newParent = new Parents({
                     fullName: item.guardianFullName,
                     email: item.email,
-                    phone: "N/A",
-                    country: "N/A",
-                    state: "N/A",
+                    phone: "",
+                    country: "",
+                    state: "",
                     students: [],
                 });
 
@@ -1026,6 +1026,8 @@ exports.addStudentsToCourseEnrollment = async (req, res) => {
                 } else {
                     // Student already exists, check if they are enrolled
                     const findStd = await User.findById(student._id);
+
+                   
                     const studentEnrollment = await StudentEnrollments.findOne({
                         course: existingEnrollment.course._id,
                         school: id,
@@ -1033,6 +1035,7 @@ exports.addStudentsToCourseEnrollment = async (req, res) => {
                         status: { $ne: "Deactivated" },
                         user: findStd._id,
                     });
+
                     // Student has not accepted invite
                     if (!studentEnrollment) {
                         findStd.newCourseInvite = {

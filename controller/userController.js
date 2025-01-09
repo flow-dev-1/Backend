@@ -201,7 +201,8 @@ exports.registerInvitedUser = async (req, res) => {
     state,
     lga,
     students,
-    userId
+    userId,
+    enrollmentId
   } = req.body;
 
   if (!students || students.length === 0) {
@@ -247,8 +248,11 @@ exports.registerInvitedUser = async (req, res) => {
       (s) => s.fullName === fullName && s.DOB === DOB
     );
 
+    // console.log(existingStudent,"Existing student")
+
     if (existingStudent) {
       if (existingStudent.isVerified) {
+        // toDo: For a verified student check if he has new course invite
         continue; // Skip if the student is already registered and verified
       } else {
         // Handle unverified existing student
@@ -299,10 +303,9 @@ exports.registerInvitedUser = async (req, res) => {
           foundStudent.lga = lga
           foundStudent.state = state
         }
-        await foundStudent.save();
 
-        await StudentEnrollments.findOneAndUpdate(
-          { user: foundStudent._id }, // Filter to find the document
+        await foundStudent.save();
+        await StudentEnrollments.findByIdAndUpdate(enrollmentId,
           {
             status: "Confirmed" // Update object
           },
@@ -544,9 +547,8 @@ exports.getParentWithNewCourseInvite = async (req, res) => {
   // toDo we need to modify this to indicate the student to send to.
   const studentsWithInvite = await User.find({
     email: email,
-    newCourseInvite: { $exists: true, $ne: null },
-    // isVerified: false
-  });
+    newCourseInvite: { $exists: true, $ne: null }
+  }).select('-password');
 
   if (!studentsWithInvite.length) {
     return res.status(StatusCodes.NOT_FOUND).json({

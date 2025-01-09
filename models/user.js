@@ -185,7 +185,6 @@ function validateUser(user) {
 
 
 function validateInvitedUser(user) {
-  console.log(user);
   const studentSchema = Joi.object({
     userId: Joi.string().required(),
     fullName: Joi.string()
@@ -210,6 +209,7 @@ function validateInvitedUser(user) {
   }).required();
 
   const schema = Joi.object({
+    enrollmentId: Joi.string().regex(/^[0-9a-fA-F]{24}$/).required(),
     guardianFullName: Joi.string()
       .min(2)
       .max(300)

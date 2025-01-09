@@ -26,6 +26,8 @@ router.post('/register', validate(validateUser), userController.registerUser);
 
 router.post('/invited-user', validate(validateInvitedUser), userController.registerInvitedUser);
 
+
+// toDo: Update the invited school admin validator
 router.post('/invited-school-admin', auth, validate(validateInvitedUser), userController.registerSchoolInvitedAdmin);
 
 router.patch('/profile', auth, validate(validateUserUpdate), userController.updateProfile);
