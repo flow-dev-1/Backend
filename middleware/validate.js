@@ -287,6 +287,8 @@ exports.schoolCourseAddTeachersValidator = function (req) {
 
 exports.courseSubmissionValidator = function (req) {
     const schema = Joi.object({
+        course: Joi.string()
+        .optional(),
         courseEnrollmentId: Joi.string()
             .pattern(/^[0-9a-fA-F]{24}$/) // Validates MongoDB ObjectId format
             .required(),

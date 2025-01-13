@@ -886,11 +886,11 @@ exports.getAssessmentData = async (req, res) => {
 
 exports.endOfCourseReaction = async (req, res) => {
   const { reaction } = req.query;
-  const { courseId } = req.params; // Assuming courseId is passed as a URL parameter
+  const { id } = req.params; // Assuming courseId is passed as a URL parameter
   const userId = req.user._id; // Assuming `req.user` contains the authenticated user's details
 
   // Find the course by ID
-  const course = await Courses.findById(courseId);
+  const course = await Courses.findById(id);
 
   if (!course) {
     return res.status(404).json({ message: "Course not found" });
@@ -914,7 +914,6 @@ exports.endOfCourseReaction = async (req, res) => {
   } else if (reaction === "dislike") {
     course.dislikes.push(userId);
   }
-
   // Save the updated course
   await course.save();
 

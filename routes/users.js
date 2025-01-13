@@ -35,7 +35,7 @@ router.patch('/profile', auth, validate(validateUserUpdate), userController.upda
 router.post('/courses/:id/enroll', auth, userController.courseEnrollment);
 
 // End of course feedback. Likes or dislikes
-router.put("/courses/:id/reaction", auth, userController.activityData);
+router.put("/courses/:id/reaction", auth, userController.endOfCourseReaction);
 
 /********************************These APIs work for Self Awarenes course alone until they are modifed to use the general APIs. Find General once Below these ************/
 
