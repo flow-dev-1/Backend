@@ -735,7 +735,7 @@ exports.getUserCourseData = async (req, res) => {
       message: "No assessment or activity for this student"
     });
   }
-
+ 
   res.status(StatusCodes.OK).json({ assessment, activity });
 
 };

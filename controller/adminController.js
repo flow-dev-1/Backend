@@ -906,17 +906,17 @@ exports.getStudentCourses = async (req, res) => {
             .populate("course")
             .populate("schoolCourseEnrollment");
 
-        for (let courseEnrollment of courses) {
-            let courseId = courseEnrollment.course._id;
-            let user = req.params.id
-            let courseProgress = await Activity.find({
-                user,
-                courseEnrollment: courseId,
-            });
+        // for (let courseEnrollment of courses) {
+        //     let courseId = courseEnrollment.course._id;
+        //     let user = req.params.id
+        //     let courseProgress = await Activity.find({
+        //         user,
+        //         courseEnrollment: courseId,
+        //     });
 
-            let progressPercentage = (courseProgress.length / 5) * 100;
-            courseEnrollment.progress = progressPercentage;
-        }
+        //     let progressPercentage = (courseProgress.length / 5) * 100;
+        //     courseEnrollment.progress = progressPercentage;
+        // }
     }
     res.status(StatusCodes.OK).json({ courses });
 };
@@ -970,7 +970,7 @@ exports.activityUpdateData = async (req, res) => {
     const { id, week } = req.params;
     const user = req.params.userId;
 
-    const activity = await Activity.findOne({ courseEnrollment: id, week, user });
+    const activity = await Activity.findOne({ $or: [{ courseEnrollment: id }, { courseEnrollmentId: id }], week, user });
 
     if (!activity) {
         return res.status(StatusCodes.NOT_FOUND).json({

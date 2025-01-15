@@ -6,10 +6,7 @@ const auth = require("../middleware/auth")
 const { inviteAdminValidator, validate, registerAdminValidator, createCourseValidator, validateAdminUpdate, schoolCourseEnrollmentValidator, schoolCourseAddStudentsValidator } = require("../middleware/validate");
 const adminController = require("../controller/adminController")
 const schoolsController = require("../controller/schoolsController")
-// const { loginValidator, validate, validateRestaurantOrder, validateUserAddress } = require("../middleware/validation");
-// const { validateUser, validateUserUpdate } = require("../models/user");
-// const { validateDispatchOrder } = require("../models/dispatchOrder");
-// const auth = require("../middleware/auth")
+const userController = require("../controller/userController")
 const upload = require("../utils/multer");
 const optionalUpload = require('../utils/optionalUpload');
 const checkAdminRole = require('../middleware/checkAdminRole');
@@ -122,6 +119,7 @@ router.delete('/schools/:enrolledCourseId/users/:userId/enrollment/:userEnrollme
 
 router.get('/courses/:id', auth, adminController.getStudentCourses);
 
+
 router.post(
     "/schools/:schoolId/course-togle/:id",
     auth,
@@ -134,7 +132,11 @@ router.get(
     adminController.getAssessmentData
 );
 
+
 router.get("/course-enrollment/:id/get-activity/:week/:userId", auth, adminController.getactivityData);
+
+// APIS for Getting Other courses Data
+router.get("/course-enrollment/:id/:week", auth, userController.getUserCourseData);
 
 router.patch("/course-enrollment/:id/post-activity/:week/:userId", auth, adminController.activityUpdateData);
 
