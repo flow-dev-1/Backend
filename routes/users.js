@@ -53,6 +53,8 @@ router.get(
 
 router.get("/course-enrollment/:id/get-activity/:week", auth, userController.getactivityData);
 
+router.get("/course-enrollment/:id/percentile", auth, userController.getAssessmentPercentile);
+
 // ***********************************************************************************************************************************/
 
 // APIS for Getting Other courses
@@ -60,4 +62,6 @@ router.get("/course-enrollment/:id/:week", auth, userController.getUserCourseDat
 
 // APIS for updating student course Activities and Assessment
 router.post("/course/submission", auth, validate(courseSubmissionValidator), userController.submitUserCourseData);
+
+
 module.exports = router; 

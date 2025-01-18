@@ -138,6 +138,8 @@ router.get("/course-enrollment/:id/get-activity/:week/:userId", auth, adminContr
 // APIS for Getting Other courses Data
 router.get("/course-enrollment/:id/:week", auth, userController.getUserCourseData);
 
+router.get("/course-enrollment/:id/percentile", auth, userController.getAssessmentPercentile);
+
 router.patch("/course-enrollment/:id/post-activity/:week/:userId", auth, adminController.activityUpdateData);
 
 

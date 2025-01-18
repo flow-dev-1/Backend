@@ -884,6 +884,34 @@ exports.getAssessmentData = async (req, res) => {
   });
 };
 
+exports.getAssessmentPercentile = async (req, res) => {
+  const { id } = req.params;
+  const user = req.user._id;
+
+  // Find the assessment for the user
+  const existingAssessment = await Assesment.find({
+    user,
+    $or: [{ courseEnrollment: id }, { courseEnrollmentId: id }]
+  }).select("rating");
+
+  if (!existingAssessment.length || existingAssessment.length < 5) {
+    return   res.status(StatusCodes.UNPROCESSABLE_ENTITY).json({
+      status: "failed",
+      message: "Please complete all activities and assessment to see feedback!"
+    });
+  }
+
+const totalRating = existingAssessment.reduce((sum, assessment) => sum + parseInt(assessment.rating), 0);
+const averageRating = totalRating / existingAssessment.length;
+
+res.status(StatusCodes.OK).json({
+  status: "success",
+  averagePercent: averageRating
+});
+
+
+};
+
 exports.endOfCourseReaction = async (req, res) => {
   const { reaction } = req.query;
   const { id } = req.params; // Assuming courseId is passed as a URL parameter

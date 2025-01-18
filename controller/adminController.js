@@ -947,8 +947,6 @@ exports.getAssessmentData = async (req, res) => {
     const { week, id } = req.params;
     const user = req.params.userId;
 
-    console.log(id)
-
     const existingAssessment = await Assesment.findOne({
         user,
         courseEnrollment: id,
