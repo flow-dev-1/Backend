@@ -233,12 +233,27 @@ exports.school_course_invite = async (
         ? `https://my-flow-dev.netlify.app/invited-user?${query}`
         : `http://localhost:3000/invited-user?${query}`;
   // }
+  // const transporter = nodemailer.createTransport({
+  //   host: "live.smtp.mailtrap.io",
+  //   port: 587,
+  //   auth: {
+  //     user: "api",
+  //     pass: process.env.MAILTRAP_TOKEN
+  //   }
+  // });
+
   const transporter = nodemailer.createTransport({
-    host: "live.smtp.mailtrap.io",
-    port: 587,
+    service: 'gmail',
+    port: 465,
+    secure: true, // true for 465, false for other ports
+    debug: true,
+    secureConnection: false,
     auth: {
-      user: "api",
-      pass: process.env.MAILTRAP_TOKEN
+      user: "dev@flow.ng",
+      pass: process.env.EMAIL_PASS,
+    },
+    tls: {
+      rejectUnAuthorized: true
     }
   });
   await transporter.sendMail({
@@ -260,6 +275,90 @@ exports.school_course_invite = async (
   });
 
 };
+
+exports.sendProcessingReport = async (
+  email,
+  studentsReport
+) => {
+  // Generate the current date and time
+  const now = new Date();
+  const formattedDate = now.toLocaleDateString();
+  try {
+    // Generate the HTML table for the report
+    const tableRows = studentsReport
+      .map(
+        (student) => `
+        <tr>
+          <td style="border: 1px solid #ddd; padding: 8px;">${student.fullName}</td>
+          <td style="border: 1px solid #ddd; padding: 8px;">${student.email}</td>
+          <td style="border: 1px solid #ddd; padding: 8px;">${student.status}</td>
+        </tr>
+      `
+      )
+      .join("");
+
+    const reportTable = `
+      <table style="border-collapse: collapse; width: 100%; font-family: Arial, sans-serif;">
+        <thead>
+          <tr>
+            <th style="border: 1px solid #ddd; padding: 8px; background-color: #f2f2f2;">Full Name</th>
+            <th style="border: 1px solid #ddd; padding: 8px; background-color: #f2f2f2;">Email</th>
+            <th style="border: 1px solid #ddd; padding: 8px; background-color: #f2f2f2;">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${tableRows}
+        </tbody>
+      </table>
+    `;
+
+    // const transporter = nodemailer.createTransport({
+    //   host: "live.smtp.mailtrap.io",
+    //   port: 587,
+    //   auth: {
+    //     user: "api",
+    //     pass: process.env.MAILTRAP_TOKEN
+    //   }
+    // });
+
+    // Email transport configuration
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      port: 465,
+      secure: true, // true for 465, false for other ports
+      debug: true,
+      secureConnection: false,
+      auth: {
+        user: "dev@flow.ng",
+        pass: process.env.EMAIL_PASS,
+      },
+      tls: {
+        rejectUnAuthorized: true
+      }
+    });
+
+    // Send the email with the report
+    await transporter.sendMail({
+      from: EMAIL,
+      to: email,
+      subject: `Flow student course invite report!`,
+      html: `
+        <div style="font-family: Arial, sans-serif; line-height: 1.6;">
+          <h2 style="color: #264653;">Processing Report</h2>
+         <p>The following is the status of the course invitation sent on <b>${formattedDate}</b>:</p>
+          ${reportTable}
+          <p>Kind regards,</p>
+          <p>The FLOW Team</p>
+        </div>
+      `,
+    });
+
+    console.log("Processing report sent successfully.");
+  } catch (error) {
+    console.error("Error sending processing report:", error.message);
+    throw new Error("Failed to send processing report.");
+  }
+}
 
 exports.school_course_invite_teacher = async (
   teacherName,
@@ -325,8 +424,8 @@ exports.welcome_new_user = async (
   student_id,
   email // Make sure to include email in the parameters
 ) => {
-  const baseUrl = process.env.ENV === "production" 
-    ? "https://flowonline.app" 
+  const baseUrl = process.env.ENV === "production"
+    ? "https://flowonline.app"
     : process.env.ENV === "staging"
       ? "https://my-flow-dev.netlify.app"
       : "http://localhost:3000";
@@ -400,7 +499,7 @@ exports.flow_course_reminder = async (
     });
     await transporter.sendMail({
       from: EMAIL,
-      to:emailArray.join(','),
+      to: emailArray.join(','),
       subject: "FLOW For Schools Course Reminder",
       html: `<b>Hi there,</b><br><br>
               <p>This is a reminder that you are enrolled in the <b style="color: #2a9d8f;">${course_name}</b> course on FLOW. Don't forget to log in today and complete your lessons!</p><br>

@@ -4,8 +4,33 @@ const morgan = require('morgan');
 const cron = require('node-cron');
 const courseReminder = require("./utils/cronJobs/courseReminder.js");
 
+const Queue = require("bull");
+const { createBullBoard } = require("@bull-board/api");
+const { BullAdapter } = require("@bull-board/api/bullAdapter");
+const { ExpressAdapter } = require("@bull-board/express");
+const emailService = require("./utils/emailQueue.js");
+
+
 require('dotenv').config();
 require("./startup/logging")();
+
+
+const serverAdapter = new ExpressAdapter();
+serverAdapter.setBasePath("/admin/queues");
+
+// Specify all queues here
+const queues = [emailService.queue()];
+
+const QUEUE_LIST = [
+    ...queues?.map((queue) => {
+        return new BullAdapter(queue);
+    }),
+];
+
+const { addQueue, removeQueue, setQueues, replaceQueues } = createBullBoard({
+    queues:QUEUE_LIST,
+    serverAdapter: serverAdapter,
+});
 
 const app = express();
 
@@ -29,6 +54,7 @@ require("./startup/db")();
 // });
 
 require("./startup/routes")(app);
+app.use("/admin/queues", serverAdapter.getRouter());
 
 // require("./startup/validation")();
 

@@ -87,7 +87,7 @@ const userSchema = new mongoose.Schema(
       enum: ["Admin", "Students", "Teachers"],
     },
     schoolAdminDate: { type: Date },
-    newCourseInvite: { type: Object },
+    newCourseInvite: { type: mongoose.Schema.Types.Mixed },
     newInvite: { type: Object }, //This accounts for admin invitation dat has not been accepted or rejected
     country: { type: String },
     state: { type: String },

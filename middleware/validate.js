@@ -222,12 +222,6 @@ exports.updateSchoolValidator = function (req) {
 
 exports.schoolCourseEnrollmentValidator = function (req) {
 
-    const studentSchema = Joi.object({
-
-        email: Joi.string().email().required(),
-        guardianFullName: Joi.string().min(2).max(100).required(), // Example additional field
-        fullName: Joi.string().min(2).max(100).required(), // Example additional field
-    });
 
     const schema = Joi.object({
         stdClass: Joi.string()
@@ -244,9 +238,6 @@ exports.schoolCourseEnrollmentValidator = function (req) {
         endTime: Joi.string()
             .required()
             .pattern(/^([01]\d|2[0-3]):([0-5]\d)$/), // Validate time format "HH:mm"
-        students: Joi.array()
-            .items(studentSchema)
-            .required(),
     });
 
     return schema.validate(req);
@@ -273,24 +264,24 @@ exports.schoolCourseAddStudentsValidator = function (req) {
 };
 
 exports.schoolCourseAddTeachersValidator = function (req) {
-  const studentSchema = Joi.object({
-    email: Joi.string().email().required(),
-    fullName: Joi.string().min(2).max(100).required(), // Example additional field
-  });
-  const schema = Joi.object({
-    stdClass: Joi.string().min(2).max(100).required(),
-    educators: Joi.array().items(studentSchema).required(),
-  });
+    const studentSchema = Joi.object({
+        email: Joi.string().email().required(),
+        fullName: Joi.string().min(2).max(100).required(), // Example additional field
+    });
+    const schema = Joi.object({
+        stdClass: Joi.string().min(2).max(100).required(),
+        educators: Joi.array().items(studentSchema).required(),
+    });
 
-  return schema.validate(req);
+    return schema.validate(req);
 };
 
 exports.courseSubmissionValidator = function (req) {
     const schema = Joi.object({
         course: Joi.string()
-        .optional(),
+            .optional(),
         rating: Joi.string()
-        .optional(),
+            .optional(),
         courseEnrollmentId: Joi.string()
             .pattern(/^[0-9a-fA-F]{24}$/) // Validates MongoDB ObjectId format
             .required(),
