@@ -12,6 +12,20 @@ exports.Otp_VerifyAccount = async (email, name, otp) => {
         pass: process.env.MAILTRAP_TOKEN
       }
     });
+    // const transporter = nodemailer.createTransport({
+    //   service: 'gmail',
+    //   port: 465,
+    //   secure: true, // true for 465, false for other ports
+    //   debug: true,
+    //   secureConnection: false,
+    //   auth: {
+    //     user: "dev@flow.ng",
+    //     pass: process.env.EMAIL_PASS,
+    //   },
+    //   tls: {
+    //     rejectUnAuthorized: true
+    //   }
+    // });
     await transporter.sendMail({
       from: EMAIL,
       to: email,
@@ -48,7 +62,6 @@ exports.Otp_ForgotPassword = async (name, email, otp, token) => {
       }
     });
 
-    console.log(email)
     await transporter.sendMail({
       from: EMAIL,
       to: email,
@@ -233,29 +246,29 @@ exports.school_course_invite = async (
         ? `https://my-flow-dev.netlify.app/invited-user?${query}`
         : `http://localhost:3000/invited-user?${query}`;
   // }
-  // const transporter = nodemailer.createTransport({
-  //   host: "live.smtp.mailtrap.io",
-  //   port: 587,
-  //   auth: {
-  //     user: "api",
-  //     pass: process.env.MAILTRAP_TOKEN
-  //   }
-  // });
-
   const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    port: 465,
-    secure: true, // true for 465, false for other ports
-    debug: true,
-    secureConnection: false,
+    host: "live.smtp.mailtrap.io",
+    port: 587,
     auth: {
-      user: "dev@flow.ng",
-      pass: process.env.EMAIL_PASS,
-    },
-    tls: {
-      rejectUnAuthorized: true
+      user: "api",
+      pass: process.env.MAILTRAP_TOKEN
     }
   });
+
+  // const transporter = nodemailer.createTransport({
+  //   service: 'gmail',
+  //   port: 465,
+  //   secure: true, // true for 465, false for other ports
+  //   debug: true,
+  //   secureConnection: false,
+  //   auth: {
+  //     user: "dev@flow.ng",
+  //     pass: process.env.EMAIL_PASS,
+  //   },
+  //   tls: {
+  //     rejectUnAuthorized: true
+  //   }
+  // });
   await transporter.sendMail({
     from: EMAIL,
     to: email,
@@ -273,7 +286,7 @@ exports.school_course_invite = async (
             </br>
             <p>Kind Regards! </p>`,
   });
-
+  console.log("Email sent successfully!")
 };
 
 exports.sendProcessingReport = async (
@@ -312,30 +325,30 @@ exports.sendProcessingReport = async (
       </table>
     `;
 
-    // const transporter = nodemailer.createTransport({
-    //   host: "live.smtp.mailtrap.io",
-    //   port: 587,
-    //   auth: {
-    //     user: "api",
-    //     pass: process.env.MAILTRAP_TOKEN
-    //   }
-    // });
-
-    // Email transport configuration
     const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      port: 465,
-      secure: true, // true for 465, false for other ports
-      debug: true,
-      secureConnection: false,
+      host: "live.smtp.mailtrap.io",
+      port: 587,
       auth: {
-        user: "dev@flow.ng",
-        pass: process.env.EMAIL_PASS,
-      },
-      tls: {
-        rejectUnAuthorized: true
+        user: "api",
+        pass: process.env.MAILTRAP_TOKEN
       }
     });
+
+    // Email transport configuration
+    // const transporter = nodemailer.createTransport({
+    //   service: 'gmail',
+    //   port: 465,
+    //   secure: true, // true for 465, false for other ports
+    //   debug: true,
+    //   secureConnection: false,
+    //   auth: {
+    //     user: "dev@flow.ng",
+    //     pass: process.env.EMAIL_PASS,
+    //   },
+    //   tls: {
+    //     rejectUnAuthorized: true
+    //   }
+    // });
 
     // Send the email with the report
     await transporter.sendMail({
@@ -441,6 +454,20 @@ exports.welcome_new_user = async (
         pass: process.env.MAILTRAP_TOKEN
       }
     });
+    // const transporter = nodemailer.createTransport({
+    //   service: 'gmail',
+    //   port: 465,
+    //   secure: true, // true for 465, false for other ports
+    //   debug: true,
+    //   secureConnection: false,
+    //   auth: {
+    //     user: "dev@flow.ng",
+    //     pass: process.env.EMAIL_PASS,
+    //   },
+    //   tls: {
+    //     rejectUnAuthorized: true
+    //   }
+    // });
     await transporter.sendMail({
       from: EMAIL,
       to: email,

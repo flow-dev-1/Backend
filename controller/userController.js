@@ -201,167 +201,92 @@ exports.registerInvitedUser = async (req, res) => {
     state,
     lga,
     students,
-    userId,
     enrollmentId
   } = req.body;
 
-  if (!students || students.length === 0) {
-    return res
-      .status(StatusCodes.BAD_REQUEST)
-      .json({ message: "No students provided in the request." });
-  }
 
-  let newParent = await Parents.findOne({ email }).populate(
-    "students",
-    "-password"
-  );
+  // Find and update parent data
+  const updatedParentData = await Parents.findOneAndUpdate({ email }, {
+    fullName: guardianFullName,
+    email,
+    phone,
+    country,
+    lga,
+    state,
+  }, {
+    new: true
+  })
 
-  if (!newParent) {
-    // Create new parent if not found
-    newParent = new Parents({
-      fullName: guardianFullName,
-      email,
-      phone,
-      country,
-      lga,
-      state,
-      students: []
-    });
-  }
-
-  // Update parent details
-  newParent.fullName = guardianFullName;
-  newParent.email = email;
-  newParent.phone = phone;
-  newParent.country = country;
-  newParent.state = state;
-  newParent.lga = lga
-
-  let firstStudentToken = null;
-  let emailError = null;
-
-  for (const studentItem of students) {
-    const { userId, fullName, grade, gender, DOB, password } = studentItem;
-
-    // Check if the student is already registered under this parent
-    const existingStudent = newParent.students.find(
-      (s) => s.fullName === fullName && s.DOB === DOB
-    );
-
-    // console.log(existingStudent,"Existing student")
-
-    if (existingStudent) {
-      if (existingStudent.isVerified) {
-        // toDo: For a verified student check if he has new course invite
-        continue; // Skip if the student is already registered and verified
-      } else {
-        // Handle unverified existing student
-        const code = otpGenerator.generate(6, {
-          lowerCaseAlphabets: false,
-          upperCaseAlphabets: false,
-          specialChars: false
-        });
-
-        const otp = new OTP({
-          user: existingStudent._id,
-          checkModel: "User",
-          email,
-          code,
-          type: "RegisterUser",
-          expiresIn: Date.now() + 3600000 // 1 hour expiration
-        });
-
-        await otp.save();
-
-        const emailResult = await Otp_VerifyAccount(
-          email,
-          guardianFullName,
-          code
-        ).catch((error) => {
-          emailError = error;
-        });
-
-        firstStudentToken = existingStudent.generateAuthToken();
-      }
-    } else {
-      // Attempt to find the student by userId
-      const foundStudent = await User.findOne({ userId });
-
-      if (foundStudent) {
-        // Update student details
-
-        for (const key in studentItem) {
-          if (studentItem.hasOwnProperty(key)) {
-            foundStudent[key] = studentItem[key];
-          }
-        }
-
-        if (password) {
-          const salt = await bcrypt.genSalt(10);
-          foundStudent.password = await bcrypt.hash(password, salt);
-          foundStudent.phone = phone
-          foundStudent.lga = lga
-          foundStudent.state = state
-        }
-
-        await foundStudent.save();
-        await StudentEnrollments.findByIdAndUpdate(enrollmentId,
-          {
-            status: "Confirmed" // Update object
-          },
-          {
-            new: true, // Return the updated document
-          }
-        );
-
-        const code = otpGenerator.generate(6, {
-          lowerCaseAlphabets: false,
-          upperCaseAlphabets: false,
-          specialChars: false
-        });
-
-        const otp = new OTP({
-          user: foundStudent._id,
-          checkModel: "User",
-          email,
-          code,
-          type: "RegisterUser",
-          expiresIn: Date.now() + 3600000 // 1 hour expiration
-        });
-
-        await otp.save();
-
-        await Otp_VerifyAccount(email, guardianFullName, code).catch(
-          (error) => {
-            emailError = error;
-          }
-        );
-
-        if (!newParent.students.includes(foundStudent._id)) {
-          newParent.students.push(foundStudent._id);
-        }
-
-
-        firstStudentToken = foundStudent.generateAuthToken();
-      } else {
-        // Skip creating a new student
-        continue;
-      }
-    }
-  }
-
-  await newParent.save();
-
-  if (emailError) {
+  if (!updatedParentData) {
     return res.status(StatusCodes.BAD_REQUEST).json({
-      message: "Account update successful, but email sending failed.",
-      error: emailError.message || emailError
+      message: "No data found with the provided email!",
     });
   }
+
+  const [studentData, enrollmentUpdate] = await Promise.all([
+    User.findOne({ userId: students.userId }).select("-password"),
+    StudentEnrollments.findByIdAndUpdate(
+      enrollmentId,
+      {
+        status: "Accepted", // Update the enrollment status
+      },
+      {
+        new: true, // Return the updated document
+      }
+    )
+  ]);
+
+  // Check if student data is not found
+  if (!studentData) {
+    return res.status(StatusCodes.BAD_REQUEST).json({
+      message: `No student found with userId: ${students.userId}`,
+    });
+  }
+
+  // Check if the enrollment update failed
+  if (!enrollmentUpdate) {
+    return res.status(StatusCodes.BAD_REQUEST).json({
+      message: `Failed to update enrollment with id: ${enrollmentId}`,
+    });
+  }
+
+
+  if (students.password) {
+    const salt = await bcrypt.genSalt(10);
+    studentData.password = await bcrypt.hash(students.password, salt);
+    studentData.phone = phone
+    studentData.lga = lga
+    studentData.state = state
+    studentData.DOB = students.DOB
+    studentData.gender = students.gender
+    studentData.grade = students.grade
+  }
+
+  studentData.newCourseInvite = null
+
+  const code = otpGenerator.generate(6, {
+    lowerCaseAlphabets: false,
+    upperCaseAlphabets: false,
+    specialChars: false
+  });
+
+  const otp = new OTP({
+    user: studentData._id,
+    checkModel: "User",
+    email,
+    code,
+    type: "RegisterUser",
+    expiresIn: Date.now() + 3600000 // 1 hour expiration
+  });
+
+  await Promise.all([
+    studentData.save(),
+    otp.save(),
+    Otp_VerifyAccount(email, guardianFullName, code)
+  ]);
 
   return res.status(StatusCodes.OK).json({
-    message: "Accounts updated successfully!",
-    token: firstStudentToken
+    message: `Course enrollment successful. Please enter OTP sent to ${email}`,
   });
 };
 
@@ -534,30 +459,50 @@ exports.courseEnrollment = async (req, res) => {
 
 exports.getParentWithNewCourseInvite = async (req, res) => {
   const { email } = req.user;
+  const { enrollmentId } = req.query
 
-  const parent = await Parents.findOne({ email });
+  if (!enrollmentId) {
+    return res.status(StatusCodes.BAD_REQUEST).json({
+      status: "failed",
+      message: "No student found in the request!"
+    });
+  }
+
+  const parent = await Parents.findOne({ email }).populate("students", "-password");
 
   if (!parent) {
-    return res.status(StatusCodes.NOT_FOUND).json({
+    return res.status(StatusCodes.UNPROCESSABLE_ENTITY).json({
       status: "failed",
-      message: "Parent not found"
+      message: "No parent found with this email!"
     });
   }
 
-  // toDo we need to modify this to indicate the student to send to.
-  const studentsWithInvite = await User.find({
-    email: email,
-    newCourseInvite: { $exists: true, $ne: null }
-  }).select('-password');
+  const enrolledStudent = await CourseEnrollment.findById(enrollmentId);
 
-  if (!studentsWithInvite.length) {
-    return res.status(StatusCodes.NOT_FOUND).json({
+  if (!enrolledStudent) {
+    return res.status(StatusCodes.UNPROCESSABLE_ENTITY).json({
       status: "failed",
-      message: "No students found with a new course invite for this parent"
+      message: "This student has no course invite for this course!"
     });
   }
 
-  parent.students = studentsWithInvite;
+  if (enrolledStudent.status !== "Pending" && enrolledStudent.status !== "Accepted") {
+    return res.status(StatusCodes.UNPROCESSABLE_ENTITY).json({
+      status: "failed",
+      message: "Student is already enrolled in this course!"
+    });
+  }
+
+  const foundStudent = parent.students.find(item => item._id.toString() === enrolledStudent.user.toString());
+
+  if (!foundStudent) {
+    return res.status(StatusCodes.UNPROCESSABLE_ENTITY).json({
+      status: "failed",
+      message: "No student with a pending invite was found for this email."
+    });
+  }
+
+  parent.students = [foundStudent]
 
   return res.status(StatusCodes.OK).json({
     status: "success",
@@ -735,7 +680,7 @@ exports.getUserCourseData = async (req, res) => {
       message: "No assessment or activity for this student"
     });
   }
- 
+
   res.status(StatusCodes.OK).json({ assessment, activity });
 
 };
@@ -894,20 +839,21 @@ exports.getAssessmentPercentile = async (req, res) => {
     $or: [{ courseEnrollment: id }, { courseEnrollmentId: id }]
   }).select("rating");
 
+
   if (!existingAssessment.length || existingAssessment.length < 5) {
-    return   res.status(StatusCodes.UNPROCESSABLE_ENTITY).json({
+    return res.status(StatusCodes.UNPROCESSABLE_ENTITY).json({
       status: "failed",
       message: "Please complete all activities and assessment to see feedback!"
     });
   }
 
-const totalRating = existingAssessment.reduce((sum, assessment) => sum + parseInt(assessment.rating), 0);
-const averageRating = totalRating / existingAssessment.length;
+  const totalRating = existingAssessment.reduce((sum, assessment) => sum + parseInt(assessment.rating), 0);
+  const averageRating = totalRating / existingAssessment.length;
 
-res.status(StatusCodes.OK).json({
-  status: "success",
-  averagePercent: averageRating
-});
+  res.status(StatusCodes.OK).json({
+    status: "success",
+    averagePercent: averageRating
+  });
 
 
 };

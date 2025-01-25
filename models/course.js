@@ -24,6 +24,7 @@ const courseSchema = mongoose.Schema(
       ref: "Admin",
     },
     title: { type: String, required: true },
+    topic: { type: String, required: false },
     description: { type: String, required: true },
     cost: { type: Number, required: true },
     currency: { type: String, required: true },
@@ -41,6 +42,7 @@ const courseSchema = mongoose.Schema(
     },
     url: { type: String, required: true },
     image: { type: String, required: true },
+    banner: { type: String, required: false },
     courseEnrollment: [
       {
         type: mongoose.Schema.Types.ObjectId,

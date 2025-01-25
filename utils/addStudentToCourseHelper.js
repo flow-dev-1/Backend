@@ -8,6 +8,7 @@ const mongoose = require("mongoose");
 const StatusCodes = require("./status-codes");
 const generateId = require("./generateId");
 const school = require("../models/school");
+const sendSingleEmailQueue = require("../utils/sendSingleEmailQueue");
 
 module.exports = addStudentTocourse = async (stdClass, students, id, enrolledCourseId) => {
     const existingEnrollment = await SchoolCourses.findOne({
@@ -94,19 +95,22 @@ module.exports = addStudentTocourse = async (stdClass, students, id, enrolledCou
                     : stdClass.startsWith("Year")
                         ? "Secondary"
                         : "Educator";
+    
+                sendSingleEmailQueue.addSendEmailJob({
+                    parentName: item.guardianFullName,
+                    childName: item?.fullName,
+                    status: "new",
+                    grade: stdGrade,
+                    enrollment_id: newStudentEnrollment._id,
+                    school_name: existingEnrollment.school.school_name,
+                    course_name: existingEnrollment.course.title,
+                    email: item.email,
+                    token: token
+                })
 
-                await school_course_invite(
-                    item.guardianFullName,
-                    item?.fullName,
-                    "new",
-                    stdGrade,
-                    newStudentEnrollment._id,
-                    existingEnrollment.school.school_name,
-                    existingEnrollment.course.title,
-                    item.email,
-                    token
-                );
+
                 studentStatus.status = "Sent";
+
 
             } else {
                 // // The parent exists, check if the child exists
@@ -166,17 +170,29 @@ module.exports = addStudentTocourse = async (stdClass, students, id, enrolledCou
                             ? "Secondary"
                             : "Educator";
 
-                    await school_course_invite(
-                        existingParent.fullName,
-                        item?.fullName,
-                        "new",
-                        stdGrade,
-                        newStudentEnrollment._id,
-                        existingEnrollment.school.school_name,
-                        existingEnrollment.course.title,
-                        item.email,
-                        token
-                    );
+                    sendSingleEmailQueue.addSendEmailJob({
+                        parentName:  existingParent.fullName,
+                        childName: item?.fullName,
+                        status: "new",
+                        grade: stdGrade,
+                        enrollment_id: newStudentEnrollment._id,
+                        school_name: existingEnrollment.school.school_name,
+                        course_name: existingEnrollment.course.title,
+                        email: item.email,
+                        token: token
+                    })
+
+                    // await school_course_invite(
+                    //     existingParent.fullName,
+                    //     item?.fullName,
+                    //     "new",
+                    //     stdGrade,
+                    //     newStudentEnrollment._id,
+                    //     existingEnrollment.school.school_name,
+                    //     existingEnrollment.course.title,
+                    //     item.email,
+                    //     token
+                    // );
                     studentStatus.status = "Sent";
 
                 } else {
@@ -219,24 +235,37 @@ module.exports = addStudentTocourse = async (stdClass, students, id, enrolledCou
                                 ? "Secondary"
                                 : "Educator";
 
-                        await school_course_invite(
-                            existingParent.fullName,
-                            student?.fullName,
-                            "new",
-                            stdGrade,
-                            newStudentEnrollment._id,
-                            existingEnrollment.school.school_name,
-                            existingEnrollment.course.title,
-                            item.email,
-                            token
-                        );
+                        sendSingleEmailQueue.addSendEmailJob({
+                            parentName: existingParent.fullName,
+                            childName: student?.fullName,
+                            status: "new",
+                            grade: stdGrade,
+                            enrollment_id: newStudentEnrollment._id,
+                            school_name: existingEnrollment.school.school_name,
+                            course_name: existingEnrollment.course.title,
+                            email: item.email,
+                            token: token
+                        })
+
+                        // await school_course_invite(
+                        //     existingParent.fullName,
+                        //     student?.fullName,
+                        //     "new",
+                        //     stdGrade,
+                        //     newStudentEnrollment._id,
+                        //     existingEnrollment.school.school_name,
+                        //     existingEnrollment.course.title,
+                        //     item.email,
+                        //     token
+                        // );
                         studentStatus.status = "Sent";
 
 
                     } else {
                         // So student is enrolled but could either have accepted or is pending
                         // If pending, Resend invite
-                        if (studentEnrollment.status === "Pending") {
+
+                        if (studentEnrollment.status === "Pending" || studentEnrollment.status === "Accepted") {
                             //         // Re-send Email
                             let stdGrade = stdClass.startsWith("Pri")
                                 ? "Primary"
@@ -245,19 +274,33 @@ module.exports = addStudentTocourse = async (stdClass, students, id, enrolledCou
                                     : "Educator";
 
                             const token = student.generateAuthToken();
-                            await school_course_invite(
-                                existingParent.fullName,
-                                student?.fullName,
-                                "new",
-                                stdGrade,
-                                studentEnrollment._id,
-                                existingEnrollment.school.school_name,
-                                existingEnrollment.course.title,
-                                item.email,
-                                token
-                            );
+                            sendSingleEmailQueue.addSendEmailJob({
+                                parentName: existingParent.fullName,
+                                childName: student?.fullName,
+                                status: "new",
+                                grade: stdGrade,
+                                enrollment_id: studentEnrollment._id,
+                                school_name: existingEnrollment.school.school_name,
+                                course_name: existingEnrollment.course.title,
+                                email: item.email,
+                                token: token
+                            })
+                            // await school_course_invite(
+                            //     existingParent.fullName,
+                            //     student?.fullName,
+                            //     "new",
+                            //     stdGrade,
+                            //     studentEnrollment._id,
+                            //     existingEnrollment.school.school_name,
+                            //     existingEnrollment.course.title,
+                            //     item.email,
+                            //     token
+                            // );
                             studentStatus.status = "Sent";
 
+                        } else {
+
+                            studentStatus.status = "Enrolled";
                         }
 
                     }

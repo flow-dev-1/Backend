@@ -107,7 +107,7 @@ exports.getSingleEnrolledCourse = async (req, res) => {
     let { enrolledCourseId } = req.params;
 
     const course = await SchoolCourses.findOne({ _id: enrolledCourseId })
-        .populate("course", "title image")
+        .populate("course", "title image banner")
         .populate({
             path: "studentEnrollments",
             populate: {
@@ -877,7 +877,6 @@ exports.addStudentsToCourseEnrollment = async (req, res) => {
     const { id, enrolledCourseId } = req.params;
     // Check if the array length exceeds 10, then process via background queue
     if (students.length > 1) {
-
         // Add the job to Bull queue for background processing
         emailService.addEmailJob({stdClass, students, id, enrolledCourseId,user:req.user});
 

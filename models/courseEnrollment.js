@@ -23,7 +23,7 @@ const courseEnrollmentSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["Pending", "Confirmed", "Deactivated"],
+      enum: ["Pending","Accepted", "Confirmed", "Deactivated"],
       default: "Pending",
     },
     progress: {

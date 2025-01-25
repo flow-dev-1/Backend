@@ -293,7 +293,7 @@ exports.generateUserId = async (req, res) => {
 
 // Verify Account route
 exports.verifyAccount = async (req, res) => {
-  const { code } = req.body;
+  const { code, enrollmentId } = req.body;
   const { email } = req.user;
 
   if (!code) {
@@ -334,33 +334,33 @@ exports.verifyAccount = async (req, res) => {
   // Update the isVerified status for the account
   await model.updateMany({ email }, { isVerified: true });
   if (otp.checkModel === "User") {
-    const users = await model.find({ email })
+    if (!enrollmentId) return res.status(StatusCodes.BAD_REQUEST).json({
+      message: "Invalid enrollment data!"
+    });
+    const user = await model.findOne({ email })
 
-    for (const user of users) {
-      let school;
-      if (user.newCourseInvite) {
-        school = user.newCourseInvite.school
+    const enrollment = await CourseEnrollment.findById(enrollmentId)
 
-        const enrollment = await CourseEnrollment.findOne({
-          school,
-          status: "Confirmed",
-          user: user._id
-        })
+    if (!enrollment) return res.status(StatusCodes.BAD_REQUEST).json({
+      message: "Invalid enrollment data!"
+    });
 
-        if (enrollment) {
-          await Course.findOneAndUpdate({ _id: enrollment.course }, { $addToSet: { courseEnrollment: enrollment._id } })
-        }
 
-      }
+    enrollment.status = "Confirmed"
 
-      user.school = school
-      user.newCourseInvite = null
+    user.school = enrollment.school
+    user.newCourseInvite = null
 
-      await user.save()
-      await welcome_new_user(
+    await Promise.all([
+      Course.findOneAndUpdate({ _id: enrollment.course }, { $addToSet: { courseEnrollment: enrollment._id } }),
+      enrollment.save(),
+      user.save(),
+      welcome_new_user(
         user.fullName, user.userId, email,
       )
-    }
+    ])
+
+
   } else {
     const user = await model.findOne({ email })
     await welcome_new_user(

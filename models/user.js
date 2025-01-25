@@ -117,7 +117,7 @@ userSchema.methods.generateAuthToken = function () {
     },
     process.env.JWT,
     {
-      expiresIn: "7d",
+      expiresIn: "30d",
     }
   );
   return token;
@@ -185,12 +185,13 @@ function validateUser(user) {
 
 
 function validateInvitedUser(user) {
+
   const studentSchema = Joi.object({
     userId: Joi.string().required(),
     fullName: Joi.string()
       .min(2)
       .max(300)
-      .pattern(/^[a-zA-Z]+(?: [a-zA-Z]+)+$/)
+      .pattern(/^[a-zA-ZÀ-ÖØ-öø-ÿ0-9_'`-]+(?: [a-zA-ZÀ-ÖØ-öø-ÿ0-9_'`-]+)+$/)
       .message(
         "Full name must contain at least two names separated by a space."
       )
@@ -199,13 +200,7 @@ function validateInvitedUser(user) {
     gender: Joi.string().valid("male", "female").required(),
     DOB: Joi.date().required(),
     password: Joi.string().min(0).max(1024).optional(),
-    phone: Joi.string()
-      .pattern(/^\+[1-9]\d{1,14}$/)
-      .message("Please enter a valid phone number in international format")
-      .required(),
-    country: Joi.string().min(2).max(255).required(),
-    state: Joi.string().min(2).max(255).required(),
-    lga: Joi.string().min(2).max(255).required(),
+    isVerified: Joi.boolean().optional(),
   }).required();
 
   const schema = Joi.object({
@@ -213,9 +208,9 @@ function validateInvitedUser(user) {
     guardianFullName: Joi.string()
       .min(2)
       .max(300)
-      .pattern(/^[a-zA-Z]+(?: [a-zA-Z]+)+$/)
+      .pattern(/^[a-zA-ZÀ-ÖØ-öø-ÿ0-9_'`-]+(?: [a-zA-ZÀ-ÖØ-öø-ÿ0-9_'`-]+)+$/)
       .message(
-        "Guardian's full name must contain at least a first name and a last name separated by a space."
+        "Guardian's full name must contain at least two names separated by a space."
       )
       .required(),
     phone: Joi.string()
@@ -226,10 +221,15 @@ function validateInvitedUser(user) {
     country: Joi.string().min(2).max(255).required(),
     state: Joi.string().min(2).max(255).required(),
     lga: Joi.string().min(2).max(255).required(),
-    students: Joi.array().items(studentSchema).min(1).required(),
+    students: studentSchema.required(),
   })
     .required()
     .unknown(true); // Allow data that is not defined in the schema
+
+    const {error} = schema.validate(user); 
+    if(error){
+      throw error
+    }
 
   return schema.validate(user);
 }

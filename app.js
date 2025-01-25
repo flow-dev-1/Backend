@@ -9,6 +9,7 @@ const { createBullBoard } = require("@bull-board/api");
 const { BullAdapter } = require("@bull-board/api/bullAdapter");
 const { ExpressAdapter } = require("@bull-board/express");
 const emailService = require("./utils/emailQueue.js");
+const sendStudentEmailService = require("./utils/sendSingleEmailQueue.js");
 
 
 require('dotenv').config();
@@ -19,7 +20,7 @@ const serverAdapter = new ExpressAdapter();
 serverAdapter.setBasePath("/admin/queues");
 
 // Specify all queues here
-const queues = [emailService.queue()];
+const queues = [emailService.queue(),sendStudentEmailService.queue()];
 
 const QUEUE_LIST = [
     ...queues?.map((queue) => {
@@ -39,10 +40,10 @@ app.use(morgan('tiny'));
 require("./startup/cors.js")(app);
 require("./startup/db")();
 
-// cron.schedule('0 12 * * *', () => {
-//     console.log("Running at 12:00 PM every day");
-//     courseReminder();
-// });
+cron.schedule('0 12 * * *', () => {
+    console.log("Running at 12:00 PM every day");
+    courseReminder();
+});
 
 // cron.schedule('*/10 * * * *', () => {
 //     console.log("Running every 10 minutes");
