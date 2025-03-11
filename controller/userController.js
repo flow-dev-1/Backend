@@ -4,7 +4,7 @@ const OTP = require("../models/OTP");
 const StatusCodes = require("../utils/status-codes");
 const bcrypt = require("bcrypt");
 const _ = require("lodash");
-const { Otp_VerifyAccount, Otp_ForgotPassword } = require("../utils/sendmail");
+const { Otp_VerifyAccount, Otp_ForgotPassword, welcome_new_user } = require("../utils/sendmail");
 const otpGenerator = require("otp-generator");
 const { initiatePaystackPayment } = require("../utils/paystack");
 const CourseEnrollment = require("../models/courseEnrollment");
@@ -263,6 +263,27 @@ exports.registerInvitedUser = async (req, res) => {
   }
 
   studentData.newCourseInvite = null
+
+  if (studentData.isVerified) {
+    // This is a case where the student is already verified
+    // and the parent is trying to accept the course invite
+    // Update the enrollment status to "Confirmed"
+    enrollmentUpdate.status = "Confirmed";
+
+    await Promise.all([
+      studentData.save(),
+      Course.findOneAndUpdate({ _id: enrollmentUpdate.course }, { $addToSet: { courseEnrollment: enrollmentUpdate._id } }),
+      enrollmentUpdate.save(),
+      welcome_new_user(
+        studentData.fullName, studentData.userId, email,
+      )
+    ]);
+
+    return res.status(StatusCodes.OK).json({
+      status: "redirect",
+      message: `Course enrollment successful. Please proceed to sign in.`,
+    });
+  }
 
   const code = otpGenerator.generate(6, {
     lowerCaseAlphabets: false,
