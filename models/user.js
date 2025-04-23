@@ -146,6 +146,7 @@ const User = mongoose.model("User", userSchema);
 function validateUser(user) {
   const studentSchema = Joi.object({
     userId: Joi.string().optional(),
+    stdEmail:Joi.string().min(5).max(255).required().email(),
     fullName: Joi.string()
       .min(2)
       .max(300)

@@ -9,6 +9,8 @@ router.get('/', async (req, res) => {
     res.json('Hello! welcome to FLOW');
 })
 
+// router.post('/fixing', indexController.fixing_selfawareness);
+
 router.post('/login', validate(loginValidator), indexController.login);
 
 router.post('/forgot-password', indexController.forgotPassword);

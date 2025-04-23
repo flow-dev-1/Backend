@@ -46,7 +46,6 @@ exports.getLoggedUser = async (req, res) => {
   res.status(StatusCodes.OK).json({ user });
 };
 
-
 exports.getPayments = async (req, res) => {
   const payments = await Payment.find({ user: req.user._id }).select(
     "-paymentDetails"
@@ -89,106 +88,194 @@ exports.registerUser = async (req, res) => {
     });
   }
 
-  let firstStudentToken = null;
+  /*************This code is no longer valid **************************/
 
-  for (const studentItem of student) {
-    const { userId, fullName, grade, gender, DOB, password } = studentItem;
+  // let firstStudentToken = null;
 
-    // Check if the student is already registered under this parent
-    const existingStudent = newParent.students.find(
-      (s) => s.fullName === fullName && s.DOB === DOB
-    );
+  // for (const studentItem of student) {
+  //   const { userId, fullName, grade, gender, DOB, password } = studentItem;
 
-    if (existingStudent) {
-      if (existingStudent.isVerified) {
-        continue; // Skip the student if already registered and verified
-      } else {
-        // Handle case where student exists but is not verified
-        const code = otpGenerator.generate(6, {
-          lowerCaseAlphabets: false,
-          upperCaseAlphabets: false,
-          specialChars: false
-        });
+  //   // Check if the student is already registered under this parent
+  //   const existingStudent = newParent.students.find(
+  //     (s) => s.fullName === fullName && s.DOB === DOB
+  //   );
 
-        const otp = new OTP({
-          user: existingStudent._id,
-          checkModel: "User",
-          email,
-          code,
-          type: "RegisterUser",
-          expiresIn: Date.now() + 3600000 // 1 hour expiration
-        });
+  //   if (existingStudent) {
+  //     if (existingStudent.isVerified) {
+  //       continue; // Skip the student if already registered and verified
+  //     } else {
+  //       // Handle case where student exists but is not verified
+  //       const code = otpGenerator.generate(6, {
+  //         lowerCaseAlphabets: false,
+  //         upperCaseAlphabets: false,
+  //         specialChars: false
+  //       });
 
-        await otp.save();
-        await Otp_VerifyAccount(email, guardianFullName, code);
+  //       const otp = new OTP({
+  //         user: existingStudent._id,
+  //         checkModel: "User",
+  //         email,
+  //         code,
+  //         type: "RegisterUser",
+  //         expiresIn: Date.now() + 3600000 // 1 hour expiration
+  //       });
 
-        firstStudentToken = existingStudent.generateAuthToken();
-      }
-    } else {
-      // Register new student
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(password, salt);
-      const foundStudent = await findStudentByEmailAndFullName(
-        email,
-        studentItem.fullName,
-        newParent.students
-      );
+  //       await otp.save();
+  //       await Otp_VerifyAccount(email, guardianFullName, code);
 
-      if (foundStudent) {
-        return res.status(StatusCodes.BAD_REQUEST).json({
-          sucess: "failed",
-          message: "Student already exists"
-        });
-      }
-      const newStudent = new User({
-        _id: new mongoose.Types.ObjectId(),
-        userId,
-        fullName,
-        grade,
-        gender,
-        DOB,
-        password: hashedPassword,
-        guardianFullName,
-        phone,
-        email,
-        country,
-        state,
-        lga,
-        userType: "Individual"
-      });
+  //       firstStudentToken = existingStudent.generateAuthToken();
+  //     }
+  //   } else {
+  //     // Register new student
+  //     const salt = await bcrypt.genSalt(10);
+  //     const hashedPassword = await bcrypt.hash(password, salt);
+  //     const foundStudent = await findStudentByEmailAndFullName(
+  //       email,
+  //       studentItem.fullName,
+  //       newParent.students
+  //     );
 
-      await newStudent.save();
-      newParent.students.push(newStudent._id);
+  //     if (foundStudent) {
+  //       return res.status(StatusCodes.BAD_REQUEST).json({
+  //         sucess: "failed",
+  //         message: "Student already exists"
+  //       });
+  //     }
+  //     const newStudent = new User({
+  //       _id: new mongoose.Types.ObjectId(),
+  //       userId,
+  //       fullName,
+  //       grade,
+  //       gender,
+  //       DOB,
+  //       password: hashedPassword,
+  //       guardianFullName,
+  //       phone,
+  //       email,
+  //       country,
+  //       state,
+  //       lga,
+  //       userType: "Individual"
+  //     });
 
-      if (!firstStudentToken) {
-        firstStudentToken = newStudent.generateAuthToken();
-      }
+  //     await newStudent.save();
+  //     newParent.students.push(newStudent._id);
 
-      const code = otpGenerator.generate(6, {
-        lowerCaseAlphabets: false,
-        upperCaseAlphabets: false,
-        specialChars: false
-      });
+  //     if (!firstStudentToken) {
+  //       firstStudentToken = newStudent.generateAuthToken();
+  //     }
 
-      const otp = new OTP({
-        user: newStudent._id,
-        checkModel: "User",
-        email,
-        code,
-        type: "RegisterUser",
-        expiresIn: Date.now() + 3600000 // 1 hour expiration
-      });
+  //     const code = otpGenerator.generate(6, {
+  //       lowerCaseAlphabets: false,
+  //       upperCaseAlphabets: false,
+  //       specialChars: false
+  //     });
 
-      await otp.save();
-      await Otp_VerifyAccount(email, guardianFullName, code);
-    }
+  //     const otp = new OTP({
+  //       user: newStudent._id,
+  //       checkModel: "User",
+  //       email,
+  //       code,
+  //       type: "RegisterUser",
+  //       expiresIn: Date.now() + 3600000 // 1 hour expiration
+  //     });
+
+  //     await otp.save();
+  //     await Otp_VerifyAccount(email, guardianFullName, code);
+  //   }
+  // }
+
+  // await newParent.save();
+
+  const studentItem = student[0];
+  const { userId, stdEmail, fullName, grade, gender, DOB, password } = studentItem;
+
+  const existingStudent = await User.findOne({ email: stdEmail })
+
+  if (existingStudent && existingStudent.isVerified) {
+    return res.status(StatusCodes.BAD_REQUEST).json({
+      sucess: "failed",
+      message: "A user with this credentials already exists!"
+    });
   }
 
+  if (existingStudent && !existingStudent.isVerified) {
+    const code = otpGenerator.generate(6, {
+      lowerCaseAlphabets: false,
+      upperCaseAlphabets: false,
+      specialChars: false
+    });
+
+    const otp = new OTP({
+      user: existingStudent._id,
+      checkModel: "User",
+      email,
+      code,
+      type: "RegisterUser",
+      expiresIn: Date.now() + 3600000 // 1 hour expiration
+    });
+
+    await Promise.all([
+      otp.save(),
+      Otp_VerifyAccount(stdEmail, fullName, code)
+    ]);
+
+    const token = existingStudent.generateAuthToken();
+    return res.status(StatusCodes.OK).json({
+      message: `please enter token sent to ${stdEmail}`,
+      token,
+    });
+  }
+  // Register new student
+  const salt = await bcrypt.genSalt(10);
+  const hashedPassword = await bcrypt.hash(password, salt);
+
+  const newStudent = new User({
+    _id: new mongoose.Types.ObjectId(),
+    userId,
+    fullName,
+    grade,
+    gender,
+    DOB,
+    password: hashedPassword,
+    guardianFullName,
+    phone,
+    email: stdEmail,
+    country,
+    state,
+    lga,
+    userType: "Individual"
+  });
+
+  const code = otpGenerator.generate(6, {
+    lowerCaseAlphabets: false,
+    upperCaseAlphabets: false,
+    specialChars: false
+  });
+
+  const otp = new OTP({
+    user: newStudent._id,
+    checkModel: "User",
+    email,
+    code,
+    type: "RegisterUser",
+    expiresIn: Date.now() + 3600000 // 1 hour expiration
+  });
+
+  await Promise.all([
+    await newStudent.save(),
+    otp.save(),
+    Otp_VerifyAccount(stdEmail, fullName, code)
+  ]);
+  newParent.students.push(newStudent._id);
+
+
   await newParent.save();
+  const token = newStudent.generateAuthToken();
 
   return res.status(StatusCodes.OK).json({
     message: "Students registered successfully",
-    token: firstStudentToken
+    token
   });
 };
 
@@ -590,6 +677,7 @@ exports.submitUserCourseData = async (req, res) => {
   // const activities = req.body.activities;
   // const assesment = req.body.assesment;
 
+
   const courseEnrollmentForActivity = await CourseEnrollment.findOne({
     _id: req.body.courseEnrollmentId,
     user,
@@ -597,7 +685,6 @@ exports.submitUserCourseData = async (req, res) => {
     path: "course",
     select: "weeks"
   });
-  ;
 
   if (!courseEnrollmentForActivity) {
     return res
@@ -854,14 +941,18 @@ exports.getAssessmentPercentile = async (req, res) => {
   const { id } = req.params;
   const user = req.user._id;
 
-  // Find the assessment for the user
-  const existingAssessment = await Assesment.find({
-    user,
-    $or: [{ courseEnrollment: id }, { courseEnrollmentId: id }]
-  }).select("rating");
+
+  const [findEnrollment, existingAssessment] = await Promise.all([
+    CourseEnrollment.findById(id).populate("course", "title"),
+    Assesment.find({
+      user,
+      $or: [{ courseEnrollment: id }, { courseEnrollmentId: id }]
+    }).select("rating")
+  ]);
 
 
-  if (!existingAssessment.length || existingAssessment.length < 5) {
+
+  if (!existingAssessment.length || (findEnrollment?.course?.title === "Transition" && existingAssessment.length < 10) || existingAssessment.length < 5) {
     return res.status(StatusCodes.UNPROCESSABLE_ENTITY).json({
       status: "failed",
       message: "Please complete all activities and assessment to see feedback!"

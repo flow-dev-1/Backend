@@ -42,6 +42,11 @@ exports.validatePaymentByCallback = async (req, res, next) => {
         payment.save()
     ]);
 
+    return res.status(StatusCodes.CREATED).json({
+        status: "success",
+        message: "Payment Successfull!",
+    });
+
 }
 
 exports.validatePaymentByWebhook = async (req, res, next) => {
@@ -54,6 +59,7 @@ exports.validatePaymentByWebhook = async (req, res, next) => {
         if (hash == req.headers['x-paystack-signature']) {
             // Retrieve the request's body
             const event = req.body;
+
             if (event.event == 'charge.success') {
 
                 const data = await validatePaystackPayment(event.data.reference);
@@ -64,21 +70,38 @@ exports.validatePaymentByWebhook = async (req, res, next) => {
 
                 const amount_paid = data.data.amount / 100;
 
-                const order = await OrderRepo.findOne("_id", data.data.metadata.orderId);
+                const payment = await Payment.findOne({ reference:data.data.reference });
 
-
-                // If this payment has already been verified maybe either by callbackUrl or hook prevent re-run wen page is refreshed
-                if (order.payment_status.status === "Completed") {
-                    return res.sendStatus(200);
+                if (!payment) return res.status(StatusCodes.BAD_REQUEST).json({
+                    status: "failed",
+                    message: "Operation Failed",
+                });
+            
+                if (payment.status === "Confirmed") {
+                    // This is already handled in the callback
+                    return res.status(StatusCodes.CREATED).json({
+                        status: "success",
+                        message: "Payment Successfull!",
+                    });
                 }
 
-
-                order.payment_status.status = "Completed";
-                order.payment_status.timestamp = Date.now()
-                order.status = 'In Progress'
-
-
-
+                payment.status = "Confirmed";
+                payment.paymentDetails = data?.data || data
+                const enrollment = await CourseEnrollment.findById(payment.courseEnrollment)
+                enrollment.status = "Confirmed"
+            
+                await Promise.all([
+                    Course.findByIdAndUpdate(enrollment.course, {
+                        $push: { courseEnrollment: enrollment._id }
+                    }),
+                    enrollment.save(),
+                    payment.save()
+                ]);
+            
+                return res.status(StatusCodes.OK).json({
+                    status: "success",
+                    message: "Payment Successfull!",
+                });
             }
 
         } else {

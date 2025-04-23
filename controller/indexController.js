@@ -11,11 +11,72 @@ const Counter = require("../models/counter");
 const Schools = require("../models/school");
 const CourseEnrollment = require("../models/courseEnrollment");
 const Course = require("../models/course");
+const { date } = require("joi");
+const Activity = require("../models/activity");
+const Assessment = require("../models/assessment.model");
+
+exports.fixing_selfawareness = async (req, res) => {
+  try {
+    // Get enrollments with skip for next 50
+    const enrollments = await CourseEnrollment.find({
+      course: "66853bf50118e2e0a02b6a5a",
+      status: "Confirmed",
+      progress: { $gt: 0 }
+    })
+      .skip(200)  // Skip first 50
+      .limit(50)  // Get next 50
+      .populate("user", "fullName email")
+      .exec();
+
+    // Update activities and assessments for each enrollment
+    for (const enrollment of enrollments) {
+      // console.log("\n--- Processing Enrollment ---");
+      // console.log("User:", enrollment.user?.fullName);
+      // console.log("EnrollmentId:", enrollment?._id);
+
+      const [activityResult, assessmentResult] = await Promise.all([
+        Activity.updateMany(
+          {
+            "user": enrollment?.user?._id,
+            "courseEnrollment": "66853bf50118e2e0a02b6a5a"
+          },
+          {
+            $set: {
+              "courseEnrollmentId": enrollment?._id,
+            }
+          }
+        ),
+        Assessment.updateMany(
+          {
+            "user": enrollment?.user?._id,
+            "courseEnrollment": "66853bf50118e2e0a02b6a5a"
+          },
+          {
+            $set: {
+              "courseEnrollmentId": enrollment?._id,
+            }
+          }
+        )
+      ]);
+    }
+
+    return res.status(StatusCodes.OK).json({
+      message: "Successfully updated next 50 records",
+      count: enrollments?.length,
+      data: enrollments
+    });
+  } catch (error) {
+    console.error("Error:", error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      message: "Error updating records",
+      error: error.message
+    });
+  }
+};
 
 // Login Route
 exports.login = async (req, res) => {
   const { usernameOrEmail, password } = req.body;
-
   // Helper function to find a user in the specified model
   const findUser = async (Model, query) => {
     return await Model.findOne(query).select(
@@ -30,26 +91,36 @@ exports.login = async (req, res) => {
   let accountType = "";
 
   if (isEmail(usernameOrEmail)) {
+    // Search for an Individual user by userId if not email is entered
+    // Search for users across all account types
+   
+    const lowercaseEmail = usernameOrEmail.toLowerCase();
 
-    // Search for a School by email
-    const school = await findUser(Schools, {
-      email: usernameOrEmail,
-      isVerified: true
-    });
-    if (school) {
-      account = school;
+    const [user, school, educator] = await Promise.all([
+      findUser(User, { 
+        email: { $regex: new RegExp(`^${lowercaseEmail}$`, 'i') }, 
+        isVerified: true 
+      }),
+      findUser(Schools, { 
+        email: { $regex: new RegExp(`^${lowercaseEmail}$`, 'i') }, 
+        isVerified: true 
+      }),
+      findUser(Educator, { 
+        email: { $regex: new RegExp(`^${lowercaseEmail}$`, 'i') }, 
+        isVerified: true 
+      })
+    ]);
+
+    // Assign the first found account
+    if (user) {
+      account = user;
+      accountType = "Individual";
+    } else if (school) {
+      account = school; 
       accountType = "School";
-    } else {
-      // Search for an Educator by email if no School was found
-      const educator = await findUser(Educator, {
-        email: usernameOrEmail,
-        isVerified: true
-      });
-
-      if (educator) {
-        account = educator;
-        accountType = "Educator";
-      }
+    } else if (educator) {
+      account = educator;
+      accountType = "Educator";
     }
   } else {
     // Convert the userId to uppercase for a case-insensitive search
@@ -72,7 +143,6 @@ exports.login = async (req, res) => {
       .status(StatusCodes.BAD_REQUEST)
       .json({ message: "Invalid credentials." });
   }
-
   // Verify the password
   const validPassword = await bcrypt.compare(password, account.password);
   if (!validPassword) {
@@ -303,9 +373,7 @@ exports.verifyAccount = async (req, res) => {
   }
 
   // Find the OTP entry that matches the provided code, email, and type
-  const otp = await OTP.findOne({
-    code
-  });
+  const otp = await OTP.findOne({ code });
 
   if (!otp) {
     return res.status(StatusCodes.BAD_REQUEST).json({
@@ -334,32 +402,38 @@ exports.verifyAccount = async (req, res) => {
   // Update the isVerified status for the account
   await model.updateMany({ email }, { isVerified: true });
   if (otp.checkModel === "User") {
-    if (!enrollmentId) return res.status(StatusCodes.BAD_REQUEST).json({
-      message: "Invalid enrollment data!"
-    });
     const user = await model.findOne({ email })
 
-    const enrollment = await CourseEnrollment.findById(enrollmentId)
-
-    if (!enrollment) return res.status(StatusCodes.BAD_REQUEST).json({
-      message: "Invalid enrollment data!"
-    });
-
-
-    enrollment.status = "Confirmed"
-
-    user.school = enrollment.school
-    user.newCourseInvite = null
-
-    await Promise.all([
-      Course.findOneAndUpdate({ _id: enrollment.course }, { $addToSet: { courseEnrollment: enrollment._id } }),
-      enrollment.save(),
-      user.save(),
-      welcome_new_user(
+    // Check if user is an individual user
+    if (user.userType === "Individual" && !enrollmentId) {
+      await welcome_new_user(
         user.fullName, user.userId, email,
       )
-    ])
+    } else {
+      if (!enrollmentId) return res.status(StatusCodes.BAD_REQUEST).json({
+        message: "Invalid enrollment data!"
+      });
 
+      const enrollment = await CourseEnrollment.findById(enrollmentId)
+
+      if (!enrollment) return res.status(StatusCodes.BAD_REQUEST).json({
+        message: "Invalid enrollment data!"
+      });
+
+      enrollment.status = "Confirmed"
+
+      user.school = enrollment.school
+      user.newCourseInvite = null
+
+      await Promise.all([
+        Course.findOneAndUpdate({ _id: enrollment.course }, { $addToSet: { courseEnrollment: enrollment._id } }),
+        enrollment.save(),
+        user.save(),
+        welcome_new_user(
+          user.fullName, user.userId, email,
+        )
+      ])
+    }
 
   } else {
     const user = await model.findOne({ email })

@@ -11,6 +11,6 @@ router.get('/', async (req, res) => {
 
 router.post('/validate-transaction', auth, paymentController.validatePaymentByCallback);
 
-router.post('/', paymentController.validatePaymentByWebhook);
+router.post('/webhook', paymentController.validatePaymentByWebhook);
 
 module.exports = router; 
