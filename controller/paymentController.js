@@ -85,6 +85,16 @@ exports.validatePaymentByWebhook = async (req, res, next) => {
                     });
                 }
 
+                // ToDo: confirm payment amount
+                // if (payment.amount !== amount_paid) {
+                //     return res.status(StatusCodes.BAD_REQUEST).json({
+                //         status: "failed",
+                //         message: "Payment amount mismatch",
+                //         expected: payment.amount,
+                //         received: amount_paid
+                //     });
+                // }
+
                 payment.status = "Confirmed";
                 payment.paymentDetails = data?.data || data
                 const enrollment = await CourseEnrollment.findById(payment.courseEnrollment)

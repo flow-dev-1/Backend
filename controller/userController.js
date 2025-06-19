@@ -25,6 +25,7 @@ const Assesment = require("../models/assessment.model");
 const { courseEnrollment } = require("./schoolsController");
 const course = require("../models/course");
 
+
 exports.getLoggedUser = async (req, res) => {
   let userId = req.params.id ? req.params.id : req.user._id
   const user = await User.findById(userId)
