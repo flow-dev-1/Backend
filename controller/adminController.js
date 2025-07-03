@@ -438,7 +438,9 @@ exports.deleteCourse = async (req, res) => {
 exports.getUsers = async (req, res) => {
 
     const users = await User.find({
-        userType: "Individual"
+        userType: "Individual",
+        isVerified: true,
+        isDeleted: false
     })
         .select('-password -isVerified -isDeleted -resetPassword');
     res.status(StatusCodes.OK).json({
@@ -470,7 +472,7 @@ exports.getSingleSchool = async (req, res) => {
 };
 
 exports.getSchoolEnrolledCourses = async (req, res) => {
-    const courses = await SchoolCourses.find({ school: req.params.id})
+    const courses = await SchoolCourses.find({ school: req.params.id })
         .populate("course");
 
     const filteredCourses = courses.filter(
@@ -755,22 +757,22 @@ exports.getSingleEducator = async (req, res) => {
 exports.getSingleUser = async (req, res) => {
     const userId = req.params.id
     const user = await User.findById(userId)
-    .select("-password -isDeleted -resetPassword")
-    .populate({
-      path: 'school',
-      model: 'School',
-      select: "school_name lga"
-    });
+        .select("-password -isDeleted -resetPassword")
+        .populate({
+            path: 'school',
+            model: 'School',
+            select: "school_name lga"
+        });
 
-  if (!user.phone || !user.lga) {
-    const parentData = await Parents.findOne({ email: user.email });
-    user.country = parentData.country
-    user.lga = parentData.lga
-    user.phone = parentData.phone
-    user.state = parentData.state
+    if (!user.phone || !user.lga) {
+        const parentData = await Parents.findOne({ email: user.email });
+        user.country = parentData.country
+        user.lga = parentData.lga
+        user.phone = parentData.phone
+        user.state = parentData.state
 
-    await user.save()
-  }
+        await user.save()
+    }
 
     res.status(StatusCodes.OK).json({
         status: 'success',
