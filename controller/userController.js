@@ -184,7 +184,7 @@ exports.registerUser = async (req, res) => {
     });
   } catch (error) {
     console.error("Error in registerUser:", error);
-    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+    return res.status(StatusCodes.SERVER_ERROR).json({
       message: "An error occurred while processing your request.",
       error: error.message
     });

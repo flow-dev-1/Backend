@@ -67,7 +67,7 @@ exports.fixing_selfawareness = async (req, res) => {
     });
   } catch (error) {
     console.error("Error:", error);
-    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+    return res.status(StatusCodes.SERVER_ERROR).json({
       message: "Error updating records",
       error: error.message
     });
