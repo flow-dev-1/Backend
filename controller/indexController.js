@@ -178,7 +178,7 @@ exports.forgotPassword = async (req, res) => {
   let accountType = "";
 
   // Check Individual User by userId
-  const user = await findUser(User, "userId");
+  const user = await findUser(User, "email");
   if (user) {
     account = user;
     accountType = "User";
