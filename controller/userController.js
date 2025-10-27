@@ -435,7 +435,7 @@ exports.courseEnrollment = async (req, res) => {
     user: req.user._id,
     checkModel: req.user.isSchool
       ? "School"
-      : req.user.educatorType
+      : req.user.isEducator
         ? "Educator"
         : "User"
   });

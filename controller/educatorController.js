@@ -34,6 +34,8 @@ exports.registerEducator = async (req, res) => {
     grade,
   } = req.body;
 
+  console.log(type)
+
   if (!type) {
     return res
       .status(StatusCodes.BAD_REQUEST)

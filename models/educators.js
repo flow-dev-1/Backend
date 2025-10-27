@@ -52,6 +52,10 @@ const educatorSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    isEducator: {
+      type: Boolean,
+      default: true,
+    },
     address: {
       type: String,
     },
@@ -100,6 +104,7 @@ educatorSchema.methods.generateAuthToken = function () {
     {
       _id: this._id,
       isVerified: this.isVerified,
+      isEducator: this.isEducator,
       fullName: this.fullName,
       email: this.email,
       phone: this.phone,
@@ -118,6 +123,7 @@ educatorSchema.methods.generateInviteToken = function () {
     {
       _id: this._id,
       isVerified: this.isVerified,
+      isEducator: this.isEducator,
       fullName: this.fullName,
       email: this.email,
       phone: this.phone,
