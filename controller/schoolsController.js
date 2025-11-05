@@ -59,11 +59,14 @@ exports.getSingleSchool = async (req, res) => {
 };
 
 exports.getSchoolAdminTeam = async (req, res) => {
+
     // Find the school and populate the team field
     const school = await Schools.findOne({ _id: req.params.id }).select("team").populate({
         path: "team",
         select: "fullName email newInvite.school newInvite.schoolAdminStatus newInvite.schoolAdminPermission newInvite.schoolAdminDate", // Select the fields you want from the Educator document
     });
+
+    console.log(school,"School ooooooooooo")
 
     if (!school) {
         return res.status(StatusCodes.NOT_FOUND).json({ message: "School not found!" });
