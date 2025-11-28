@@ -637,7 +637,7 @@ exports.submitUserCourseData = async (req, res) => {
     await newAssessment.save()
       .then(async () => {
         // Increase the progress
-        courseEnrollmentForActivity.progress += 100 / courseEnrollmentForActivity?.course?.weeks
+        courseEnrollmentForActivity.progress = Math.ceil(courseEnrollmentForActivity.progress + (100 / courseEnrollmentForActivity?.course?.weeks));
         await courseEnrollmentForActivity.save()
         return res.status(StatusCodes.OK).json({
           success: true,
@@ -661,7 +661,7 @@ exports.submitUserCourseData = async (req, res) => {
     const newAssessment = new Assesment(req.body);
     await newAssessment.save();
     // Increase course progress
-    courseEnrollmentForActivity.progress += 100 / courseEnrollmentForActivity?.course?.weeks
+    courseEnrollmentForActivity.progress = Math.ceil(courseEnrollmentForActivity.progress + (100 / courseEnrollmentForActivity?.course?.weeks));
     await courseEnrollmentForActivity.save()
     return res.status(StatusCodes.OK).json({
       success: true,
