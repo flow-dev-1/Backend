@@ -66,7 +66,7 @@ exports.getSchoolAdminTeam = async (req, res) => {
         select: "fullName email newInvite.school newInvite.schoolAdminStatus newInvite.schoolAdminPermission newInvite.schoolAdminDate", // Select the fields you want from the Educator document
     });
 
-    console.log(school,"School ooooooooooo")
+    console.log(school, "School ooooooooooo")
 
     if (!school) {
         return res.status(StatusCodes.NOT_FOUND).json({ message: "School not found!" });
@@ -643,7 +643,7 @@ exports.addEmailNotificationadmin = async (req, res) => {
 };
 
 exports.courseEnrollment = async (req, res) => {
-    const { stdClass, dayOfWeek, startTime, endTime, students } = req.body;
+    const { stdClass, classTag, dayOfWeek, startTime, endTime, students } = req.body;
     const { id, courseId } = req.params;
 
     const existingEnrollment = await SchoolCourses.findOne({
@@ -651,6 +651,7 @@ exports.courseEnrollment = async (req, res) => {
         school: id,
         status: "Active",
         stdClass,
+        classTag
     });
 
     if (existingEnrollment) {
@@ -676,193 +677,12 @@ exports.courseEnrollment = async (req, res) => {
         school: id,
         status: "Active",
         stdClass,
+        classTag,
         dayOfWeek,
         startTime,
         endTime,
         studentEnrollments: [],
     });
-
-    // Store student processing results in an array
-    // const studentProcessResults = [];
-
-
-    // We are removing this part away to reduce the complexity of the code.
-
-    // for (const item of students) {
-    //     // For each student, store the result (success or failure)
-    //     const result = {
-    //         email: item.email,
-    //         success: false,
-    //         error: null,
-    //     };
-
-    //     try {
-    //         const existingParent = await Parents.findOne({ email: item.email }).populate("students", "-password");
-
-    //         if (!existingParent) {
-    //             // Parent doesn't exist, create new parent, user and student enrollment
-    //             const newParent = new Parents({
-    //                 fullName: item.guardianFullName,
-    //                 email: item.email,
-    //                 phone: "",
-    //                 country: "",
-    //                 state: "",
-    //                 students: [],
-    //             });
-
-    //             const userId = generateId();
-    //             const newUser = new User({
-    //                 _id: new mongoose.Types.ObjectId(),
-    //                 userId,
-    //                 fullName: item?.fullName,
-    //                 guardianFullName: item.guardianFullName,
-    //                 email: item.email,
-    //                 userType: "School",
-    //                 grade: stdClass.startsWith("Pri") ? "Primary" : stdClass.startsWith("Year") ? "Secondary" : "Educator",
-    //                 newCourseInvite: { school: id },
-    //             });
-
-    //             const newStudentEnrollment = new StudentEnrollments({
-    //                 _id: new mongoose.Types.ObjectId(),
-    //                 course: courseId,
-    //                 school: id,
-    //                 schoolCourseEnrollment: newEnrollment._id,
-    //                 user: newUser._id,
-    //                 checkModel: "User",
-    //             });
-
-    //             newEnrollment.studentEnrollments.push(newStudentEnrollment._id);
-    //             newParent.students = [newUser._id];
-    //             const token = newUser.generateAuthToken();
-
-    //             await Promise.all([newStudentEnrollment.save(), newUser.save(), newParent.save()]);
-
-    //             let stdGrade = stdClass.startsWith("Pri")
-    //                 ? "Primary"
-    //                 : stdClass.startsWith("Year")
-    //                     ? "Secondary"
-    //                     : "Educator";
-
-    //             await school_course_invite(
-    //                 item.guardianFullName,
-    //                 item?.fullName,
-    //                 "new",
-    //                 stdGrade,
-    //                 newStudentEnrollment._id,
-    //                 school.school_name,
-    //                 course.title,
-    //                 item.email,
-    //                 token
-    //             );
-
-    //             result.success = true;
-    //         } else {
-    //             // Parent exists, check if student exists
-    //             const student = await findStudentByEmailAndFullName(item.email, item.fullName, existingParent.students);
-
-    //             if (!student) {
-    //                 // New student
-    //                 const userId = generateId();
-    //                 const newUser = new User({
-    //                     _id: new mongoose.Types.ObjectId(),
-    //                     userId,
-    //                     fullName: item?.fullName,
-    //                     guardianFullName: item.guardianFullName,
-    //                     email: item.email,
-    //                     userType: "School",
-    //                     grade: stdClass.startsWith("Pri") ? "Primary" : stdClass.startsWith("Year") ? "Secondary" : "Educator",
-    //                     newCourseInvite: { school: id },
-    //                 });
-
-    //                 const newStudentEnrollment = new StudentEnrollments({
-    //                     _id: new mongoose.Types.ObjectId(),
-    //                     course: courseId,
-    //                     school: id,
-    //                     schoolCourseEnrollment: newEnrollment._id,
-    //                     user: newUser._id,
-    //                     checkModel: "User",
-    //                 });
-
-    //                 newEnrollment.studentEnrollments.push(newStudentEnrollment._id);
-    //                 existingParent.students = [...existingParent.students, newUser._id];
-    //                 const token = newUser.generateAuthToken();
-
-    //                 await Promise.all([newStudentEnrollment.save(), newUser.save(), existingParent.save()]);
-
-    //                 let stdGrade = stdClass.startsWith("Pri")
-    //                     ? "Primary"
-    //                     : stdClass.startsWith("Year")
-    //                         ? "Secondary"
-    //                         : "Educator";
-
-    //                 await school_course_invite(
-    //                     existingParent.fullName,
-    //                     item?.fullName,
-    //                     "new",
-    //                     stdGrade,
-    //                     newStudentEnrollment._id,
-    //                     school.school_name,
-    //                     course.title,
-    //                     item.email,
-    //                     token
-    //                 );
-
-    //                 result.success = true;
-    //             } else {
-    //                 // Existing student, check if enrolled
-    //                 const studentEnrollment = await StudentEnrollments.findOne({
-    //                     course: courseId,
-    //                     school: id,
-    //                     schoolCourseEnrollment: newEnrollment._id,
-    //                     status: { $ne: "Deactivated" },
-    //                     user: student._id,
-    //                 });
-
-    //                 if (!studentEnrollment) {
-    //                     student.newCourseInvite = { school: id };
-
-    //                     const newStudentEnrollment = new StudentEnrollments({
-    //                         _id: new mongoose.Types.ObjectId(),
-    //                         course: courseId,
-    //                         school: id,
-    //                         schoolCourseEnrollment: newEnrollment._id,
-    //                         user: student._id,
-    //                         checkModel: "User",
-    //                     });
-
-    //                     newEnrollment.studentEnrollments.push(newStudentEnrollment._id);
-    //                     const token = student.generateAuthToken();
-
-    //                     await Promise.all([newStudentEnrollment.save(), student.save()]);
-
-    //                     let stdGrade = stdClass.startsWith("Pri")
-    //                         ? "Primary"
-    //                         : stdClass.startsWith("Year")
-    //                             ? "Secondary"
-    //                             : "Educator";
-
-    //                     await school_course_invite(
-    //                         existingParent.fullName,
-    //                         student.fullName,
-    //                         "new",
-    //                         stdGrade,
-    //                         newStudentEnrollment._id,
-    //                         school.school_name,
-    //                         course.title,
-    //                         item.email,
-    //                         token
-    //                     );
-
-    //                     result.success = true;
-    //                 }
-    //             }
-    //         }
-    //     } catch (error) {
-    //         result.error = error.message;
-    //     }
-
-    //     studentProcessResults.push(result);
-    // }
 
     // Save the enrollment only if all students were processed successfully
     await newEnrollment.save();
@@ -881,7 +701,7 @@ exports.addStudentsToCourseEnrollment = async (req, res) => {
     // Check if the array length exceeds 10, then process via background queue
     if (students.length > 1) {
         // Add the job to Bull queue for background processing
-        emailService.addEmailJob({stdClass, students, id, enrolledCourseId,user:req.user});
+        emailService.addEmailJob({ stdClass, students, id, enrolledCourseId, user: req.user });
 
         return res.status(StatusCodes.OK).json({
             message: "Processing in the background. You will receive an email notification when the process is completed!",

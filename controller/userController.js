@@ -584,7 +584,7 @@ exports.submitUserCourseData = async (req, res) => {
 
   req.body.user = user;
   req.body.email = email;
-  req.body.checkModel = req.user.educatorType
+  req.body.checkModel = req.user.isEducator
     ? "Educator"
     : "User";
 

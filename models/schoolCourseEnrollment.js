@@ -33,6 +33,9 @@ const schoolCourseEnrollmentSchema = new mongoose.Schema({
     stdClass: {
         type: String 
     },
+    classTag: {
+        type: String 
+    },
     dayOfWeek: {
         type: String,
         enum: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
