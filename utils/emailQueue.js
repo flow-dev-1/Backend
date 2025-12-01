@@ -40,12 +40,12 @@ class EmailQueueService {
     }
 
     async initiateProcessor(job) {
-        const { stdClass, students, id, enrolledCourseId, user } = job.data;
+        const { stdClass,classTag, students, id, enrolledCourseId, user } = job.data;
 
         // addStudentTocourse()
         // Attempt to send using MailTrap
         try {
-            const studentStatus = await addStudentToCourseHelper(stdClass, students, id, enrolledCourseId)
+            const studentStatus = await addStudentToCourseHelper(stdClass,classTag, students, id, enrolledCourseId)
 
             await sendProcessingReport(user.email, studentStatus)
         } catch (mailTrapError) {

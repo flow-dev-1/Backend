@@ -49,6 +49,13 @@ router.get(
   schoolsController.schoolEnrolledStudents
 );
 
+router.get(
+  "/:id/enrolled-classes",
+  auth,
+  schoolAccess,
+  schoolsController.getAllSchoolEnrolledClasses
+);
+
 router.get("/:id", auth, schoolAccess, schoolsController.getSingleSchool);
 
 router.get(
@@ -164,6 +171,14 @@ router.put(
   validate(schoolCourseAddTeachersValidator),
   schoolsController.addTeachersToEnrolledCourse
 );
+
+router.put(
+  "/:id/assign-course/:educatorId",
+  auth,
+  schoolAccess,
+  schoolsController.assignClassToEducator
+);
+
 
 router.delete(
   "/teams/:id",

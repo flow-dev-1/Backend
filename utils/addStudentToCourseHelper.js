@@ -10,7 +10,7 @@ const generateId = require("./generateId");
 const school = require("../models/school");
 const sendSingleEmailQueue = require("../utils/sendSingleEmailQueue");
 
-module.exports = addStudentTocourse = async (stdClass, students, id, enrolledCourseId) => {
+module.exports = addStudentTocourse = async (stdClass,classTag, students, id, enrolledCourseId) => {
     const existingEnrollment = await SchoolCourses.findOne({
         _id: enrolledCourseId,
     })
@@ -80,6 +80,7 @@ module.exports = addStudentTocourse = async (stdClass, students, id, enrolledCou
                     schoolCourseEnrollment: existingEnrollment._id,
                     user: newUser._id,
                     stdClass,
+                    classTag
                 });
 
                 existingEnrollment.studentEnrollments.push(newStudentEnrollment._id);
@@ -156,6 +157,7 @@ module.exports = addStudentTocourse = async (stdClass, students, id, enrolledCou
                         schoolCourseEnrollment: existingEnrollment._id,
                         user: newUser._id,
                         stdClass,
+                        classTag
                     });
 
                     existingEnrollment.studentEnrollments.push(newStudentEnrollment._id);
@@ -217,7 +219,8 @@ module.exports = addStudentTocourse = async (stdClass, students, id, enrolledCou
                             checkModel: "User",
                             schoolCourseEnrollment: existingEnrollment._id,
                             user: student._id,
-                            stdClass
+                            stdClass,
+                            classTag
                         });
 
                         existingEnrollment.studentEnrollments.push(newStudentEnrollment._id);

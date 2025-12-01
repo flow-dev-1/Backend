@@ -223,27 +223,27 @@ exports.updateSchoolValidator = function (req) {
 exports.schoolCourseEnrollmentValidator = function (req) {
 
 
-   const schema = Joi.object({
-    stdClass: Joi.string()
-        .min(2)
-        .max(100)
-        .required(),
-    classTag: Joi.string()
-        .min(1)
-        .max(100)
-        .optional()
-        .allow('', null), // Allow empty string or null
-    dayOfWeek: Joi.string()
-        .min(2)
-        .max(100)
-        .required(),
-    startTime: Joi.string()
-        .required()
-        .pattern(/^([01]\d|2[0-3]):([0-5]\d)$/), // Validate time format "HH:mm"
-    endTime: Joi.string()
-        .required()
-        .pattern(/^([01]\d|2[0-3]):([0-5]\d)$/), // Validate time format "HH:mm"
-});
+    const schema = Joi.object({
+        stdClass: Joi.string()
+            .min(2)
+            .max(100)
+            .required(),
+        classTag: Joi.string()
+            .min(1)
+            .max(100)
+            .optional()
+            .allow('', null), // Allow empty string or null
+        dayOfWeek: Joi.string()
+            .min(2)
+            .max(100)
+            .required(),
+        startTime: Joi.string()
+            .required()
+            .pattern(/^([01]\d|2[0-3]):([0-5]\d)$/), // Validate time format "HH:mm"
+        endTime: Joi.string()
+            .required()
+            .pattern(/^([01]\d|2[0-3]):([0-5]\d)$/), // Validate time format "HH:mm"
+    });
 
     return schema.validate(req);
 };
@@ -260,6 +260,8 @@ exports.schoolCourseAddStudentsValidator = function (req) {
             .min(2)
             .max(100)
             .required(),
+        classTag: Joi.string()
+            .optional(),
         students: Joi.array()
             .items(studentSchema)
             .required(),

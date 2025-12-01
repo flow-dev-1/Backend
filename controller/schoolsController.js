@@ -41,7 +41,9 @@ const logger = new winston.Logger({
 });
 
 exports.getCurrentSchool = async (req, res) => {
-    let school = await Schools.findOne({ _id: req.user._id }).select(
+    const schoolId = req?.user?.isSchoolAdmin ? req?.user?.school : req.user._id;
+
+    let school = await Schools.findOne({ _id: schoolId }).select(
         "-password -isVerified -isDeleted -resetPassword"
     );
     res.status(StatusCodes.OK).json({ school });
@@ -63,10 +65,8 @@ exports.getSchoolAdminTeam = async (req, res) => {
     // Find the school and populate the team field
     const school = await Schools.findOne({ _id: req.params.id }).select("team").populate({
         path: "team",
-        select: "fullName email newInvite.school newInvite.schoolAdminStatus newInvite.schoolAdminPermission newInvite.schoolAdminDate", // Select the fields you want from the Educator document
+        select: "fullName email school schoolAdminStatus schoolAdminPermission classAssigned schoolAdminDate newInvite.school newInvite.schoolAdminStatus newInvite.schoolAdminPermission newInvite.schoolAdminDate", // Select the fields you want from the Educator document
     });
-
-    console.log(school, "School ooooooooooo")
 
     if (!school) {
         return res.status(StatusCodes.NOT_FOUND).json({ message: "School not found!" });
@@ -161,6 +161,40 @@ exports.getAllEnrolledCourse = async (req, res) => {
     });
     // Respond with the filtered courses
     res.status(StatusCodes.OK).json({ courses: filteredCourses });
+};
+
+exports.getAllSchoolEnrolledClasses = async (req, res) => {
+    const schoolId = req.params.id ? req.params.id : req.user._id;
+
+    const schoolCourses = await SchoolCourses.find({
+        school: schoolId,
+        status: "Active"
+    })
+        .sort({ createdAt: -1 })
+        .lean();
+
+    if (!schoolCourses || schoolCourses.length === 0) {
+        return res.status(StatusCodes.NOT_FOUND).json({
+            status: "failed",
+            message: "No course enrollments found for this school"
+        });
+    }
+
+    // Get unique classes
+    const uniqueClasses = Array.from(
+        new Map(
+            schoolCourses.map(course => [
+                `${course.stdClass}-${course.classTag}`,
+                { stdClass: course.stdClass, classTag: course.classTag, course: course.course }
+            ])
+        ).values()
+    );
+
+    return res.status(StatusCodes.OK).json({
+        status: "success",
+        count: uniqueClasses.length,
+        data: uniqueClasses
+    });
 };
 
 exports.getCourselist = async (req, res) => {
@@ -620,7 +654,9 @@ exports.inviteSchoolAdmin = async (req, res) => {
 };
 
 exports.addEmailNotificationadmin = async (req, res) => {
-    const school = await Schools.findById(req.user._id);
+    const schoolId = req?.user?.isSchoolAdmin ? req?.user?.school : req.user._id;
+
+    const school = await Schools.findById(schoolId);
 
     if (!school) {
         return res.status(StatusCodes.NOT_FOUND).json({ message: "School not found!" });
@@ -696,19 +732,19 @@ exports.courseEnrollment = async (req, res) => {
 
 // toDo Rework this API
 exports.addStudentsToCourseEnrollment = async (req, res) => {
-    const { stdClass, students } = req.body;
+    const { stdClass, classTag, students } = req.body;
     const { id, enrolledCourseId } = req.params;
     // Check if the array length exceeds 10, then process via background queue
     if (students.length > 1) {
         // Add the job to Bull queue for background processing
-        emailService.addEmailJob({ stdClass, students, id, enrolledCourseId, user: req.user });
+        emailService.addEmailJob({ stdClass, classTag, students, id, enrolledCourseId, user: req.user });
 
         return res.status(StatusCodes.OK).json({
             message: "Processing in the background. You will receive an email notification when the process is completed!",
         });
     }
 
-    await addStudentToCourseHelper(stdClass, students, id, enrolledCourseId)
+    await addStudentToCourseHelper(stdClass, classTag, students, id, enrolledCourseId)
 
     res.status(StatusCodes.OK).json({
         message: "Student invited to course successfully!",
@@ -958,7 +994,7 @@ exports.schoolCoursesActiveGraph = async (req, res) => {
 };
 
 exports.allGraphData = async (req, res) => {
-    const school = req.user._id;
+    const school = req?.user?.isSchoolAdmin ? req?.user?.school : req.user._id;
     // Fetch the graph data with necessary fields populated
     const graphData = await StudentEnrollments.find({
         school,
@@ -1153,6 +1189,72 @@ exports.addTeachersToEnrolledCourse = async (req, res) => {
     await existingEnrollment.save();
 
     res.status(StatusCodes.OK).json({ message: "Educators invited to course successfully!" });
+};
+
+exports.assignClassToEducator = async (req, res) => {
+    const { educatorId } = req.params;
+    const { stdClass, classTag, unAssign } = req.body;
+
+    // Validate educator exists
+    const educator = await Educator.findById(educatorId);
+    if (!educator) {
+        return res.status(StatusCodes.NOT_FOUND).json({
+            status: "failed",
+            message: "Educator not found"
+        });
+    }
+
+    // Check if class is already assigned
+    const classExists = educator.classAssigned.some(
+        cls => cls.stdClass === stdClass && cls.classTag === classTag
+    );
+
+    // Handle unassign
+    if (unAssign === true) {
+        if (!classExists) {
+            return res.status(StatusCodes.BAD_REQUEST).json({
+                status: "failed",
+                message: "This class is not assigned to this educator"
+            });
+        }
+
+        educator.classAssigned = educator.classAssigned.filter(
+            cls => !(cls.stdClass === stdClass && cls.classTag === classTag)
+        );
+
+        await educator.save();
+
+        return res.status(StatusCodes.OK).json({
+            status: "success",
+            message: "Class unassigned from educator successfully",
+            data: {
+                educator: educator.fullName,
+                class: `${stdClass} - ${classTag}`,
+                totalClassesAssigned: educator.classAssigned.length
+            }
+        });
+    }
+
+    if (classExists) {
+        return res.status(StatusCodes.BAD_REQUEST).json({
+            status: "failed",
+            message: "This class is already assigned to this educator"
+        });
+    }
+
+    // Assign the class to the educator
+    educator.classAssigned.push({ stdClass, classTag });
+    await educator.save();
+
+    return res.status(StatusCodes.OK).json({
+        status: "success",
+        message: "Class assigned to educator successfully",
+        data: {
+            educator: educator.fullName,
+            class: `${stdClass} - ${classTag}`,
+            totalClassesAssigned: educator.classAssigned.length
+        }
+    });
 };
 
 exports.toggleForCourse = async (req, res) => {
