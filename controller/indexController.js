@@ -93,21 +93,21 @@ exports.login = async (req, res) => {
   if (isEmail(usernameOrEmail)) {
     // Search for an Individual user by userId if not email is entered
     // Search for users across all account types
-   
+
     const lowercaseEmail = usernameOrEmail.toLowerCase();
 
     const [user, school, educator] = await Promise.all([
-      findUser(User, { 
-        email: { $regex: new RegExp(`^${lowercaseEmail}$`, 'i') }, 
-        isVerified: true 
+      findUser(User, {
+        email: { $regex: new RegExp(`^${lowercaseEmail}$`, 'i') },
+        isVerified: true
       }),
-      findUser(Schools, { 
-        email: { $regex: new RegExp(`^${lowercaseEmail}$`, 'i') }, 
-        isVerified: true 
+      findUser(Schools, {
+        email: { $regex: new RegExp(`^${lowercaseEmail}$`, 'i') },
+        isVerified: true
       }),
-      findUser(Educator, { 
-        email: { $regex: new RegExp(`^${lowercaseEmail}$`, 'i') }, 
-        isVerified: true 
+      findUser(Educator, {
+        email: { $regex: new RegExp(`^${lowercaseEmail}$`, 'i') },
+        isVerified: true
       })
     ]);
 
@@ -116,7 +116,7 @@ exports.login = async (req, res) => {
       account = user;
       accountType = "Individual";
     } else if (school) {
-      account = school; 
+      account = school;
       accountType = "School";
     } else if (educator) {
       account = educator;
@@ -364,6 +364,7 @@ exports.generateUserId = async (req, res) => {
 // Verify Account route
 exports.verifyAccount = async (req, res) => {
   const { code, enrollmentId } = req.body;
+
   const { email } = req.user;
 
   if (!code) {
@@ -410,6 +411,62 @@ exports.verifyAccount = async (req, res) => {
         user.fullName, user.userId, email,
       )
     } else {
+
+      // This is an invited user so add them to the course enrollment
+      if (!enrollmentId) return res.status(StatusCodes.BAD_REQUEST).json({
+        message: "Invalid enrollment data!"
+      });
+
+      const enrollment = await CourseEnrollment.findById(enrollmentId)
+
+      if (!enrollment) return res.status(StatusCodes.BAD_REQUEST).json({
+        message: "Invalid enrollment data!"
+      });
+
+      enrollment.status = "Confirmed"
+
+      user.school = enrollment.school
+      user.newCourseInvite = null
+
+      await Promise.all([
+        Course.findOneAndUpdate({ _id: enrollment.course }, { $addToSet: { courseEnrollment: enrollment._id } }),
+        enrollment.save(),
+        user.save(),
+        welcome_new_user(
+          user.fullName, user.userId, email,
+        )
+      ])
+    }
+
+  } else if (otp.checkModel === "Educator") {
+    const user = await model.findOne({ email })
+    // Check if user is an individual Eductor
+    if (user.educatorType === "Individual" && !enrollmentId) {
+      await welcome_new_user(
+        user.fullName, email, email,
+      )
+    } else if (user.educatorType === "School" && !enrollmentId) {
+      // This is an Educator invited to be a school admin without enrollment
+      if (!user.newInvite || !user.newInvite.school) {
+        return res.status(StatusCodes.BAD_REQUEST).json({
+          message: "Invalid invitation data!"
+        });
+      }
+
+      user.isSchoolAdmin = true
+      user.schoolAdminStatus = "Confirmed"
+      user.schoolAdminPermission = user.newInvite.schoolAdminPermission || "Admin"
+      user.schoolAdminDate = user.newInvite.schoolAdminDate || Date.now()
+      user.newInvite = null
+
+      await user.save()
+
+      await welcome_new_user(
+        user.fullName, email, email,
+      )
+    } else {
+
+      // This is an invited Educator so add them to the course enrollment
       if (!enrollmentId) return res.status(StatusCodes.BAD_REQUEST).json({
         message: "Invalid enrollment data!"
       });
@@ -439,7 +496,6 @@ exports.verifyAccount = async (req, res) => {
     const user = await model.findOne({ email })
     await welcome_new_user(
       user.fullName, email, email,
-
     )
   }
 

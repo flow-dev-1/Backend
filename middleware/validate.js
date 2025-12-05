@@ -228,6 +228,11 @@ exports.schoolCourseEnrollmentValidator = function (req) {
             .min(2)
             .max(100)
             .required(),
+        classTag: Joi.string()
+            .min(1)
+            .max(100)
+            .optional()
+            .allow('', null), // Allow empty string or null
         dayOfWeek: Joi.string()
             .min(2)
             .max(100)
@@ -255,6 +260,8 @@ exports.schoolCourseAddStudentsValidator = function (req) {
             .min(2)
             .max(100)
             .required(),
+        classTag: Joi.string()
+            .optional(),
         students: Joi.array()
             .items(studentSchema)
             .required(),

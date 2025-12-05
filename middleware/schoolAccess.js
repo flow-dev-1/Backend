@@ -3,7 +3,7 @@ const StatusCodes = require("../utils/status-codes");
 module.exports = function (req, res, next) {
     //   if (!config.get("requiresAuth")) return next();
     const isSchool = req.user.isSchool
-    const isAdmin = req.user.isAdmin
+    const isAdmin = req.user.isSchoolAdmin
 
     if (isSchool || isAdmin) return next();
 

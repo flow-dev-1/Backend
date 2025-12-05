@@ -41,7 +41,9 @@ const logger = new winston.Logger({
 });
 
 exports.getCurrentSchool = async (req, res) => {
-    let school = await Schools.findOne({ _id: req.user._id }).select(
+    const schoolId = req?.user?.isSchoolAdmin ? req?.user?.school : req.user._id;
+
+    let school = await Schools.findOne({ _id: schoolId }).select(
         "-password -isVerified -isDeleted -resetPassword"
     );
     res.status(StatusCodes.OK).json({ school });
@@ -59,10 +61,11 @@ exports.getSingleSchool = async (req, res) => {
 };
 
 exports.getSchoolAdminTeam = async (req, res) => {
+
     // Find the school and populate the team field
     const school = await Schools.findOne({ _id: req.params.id }).select("team").populate({
         path: "team",
-        select: "fullName email newInvite.school newInvite.schoolAdminStatus newInvite.schoolAdminPermission newInvite.schoolAdminDate", // Select the fields you want from the Educator document
+        select: "fullName email school schoolAdminStatus schoolAdminPermission classAssigned schoolAdminDate newInvite.school newInvite.schoolAdminStatus newInvite.schoolAdminPermission newInvite.schoolAdminDate", // Select the fields you want from the Educator document
     });
 
     if (!school) {
@@ -158,6 +161,40 @@ exports.getAllEnrolledCourse = async (req, res) => {
     });
     // Respond with the filtered courses
     res.status(StatusCodes.OK).json({ courses: filteredCourses });
+};
+
+exports.getAllSchoolEnrolledClasses = async (req, res) => {
+    const schoolId = req.params.id ? req.params.id : req.user._id;
+
+    const schoolCourses = await SchoolCourses.find({
+        school: schoolId,
+        status: "Active"
+    })
+        .sort({ createdAt: -1 })
+        .lean();
+
+    if (!schoolCourses || schoolCourses.length === 0) {
+        return res.status(StatusCodes.NOT_FOUND).json({
+            status: "failed",
+            message: "No course enrollments found for this school"
+        });
+    }
+
+    // Get unique classes
+    const uniqueClasses = Array.from(
+        new Map(
+            schoolCourses.map(course => [
+                `${course.stdClass}-${course.classTag}`,
+                { stdClass: course.stdClass, classTag: course.classTag, course: course.course }
+            ])
+        ).values()
+    );
+
+    return res.status(StatusCodes.OK).json({
+        status: "success",
+        count: uniqueClasses.length,
+        data: uniqueClasses
+    });
 };
 
 exports.getCourselist = async (req, res) => {
@@ -617,7 +654,9 @@ exports.inviteSchoolAdmin = async (req, res) => {
 };
 
 exports.addEmailNotificationadmin = async (req, res) => {
-    const school = await Schools.findById(req.user._id);
+    const schoolId = req?.user?.isSchoolAdmin ? req?.user?.school : req.user._id;
+
+    const school = await Schools.findById(schoolId);
 
     if (!school) {
         return res.status(StatusCodes.NOT_FOUND).json({ message: "School not found!" });
@@ -640,7 +679,7 @@ exports.addEmailNotificationadmin = async (req, res) => {
 };
 
 exports.courseEnrollment = async (req, res) => {
-    const { stdClass, dayOfWeek, startTime, endTime, students } = req.body;
+    const { stdClass, classTag, dayOfWeek, startTime, endTime, students } = req.body;
     const { id, courseId } = req.params;
 
     const existingEnrollment = await SchoolCourses.findOne({
@@ -648,6 +687,7 @@ exports.courseEnrollment = async (req, res) => {
         school: id,
         status: "Active",
         stdClass,
+        classTag
     });
 
     if (existingEnrollment) {
@@ -673,193 +713,12 @@ exports.courseEnrollment = async (req, res) => {
         school: id,
         status: "Active",
         stdClass,
+        classTag,
         dayOfWeek,
         startTime,
         endTime,
         studentEnrollments: [],
     });
-
-    // Store student processing results in an array
-    // const studentProcessResults = [];
-
-
-    // We are removing this part away to reduce the complexity of the code.
-
-    // for (const item of students) {
-    //     // For each student, store the result (success or failure)
-    //     const result = {
-    //         email: item.email,
-    //         success: false,
-    //         error: null,
-    //     };
-
-    //     try {
-    //         const existingParent = await Parents.findOne({ email: item.email }).populate("students", "-password");
-
-    //         if (!existingParent) {
-    //             // Parent doesn't exist, create new parent, user and student enrollment
-    //             const newParent = new Parents({
-    //                 fullName: item.guardianFullName,
-    //                 email: item.email,
-    //                 phone: "",
-    //                 country: "",
-    //                 state: "",
-    //                 students: [],
-    //             });
-
-    //             const userId = generateId();
-    //             const newUser = new User({
-    //                 _id: new mongoose.Types.ObjectId(),
-    //                 userId,
-    //                 fullName: item?.fullName,
-    //                 guardianFullName: item.guardianFullName,
-    //                 email: item.email,
-    //                 userType: "School",
-    //                 grade: stdClass.startsWith("Pri") ? "Primary" : stdClass.startsWith("Year") ? "Secondary" : "Educator",
-    //                 newCourseInvite: { school: id },
-    //             });
-
-    //             const newStudentEnrollment = new StudentEnrollments({
-    //                 _id: new mongoose.Types.ObjectId(),
-    //                 course: courseId,
-    //                 school: id,
-    //                 schoolCourseEnrollment: newEnrollment._id,
-    //                 user: newUser._id,
-    //                 checkModel: "User",
-    //             });
-
-    //             newEnrollment.studentEnrollments.push(newStudentEnrollment._id);
-    //             newParent.students = [newUser._id];
-    //             const token = newUser.generateAuthToken();
-
-    //             await Promise.all([newStudentEnrollment.save(), newUser.save(), newParent.save()]);
-
-    //             let stdGrade = stdClass.startsWith("Pri")
-    //                 ? "Primary"
-    //                 : stdClass.startsWith("Year")
-    //                     ? "Secondary"
-    //                     : "Educator";
-
-    //             await school_course_invite(
-    //                 item.guardianFullName,
-    //                 item?.fullName,
-    //                 "new",
-    //                 stdGrade,
-    //                 newStudentEnrollment._id,
-    //                 school.school_name,
-    //                 course.title,
-    //                 item.email,
-    //                 token
-    //             );
-
-    //             result.success = true;
-    //         } else {
-    //             // Parent exists, check if student exists
-    //             const student = await findStudentByEmailAndFullName(item.email, item.fullName, existingParent.students);
-
-    //             if (!student) {
-    //                 // New student
-    //                 const userId = generateId();
-    //                 const newUser = new User({
-    //                     _id: new mongoose.Types.ObjectId(),
-    //                     userId,
-    //                     fullName: item?.fullName,
-    //                     guardianFullName: item.guardianFullName,
-    //                     email: item.email,
-    //                     userType: "School",
-    //                     grade: stdClass.startsWith("Pri") ? "Primary" : stdClass.startsWith("Year") ? "Secondary" : "Educator",
-    //                     newCourseInvite: { school: id },
-    //                 });
-
-    //                 const newStudentEnrollment = new StudentEnrollments({
-    //                     _id: new mongoose.Types.ObjectId(),
-    //                     course: courseId,
-    //                     school: id,
-    //                     schoolCourseEnrollment: newEnrollment._id,
-    //                     user: newUser._id,
-    //                     checkModel: "User",
-    //                 });
-
-    //                 newEnrollment.studentEnrollments.push(newStudentEnrollment._id);
-    //                 existingParent.students = [...existingParent.students, newUser._id];
-    //                 const token = newUser.generateAuthToken();
-
-    //                 await Promise.all([newStudentEnrollment.save(), newUser.save(), existingParent.save()]);
-
-    //                 let stdGrade = stdClass.startsWith("Pri")
-    //                     ? "Primary"
-    //                     : stdClass.startsWith("Year")
-    //                         ? "Secondary"
-    //                         : "Educator";
-
-    //                 await school_course_invite(
-    //                     existingParent.fullName,
-    //                     item?.fullName,
-    //                     "new",
-    //                     stdGrade,
-    //                     newStudentEnrollment._id,
-    //                     school.school_name,
-    //                     course.title,
-    //                     item.email,
-    //                     token
-    //                 );
-
-    //                 result.success = true;
-    //             } else {
-    //                 // Existing student, check if enrolled
-    //                 const studentEnrollment = await StudentEnrollments.findOne({
-    //                     course: courseId,
-    //                     school: id,
-    //                     schoolCourseEnrollment: newEnrollment._id,
-    //                     status: { $ne: "Deactivated" },
-    //                     user: student._id,
-    //                 });
-
-    //                 if (!studentEnrollment) {
-    //                     student.newCourseInvite = { school: id };
-
-    //                     const newStudentEnrollment = new StudentEnrollments({
-    //                         _id: new mongoose.Types.ObjectId(),
-    //                         course: courseId,
-    //                         school: id,
-    //                         schoolCourseEnrollment: newEnrollment._id,
-    //                         user: student._id,
-    //                         checkModel: "User",
-    //                     });
-
-    //                     newEnrollment.studentEnrollments.push(newStudentEnrollment._id);
-    //                     const token = student.generateAuthToken();
-
-    //                     await Promise.all([newStudentEnrollment.save(), student.save()]);
-
-    //                     let stdGrade = stdClass.startsWith("Pri")
-    //                         ? "Primary"
-    //                         : stdClass.startsWith("Year")
-    //                             ? "Secondary"
-    //                             : "Educator";
-
-    //                     await school_course_invite(
-    //                         existingParent.fullName,
-    //                         student.fullName,
-    //                         "new",
-    //                         stdGrade,
-    //                         newStudentEnrollment._id,
-    //                         school.school_name,
-    //                         course.title,
-    //                         item.email,
-    //                         token
-    //                     );
-
-    //                     result.success = true;
-    //                 }
-    //             }
-    //         }
-    //     } catch (error) {
-    //         result.error = error.message;
-    //     }
-
-    //     studentProcessResults.push(result);
-    // }
 
     // Save the enrollment only if all students were processed successfully
     await newEnrollment.save();
@@ -873,19 +732,19 @@ exports.courseEnrollment = async (req, res) => {
 
 // toDo Rework this API
 exports.addStudentsToCourseEnrollment = async (req, res) => {
-    const { stdClass, students } = req.body;
+    const { stdClass, classTag, students } = req.body;
     const { id, enrolledCourseId } = req.params;
     // Check if the array length exceeds 10, then process via background queue
     if (students.length > 1) {
         // Add the job to Bull queue for background processing
-        emailService.addEmailJob({stdClass, students, id, enrolledCourseId,user:req.user});
+        emailService.addEmailJob({ stdClass, classTag, students, id, enrolledCourseId, user: req.user });
 
         return res.status(StatusCodes.OK).json({
             message: "Processing in the background. You will receive an email notification when the process is completed!",
         });
     }
 
-    await addStudentToCourseHelper(stdClass, students, id, enrolledCourseId)
+    await addStudentToCourseHelper(stdClass, classTag, students, id, enrolledCourseId)
 
     res.status(StatusCodes.OK).json({
         message: "Student invited to course successfully!",
@@ -1135,7 +994,7 @@ exports.schoolCoursesActiveGraph = async (req, res) => {
 };
 
 exports.allGraphData = async (req, res) => {
-    const school = req.user._id;
+    const school = req?.user?.isSchoolAdmin ? req?.user?.school : req.user._id;
     // Fetch the graph data with necessary fields populated
     const graphData = await StudentEnrollments.find({
         school,
@@ -1330,6 +1189,72 @@ exports.addTeachersToEnrolledCourse = async (req, res) => {
     await existingEnrollment.save();
 
     res.status(StatusCodes.OK).json({ message: "Educators invited to course successfully!" });
+};
+
+exports.assignClassToEducator = async (req, res) => {
+    const { educatorId } = req.params;
+    const { stdClass, classTag, unAssign } = req.body;
+
+    // Validate educator exists
+    const educator = await Educator.findById(educatorId);
+    if (!educator) {
+        return res.status(StatusCodes.NOT_FOUND).json({
+            status: "failed",
+            message: "Educator not found"
+        });
+    }
+
+    // Check if class is already assigned
+    const classExists = educator.classAssigned.some(
+        cls => cls.stdClass === stdClass && cls.classTag === classTag
+    );
+
+    // Handle unassign
+    if (unAssign === true) {
+        if (!classExists) {
+            return res.status(StatusCodes.BAD_REQUEST).json({
+                status: "failed",
+                message: "This class is not assigned to this educator"
+            });
+        }
+
+        educator.classAssigned = educator.classAssigned.filter(
+            cls => !(cls.stdClass === stdClass && cls.classTag === classTag)
+        );
+
+        await educator.save();
+
+        return res.status(StatusCodes.OK).json({
+            status: "success",
+            message: "Class unassigned from educator successfully",
+            data: {
+                educator: educator.fullName,
+                class: `${stdClass} - ${classTag}`,
+                totalClassesAssigned: educator.classAssigned.length
+            }
+        });
+    }
+
+    if (classExists) {
+        return res.status(StatusCodes.BAD_REQUEST).json({
+            status: "failed",
+            message: "This class is already assigned to this educator"
+        });
+    }
+
+    // Assign the class to the educator
+    educator.classAssigned.push({ stdClass, classTag });
+    await educator.save();
+
+    return res.status(StatusCodes.OK).json({
+        status: "success",
+        message: "Class assigned to educator successfully",
+        data: {
+            educator: educator.fullName,
+            class: `${stdClass} - ${classTag}`,
+            totalClassesAssigned: educator.classAssigned.length
+        }
+    });
 };
 
 exports.toggleForCourse = async (req, res) => {

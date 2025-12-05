@@ -2,6 +2,7 @@ const jwt = require("jsonwebtoken");
 const Joi = require("joi");
 const mongoose = require("mongoose");
 const { SoftDelete } = require("soft-delete-mongoose-plugin");
+const school = require("./school");
 
 // defind soft delete field name
 const IS_DELETED_FIELD = "isDeleted";
@@ -80,6 +81,14 @@ const educatorSchema = new mongoose.Schema(
       type: String,
       enum: ["Admin", "Students", "Teachers"],
     },
+    classAssigned: [{
+      stdClass: {
+        type: String
+      },
+      classTag: {
+        type: String
+      }
+    }],
     schoolAdminDate: { type: Date },
     newCourseInvite: { type: Object },
     newInvite: { type: Object },
@@ -103,8 +112,10 @@ educatorSchema.methods.generateAuthToken = function () {
   const token = jwt.sign(
     {
       _id: this._id,
+      school: this.school,
       isVerified: this.isVerified,
       isEducator: this.isEducator,
+      isSchoolAdmin: this.isSchoolAdmin,
       fullName: this.fullName,
       email: this.email,
       phone: this.phone,
