@@ -142,5 +142,8 @@ router.get("/course-enrollment/:id/percentile", auth, userController.getAssessme
 
 router.patch("/course-enrollment/:id/post-activity/:week/:userId", auth, adminController.activityUpdateData);
 
+// Deactivate a school course and all its confirmed enrollments
+router.patch('/school-course/:schoolCourseId/deactivate', auth, isAdmin, schoolsController.deactivateSchoolCourse);
 
-module.exports = router; 
+
+module.exports = router;  
