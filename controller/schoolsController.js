@@ -1275,3 +1275,48 @@ exports.toggleForCourse = async (req, res) => {
     res.status(StatusCodes.OK).json({ message: "Course updated!" });
 };
 
+// Deactivate a school course and all its confirmed enrollments
+exports.deactivateSchoolCourse = async (req, res) => {
+    const { schoolCourseId } = req.params;
+
+    // Validate schoolCourseId
+    if (!mongoose.Types.ObjectId.isValid(schoolCourseId)) {
+        return res.status(StatusCodes.BAD_REQUEST).json({
+            success: false,
+            message: "Invalid school course ID"
+        });
+    }
+
+    // Update SchoolCourseEnrollment status to Deactivated
+    const schoolCourse = await SchoolCourses.findByIdAndUpdate(
+        schoolCourseId,
+        { status: 'Deactivated' },
+        { new: true }
+    );
+
+    if (!schoolCourse) {
+        return res.status(StatusCodes.NOT_FOUND).json({
+            success: false,
+            message: "School course enrollment not found"
+        });
+    }
+
+    // Update all CourseEnrollment items with status "Confirmed" to "Deactivated"
+    const updatedEnrollments = await StudentEnrollments.updateMany(
+        {
+            schoolCourseEnrollment: schoolCourseId,
+            status: 'Confirmed'
+        },
+        { status: 'Deactivated' }
+    );
+
+    return res.status(StatusCodes.OK).json({
+        success: true,
+        message: "School course and related enrollments deactivated successfully",
+        data: {
+            schoolCourse,
+            enrollmentsUpdated: updatedEnrollments.modifiedCount
+        }
+    });
+};
+
