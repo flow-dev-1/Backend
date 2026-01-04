@@ -34,7 +34,6 @@ exports.registerEducator = async (req, res) => {
     grade,
   } = req.body;
 
-  console.log(type)
 
   if (!type) {
     return res
@@ -51,6 +50,24 @@ exports.registerEducator = async (req, res) => {
   }
 
   if (educator && !educator.isVerified) {
+    // Update educator details
+    educator.fullName = fullName;
+    educator.phone = phone;
+    educator.gender = gender;
+    educator.DOB = DOB;
+    educator.country = country;
+    educator.state = state;
+    educator.lga = lga;
+    educator.grade = grade;
+    educator.educatorType = type;
+
+    if (password) {
+      const salt = await bcrypt.genSalt(10);
+      educator.password = await bcrypt.hash(password, salt);
+    }
+
+    await educator.save();
+
     const code = otpGenerator.generate(6, {
       lowerCaseAlphabets: false,
       upperCaseAlphabets: false,
@@ -90,7 +107,7 @@ exports.registerEducator = async (req, res) => {
 
   const salt = await bcrypt.genSalt(10);
   newEducator.password = await bcrypt.hash(password, salt);
-  newEducator.userType = type;
+  newEducator.educatorType = type;
   await newEducator.save();
 
   const code = otpGenerator.generate(6, {
@@ -168,7 +185,7 @@ exports.registerInvitedEducator = async (req, res) => {
         results.push({ email, message: "Expired or invalid invite link!" });
         continue;
       }
-   
+
       // Update the educator's details if they exist
       foundEducator.fullName = fullName;
       foundEducator.phone = phone;
@@ -384,7 +401,9 @@ exports.registerInvitedEducatorAdmin = async (req, res) => {
     foundEducator.lga = lga;
     foundEducator.grade = grade;
     foundEducator.educatorType = "School";
-    foundEducator.newInvite.schoolAdminStatus = "Confirmed"
+    if (foundEducator.newInvite) {
+      foundEducator.newInvite.schoolAdminStatus = "Confirmed"
+    }
   }
 
   // Hash and set password if provided
@@ -427,5 +446,6 @@ exports.registerInvitedEducatorAdmin = async (req, res) => {
   // Return the results
   res.status(StatusCodes.OK).json({
     message: "Please enter the code sent to your email.",
-    token, });
+    token,
+  });
 };

@@ -3,6 +3,7 @@ const nodemailer = require("nodemailer");
 const EMAIL = "Hello@flowonline.app"
 
 exports.Otp_VerifyAccount = async (email, name, otp) => {
+
   try {
     const transporter = nodemailer.createTransport({
       host: "live.smtp.mailtrap.io",
@@ -182,11 +183,6 @@ exports.school_admin_invite = async (
         ? `https://my-flow-dev/invited-admin?${query}`
         : `http://localhost:3000/invited-admin?${query}`;
 
-  // } else {
-  //     // This is for users that are already registered.
-  //     // They just need to accept and confirm the invitation
-  //     link = process.env.ENV === 'staging' ? `https://my-flow-dev/invited-admin?${query}` : `http://localhost:3000/invited-admin?${query}`
-  // }
 
   try {
     const transporter = nodemailer.createTransport({
@@ -214,6 +210,7 @@ exports.school_admin_invite = async (
             </br>
             <p>Kind Regards! </p>`,
     });
+
     console.log("email sent sucessfully");
   } catch (error) {
     console.log(error, "email not sent");
@@ -231,7 +228,7 @@ exports.school_course_invite = async (
   email,
   token
 ) => {
-  let query = `t=${token}&s=${enrollment_id}&email=${email}&status=${status}&grade=${grade}&schoolName=${school_name}&coursName=${course_name}`;
+  let query = `t=${token}&s=${enrollment_id}&email=${email}&status=${status}&grade=${grade}&schoolName=${school_name}&coursName=${course_name}&fullName=${teacherName}`;
   let link;
   // if (status === "new") {
   //     // This is a new user
@@ -383,7 +380,7 @@ exports.school_course_invite_teacher = async (
   email,
   token
 ) => {
-  let query = `t=${token}&s=${enrollment_id}&email=${email}&status=${status}&grade=${grade}&schoolName=${school_name}&coursName=${course_name}`;
+  let query = `t=${token}&s=${enrollment_id}&email=${email}&status=${status}&grade=${grade}&schoolName=${school_name}&coursName=${course_name}&fullName=${teacherName}`;
   let link;
   // if (status === "new") {
   //     // This is a new user

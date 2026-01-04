@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const Admin = require("../models/admin");
 const Schools = require("../models/school");
 const AdminRoles = require("../models/adminRole");
@@ -929,29 +930,36 @@ exports.getactivityData = async (req, res) => {
     const user = req.params.userId;
 
     const activity = await Activity.findOne({
-        courseEnrollment: id,
-        user,
+        courseEnrollmentId: id,
+        user: new mongoose.Types.ObjectId(user),
         week
     });
+
+    console.log(activity)
+
+    const activityData = {
+        activity: activity.activities,
+        _id: activity._id,
+    }
 
     if (!activity) {
         return res.status(StatusCodes.NOT_FOUND).json({
             status: "failed",
-            message: "No activity for this student"
+            message: "No activity for this student",
+            
         });
     }
 
-    res.status(StatusCodes.OK).json({ activity });
+    res.status(StatusCodes.OK).json(activityData);
 };
 
 // Get Assessment Data
 exports.getAssessmentData = async (req, res) => {
     const { week, id } = req.params;
-    const user = req.params.userId;
 
     const existingAssessment = await Assesment.findOne({
-        user,
-        courseEnrollment: id,
+        courseEnrollmentId: id,
+        user: new mongoose.Types.ObjectId(req.params.userId),
         week
     });
 
