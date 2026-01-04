@@ -363,9 +363,11 @@ exports.generateUserId = async (req, res) => {
 
 // Verify Account route
 exports.verifyAccount = async (req, res) => {
+
   const { code, enrollmentId } = req.body;
 
   const { email } = req.user;
+
 
   if (!code) {
     return res
@@ -399,6 +401,7 @@ exports.verifyAccount = async (req, res) => {
         message: "Invalid account type."
       });
   }
+
 
   // Update the isVerified status for the account
   await model.updateMany({ email }, { isVerified: true });
@@ -445,6 +448,7 @@ exports.verifyAccount = async (req, res) => {
       await welcome_new_user(
         user.fullName, email, email,
       )
+
     } else if (user.educatorType === "School" && !enrollmentId) {
       // This is an Educator invited to be a school admin without enrollment
       if (!user.newInvite || !user.newInvite.school) {

@@ -586,7 +586,10 @@ exports.inviteSchoolAdmin = async (req, res) => {
     let user = await Educator.findOne({ email });
 
     if (user) {
-        // Check if the user is already part of the school's team
+        // 1. Check if user is already associated with this school
+        const isAssignedToThisSchool = user.school && user.school.equals(school._id);
+
+        // 2. Check if the user is already part of the school's team
         const existingTeamMember = school.team.some((teamMemberId) =>
             teamMemberId.equals(user._id)
         );
@@ -597,11 +600,29 @@ exports.inviteSchoolAdmin = async (req, res) => {
                 .json({ message: "User is already in the team" });
         }
 
-        // Update user invite details for an existing user
+        if (isAssignedToThisSchool) {
+            // Direct upgrade: user is already a registered educator in this school
+            user.isSchoolAdmin = true;
+            user.schoolAdminStatus = "Confirmed";
+            user.schoolAdminPermission = position;
+            user.schoolAdminDate = Date.now();
+            user.newInvite = null; // Clear any pending invitations
+
+            school.team.push(user._id);
+
+            await Promise.all([user.save(), school.save()]);
+
+            return res.status(StatusCodes.OK).json({
+                message: `${fullName} has been added directly to the team!`,
+            });
+        }
+
+        // Otherwise, send an invitation to the existing user (who might be from another school or individual)
         user.newInvite = {
             school: school._id,
             schoolAdminDate: Date.now(),
             schoolAdminPermission: position,
+            schoolAdminStatus: "Pending", // Ensure this is set for newInvites
         };
 
         // Generate an authentication token
@@ -614,8 +635,7 @@ exports.inviteSchoolAdmin = async (req, res) => {
         school.team.push(user._id);
 
         // Persist the changes to the school and user
-        await school.save();
-        await user.save();
+        await Promise.all([user.save(), school.save()]);
 
         return res.status(StatusCodes.OK).json({ message: "Admin invite sent successfully!" });
     }
@@ -1108,6 +1128,7 @@ exports.addTeachersToEnrolledCourse = async (req, res) => {
 
     // Find the existing course enrollment
     const existingEnrollment = await SchoolCourses.findOne({
+        _id: enrolledCourseId,
         school: id,
     })
         .populate("course", "title")
