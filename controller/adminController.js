@@ -478,7 +478,10 @@ exports.getSchoolEnrolledCourses = async (req, res) => {
 
     const filteredCourses = courses.filter(
         (course, index, self) =>
-            index === self.findIndex((c) => c.course._id.toString() === course.course._id.toString())
+            index === self.findIndex((c) =>
+                c.course._id.toString() === course.course._id.toString() &&
+                c.status === course.status
+            )
     );
 
     res.status(StatusCodes.OK).json({ courses: filteredCourses });
@@ -946,7 +949,7 @@ exports.getactivityData = async (req, res) => {
         return res.status(StatusCodes.NOT_FOUND).json({
             status: "failed",
             message: "No activity for this student",
-            
+
         });
     }
 
