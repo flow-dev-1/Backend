@@ -140,9 +140,10 @@ exports.getSingleEnrolledCourse = async (req, res) => {
 
 exports.getAllEnrolledCourse = async (req, res) => {
     const { courseId } = req.params;
+    const { status } = req.query;
     const courses = await SchoolCourses.find({
         school: req.params.id,
-        status: "Active",
+        status: status || "Active",
         course: courseId,
     })
         .populate("course", "title image")
