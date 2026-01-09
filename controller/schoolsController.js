@@ -1215,7 +1215,7 @@ exports.addTeachersToEnrolledCourse = async (req, res) => {
 
 exports.assignClassToEducator = async (req, res) => {
     const { educatorId } = req.params;
-    const { stdClass, classTag, unAssign } = req.body;
+    const { classes } = req.body; // Expecting an array of class objects: [{ stdClass, classTag }, ...]
 
     // Validate educator exists
     const educator = await Educator.findById(educatorId);
@@ -1226,54 +1226,18 @@ exports.assignClassToEducator = async (req, res) => {
         });
     }
 
-    // Check if class is already assigned
-    const classExists = educator.classAssigned.some(
-        cls => cls.stdClass === stdClass && cls.classTag === classTag
-    );
-
-    // Handle unassign
-    if (unAssign === true) {
-        if (!classExists) {
-            return res.status(StatusCodes.BAD_REQUEST).json({
-                status: "failed",
-                message: "This class is not assigned to this educator"
-            });
-        }
-
-        educator.classAssigned = educator.classAssigned.filter(
-            cls => !(cls.stdClass === stdClass && cls.classTag === classTag)
-        );
-
-        await educator.save();
-
-        return res.status(StatusCodes.OK).json({
-            status: "success",
-            message: "Class unassigned from educator successfully",
-            data: {
-                educator: educator.fullName,
-                class: `${stdClass} - ${classTag}`,
-                totalClassesAssigned: educator.classAssigned.length
-            }
-        });
-    }
-
-    if (classExists) {
-        return res.status(StatusCodes.BAD_REQUEST).json({
-            status: "failed",
-            message: "This class is already assigned to this educator"
-        });
-    }
-
-    // Assign the class to the educator
-    educator.classAssigned.push({ stdClass, classTag });
+    // Replace the assigned classes with the new list
+    // Ensure uniqueness based on stdClass and classTag
+    const uniqueClasses = _.uniqWith(classes, _.isEqual);
+    educator.classAssigned = uniqueClasses;
     await educator.save();
 
     return res.status(StatusCodes.OK).json({
         status: "success",
-        message: "Class assigned to educator successfully",
+        message: "Classes assigned to educator successfully",
         data: {
             educator: educator.fullName,
-            class: `${stdClass} - ${classTag}`,
+            classes: educator.classAssigned,
             totalClassesAssigned: educator.classAssigned.length
         }
     });

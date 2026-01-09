@@ -218,7 +218,6 @@ exports.school_admin_invite = async (
 };
 
 exports.school_course_invite = async (
-  parentName,
   childName,
   status,
   grade,
@@ -228,7 +227,8 @@ exports.school_course_invite = async (
   email,
   token
 ) => {
-  let query = `t=${token}&s=${enrollment_id}&email=${email}&status=${status}&grade=${grade}&schoolName=${school_name}&coursName=${course_name}&fullName=${teacherName}`;
+ try {
+   let query = `t=${token}&s=${enrollment_id}&email=${email}&status=${status}&grade=${grade}&schoolName=${school_name}&coursName=${course_name}`;
   let link;
   // if (status === "new") {
   //     // This is a new user
@@ -284,6 +284,9 @@ exports.school_course_invite = async (
             <p>Kind Regards! </p>`,
   });
   console.log("Email sent successfully!")
+ } catch (error) {
+  console.log(error)
+ }
 };
 
 exports.sendProcessingReport = async (
