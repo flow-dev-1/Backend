@@ -51,6 +51,8 @@ class SendEmailQueueService {
         } = job.data;
         // Attempt to send using MailTrap
         try {
+
+            console.log("We got here first!")
             // const studentStatus = await addStudentToCourseHelper(stdClass, students, id, enrolledCourseId)
             await school_course_invite(
                 parentName,
