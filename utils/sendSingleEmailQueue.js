@@ -39,6 +39,9 @@ class SendEmailQueueService {
     }
 
     async initiateProcessor(job) {
+        console.log("Processing job:", job.id);
+        console.log("Job data:", JSON.stringify(job.data, null, 2));
+
         console.log("Now we here")
         const {
             parentName,
@@ -51,12 +54,17 @@ class SendEmailQueueService {
             email,
             token
         } = job.data;
+
+        console.log(`Attempting to send email to: "${email}" for child: "${childName}"`);
+
+        // Validate email before attempting to send
+        if (!email || typeof email !== 'string' || !email.includes('@')) {
+            console.error(`Invalid email address: "${email}"`);
+            throw new Error(`Job failed: Invalid email address "${email}"`);
+        }
+
         // Attempt to send using MailTrap
         try {
-
-            console.log("We got here first!")
-
-            // const studentStatus = await addStudentToCourseHelper(stdClass, students, id, enrolledCourseId)
             await school_course_invite(
                 childName,
                 status,
@@ -67,14 +75,12 @@ class SendEmailQueueService {
                 email,
                 token
             );
+            console.log(`Email sent successfully to ${email} for course ${course_name}`);
             await job.log(`Email sent successfully to ${email} for course ${course_name}`);
-
-            // await sendProcessingReport(user.email, studentStatus)
         } catch (mailTrapError) {
+            console.error(`Email sending failed to ${email}:`, mailTrapError);
             await job.log(`Email sending failed to ${email} for course ${course_name}`);
-            // Mark the job as failed
-            throw new Error(`Job failed: Could not send email to ${email}. Error: ${error.message}`);
-            // console.error("Failed to send email using MailTrap. Error:", mailTrapError);
+            throw new Error(`Job failed: Could not send email to ${email}. Error: ${mailTrapError.message}`);
         }
     }
 }
