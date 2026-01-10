@@ -98,12 +98,12 @@ module.exports = addStudentTocourse = async (stdClass,classTag, students, id, en
                         : "Educator";
     
                 sendSingleEmailQueue.addSendEmailJob({
-                    parentName: item.guardianFullName,
+                    parentName: item?.guardianFullName,
                     childName: item?.fullName,
                     status: "new",
                     grade: stdGrade,
-                    enrollment_id: newStudentEnrollment._id,
-                    school_name: existingEnrollment.school.school_name,
+                    enrollment_id: newStudentEnrollment?._id,
+                    school_name: existingEnrollment?.school.school_name,
                     course_name: existingEnrollment.course.title,
                     email: item.email,
                     token: token
@@ -173,7 +173,7 @@ module.exports = addStudentTocourse = async (stdClass,classTag, students, id, en
                             : "Educator";
 
                     sendSingleEmailQueue.addSendEmailJob({
-                        parentName:  existingParent.fullName,
+                        parentName:  existingParent?.fullName,
                         childName: item?.fullName,
                         status: "new",
                         grade: stdGrade,
