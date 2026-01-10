@@ -39,7 +39,9 @@ class SendEmailQueueService {
     }
 
     async initiateProcessor(job) {
-        const { parentName,
+        console.log("Now we here")
+        const {
+            parentName,
             childName,
             status,
             grade,
@@ -53,9 +55,9 @@ class SendEmailQueueService {
         try {
 
             console.log("We got here first!")
+
             // const studentStatus = await addStudentToCourseHelper(stdClass, students, id, enrolledCourseId)
             await school_course_invite(
-                parentName,
                 childName,
                 status,
                 grade,

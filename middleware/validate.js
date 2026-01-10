@@ -50,9 +50,9 @@ exports.inviteAdminValidator = function (req) {
             .min(2)
             .max(300)
             .required()
-            .pattern(/^[a-zA-Z]+ [a-zA-Z]+$/)
+            .pattern(/^[a-zA-Z\s'-]+$/)
             .message(
-                "Full name must contain at least a first name and a last name separated by a space."
+                "Full name can only contain letters, spaces, hyphens and apostrophes."
             ),
         position: Joi.string().required(),
         email: Joi.string().min(5).max(255).required().email(),
