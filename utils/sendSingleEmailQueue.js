@@ -42,6 +42,7 @@ class SendEmailQueueService {
         console.log("Processing job:", job.id);
         console.log("Job data:", JSON.stringify(job.data, null, 2));
 
+        console.log("Now we here")
         const {
             parentName,
             childName,
