@@ -6,7 +6,7 @@ const OTP = require("../models/OTP");
 const StatusCodes = require("../utils/status-codes");
 const bcrypt = require("bcrypt");
 const _ = require("lodash");
-const { Otp_VerifyAccount, Otp_ForgotPassword, admin_invite, Admin_Otp_ForgotPassword } = require("../utils/sendmail");
+const { Otp_VerifyAccount, Otp_ForgotPassword, admin_invite, Admin_Otp_ForgotPassword, school_admin_invite } = require("../utils/sendmail");
 const otpGenerator = require("otp-generator");
 const CourseEnrollment = require("../models/courseEnrollment");
 const cloudinary = require("../utils/cloudinary");
@@ -1000,3 +1000,105 @@ exports.activityUpdateData = async (req, res) => {
     });
 };
 
+// Admin invites a team member to a school
+exports.adminInviteSchoolTeamMember = async (req, res) => {
+    const { id: schoolId } = req.params;
+    const { fullName, email, position } = req.body;
+
+    // Fetch the school by ID
+    const school = await Schools.findById(schoolId);
+
+    if (!school) {
+        return res.status(StatusCodes.NOT_FOUND).json({ message: "School not found!" });
+    }
+
+    // Check if the user already exists in the system
+    let user = await Educator.findOne({ email });
+
+    if (user) {
+        // Check if user is already associated with this school
+        const isAssignedToThisSchool = user.school && user.school.equals(school._id);
+
+        // Check if the user is already part of the school's team
+        const existingTeamMember = school.team.some((teamMemberId) =>
+            teamMemberId.equals(user._id)
+        );
+
+        if (existingTeamMember) {
+            return res
+                .status(StatusCodes.BAD_REQUEST)
+                .json({ message: "User is already in the team" });
+        }
+
+        if (isAssignedToThisSchool) {
+            // Direct upgrade: user is already a registered educator in this school
+            user.isSchoolAdmin = true;
+            user.schoolAdminStatus = "Confirmed";
+            user.schoolAdminPermission = position;
+            user.schoolAdminDate = Date.now();
+            user.newInvite = null; // Clear any pending invitations
+
+            school.team.push(user._id);
+
+            await Promise.all([user.save(), school.save()]);
+
+            return res.status(StatusCodes.OK).json({
+                message: `${fullName} has been added directly to the team!`,
+            });
+        }
+
+        // Otherwise, send an invitation to the existing user
+        user.newInvite = {
+            school: school._id,
+            schoolAdminDate: Date.now(),
+            schoolAdminPermission: position,
+            schoolAdminStatus: "Pending",
+        };
+
+        // Generate an authentication token
+        const token = await user.generateAuthToken();
+
+        // Send an invitation to the existing user
+        await school_admin_invite("old", fullName, school._id, school.school_name, email, token);
+
+        // Add the user to the school's team
+        school.team.push(user._id);
+
+        // Persist the changes to the school and user
+        await Promise.all([user.save(), school.save()]);
+
+        return res.status(StatusCodes.OK).json({ message: "Admin invite sent successfully!" });
+    }
+
+    // Create a new educator record if the user does not exist
+    user = new Educator({
+        fullName,
+        email,
+        userType: "Educator",
+        newInvite: {
+            school: school._id,
+            isSchoolAdmin: true,
+            schoolAdminStatus: "Pending",
+            schoolAdminPermission: position,
+            schoolAdminDate: Date.now(),
+        },
+        educatorType: "School",
+        school: school._id,
+    });
+
+    await user.save();
+
+    // Generate an authentication token for the new user
+    const token = await user.generateAuthToken();
+
+    // Send an invitation to the new user
+    await school_admin_invite("new", fullName, school._id, school.school_name, email, token);
+
+    // Add the new user to the school's team
+    school.team.push(user._id);
+
+    // Persist the changes to the school
+    await school.save();
+
+    res.status(StatusCodes.OK).json({ message: "Admin invite sent successfully!" });
+};
