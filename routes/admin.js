@@ -109,6 +109,8 @@ router.post('/schools/:id/courses/:courseId/enroll', auth, isAdmin, validate(sch
 
 router.put('/schools/:id/courses/:enrolledCourseId/users', auth, isAdmin, validate(schoolCourseAddStudentsValidator), schoolsController.addStudentsToCourseEnrollment);
 
+router.post('/schools/:id/teams', auth, isAdmin, validate(inviteAdminValidator), adminController.adminInviteSchoolTeamMember);
+
 router.delete('/schools/:id/teams/:userId', auth, isAdmin, adminController.deleteAdminFromSchool);
 
 router.delete('/schools/:id/emails/:emailId', auth, isAdmin, adminController.deleteEmailFromSchool);
