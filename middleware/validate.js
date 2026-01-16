@@ -261,7 +261,8 @@ exports.schoolCourseAddStudentsValidator = function (req) {
             .max(100)
             .required(),
         classTag: Joi.string()
-            .optional(),
+            .optional()
+            .allow('', null),
         students: Joi.array()
             .items(studentSchema)
             .required(),
