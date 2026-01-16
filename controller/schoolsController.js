@@ -755,6 +755,7 @@ exports.courseEnrollment = async (req, res) => {
 exports.addStudentsToCourseEnrollment = async (req, res) => {
     const { stdClass, classTag, students } = req.body;
     const { id, enrolledCourseId } = req.params;
+
     // Check if the array length exceeds 10, then process via background queue
     if (students.length > 1) {
         // Add the job to Bull queue for background processing
