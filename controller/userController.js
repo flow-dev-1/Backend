@@ -696,7 +696,7 @@ exports.getUserCourseData = async (req, res) => {
     })
   ]);
 
-  if (!assessment || !activity) {
+  if (!assessment && !activity) {
     return res.status(StatusCodes.NOT_FOUND).json({
       status: "failed",
       message: "No assessment or activity for this student"
@@ -896,6 +896,14 @@ exports.endOfCourseReaction = async (req, res) => {
     return res.status(404).json({ message: "Course not found" });
   }
 
+  // Check if user has already reacted (in likes or dislikes)
+  const hasLiked = course.likes.some((id) => id.toString() === userId.toString());
+  const hasDisliked = course.dislikes.some((id) => id.toString() === userId.toString());
+
+  if (hasLiked || hasDisliked) {
+    return res.status(200).json({ message: "Reaction already recorded" });
+  }
+
   if (reaction === "neutral") {
     return res.status(200).json({ message: "Success" });
   }
@@ -903,10 +911,6 @@ exports.endOfCourseReaction = async (req, res) => {
   if (!["like", "dislike"].includes(reaction)) {
     return res.status(400).json({ message: "Invalid reaction" });
   }
-
-  // Remove the userId from both arrays to ensure no duplicates
-  course.likes = course.likes.filter((id) => id.toString() !== userId.toString());
-  course.dislikes = course.dislikes.filter((id) => id.toString() !== userId.toString());
 
   // Add the userId to the appropriate array
   if (reaction === "like") {
@@ -920,3 +924,4 @@ exports.endOfCourseReaction = async (req, res) => {
   res.status(200).json({ message: "Reaction updated successfully" });
 
 }
+

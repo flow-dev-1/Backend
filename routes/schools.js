@@ -217,6 +217,8 @@ router.get(
 );
 
 router.get("/course-enrollment/:id/get-activity/:week/:userId", auth, adminController.getactivityData);
+
+router.get("/course-enrollment/:id/:week/:userId", auth, adminController.getStudentCourseData);
 // router.delete('/:id', [auth, schoolAccess], schoolsController.deleteAdmin);
 
 router.get("/payments", auth, schoolAccess, schoolsController.getPayments);

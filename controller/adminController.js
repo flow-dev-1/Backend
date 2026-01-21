@@ -927,23 +927,37 @@ exports.getStudentCourses = async (req, res) => {
     res.status(StatusCodes.OK).json({ courses });
 };
 
+// Get Assessment Data
+exports.getAssessmentData = async (req, res) => {
+    const { id, week } = req.params;
+    const user = req.params.userId;
+
+    const assessment = await Assesment.findOne({
+        $or: [{ courseEnrollmentId: id }, { courseEnrollment: id }],
+        user: new mongoose.Types.ObjectId(user),
+        week
+    });
+
+    if (!assessment) {
+        return res.status(StatusCodes.NOT_FOUND).json({
+            status: "failed",
+            message: "No assessment found for this student"
+        });
+    }
+
+    res.status(StatusCodes.OK).json(assessment);
+};
+
 // Get Activity Data
 exports.getactivityData = async (req, res) => {
     const { id, week } = req.params;
     const user = req.params.userId;
 
     const activity = await Activity.findOne({
-        courseEnrollmentId: id,
+        $or: [{ courseEnrollmentId: id }, { courseEnrollment: id }],
         user: new mongoose.Types.ObjectId(user),
         week
     });
-
-    console.log(activity)
-
-    const activityData = {
-        activity: activity.activities,
-        _id: activity._id,
-    }
 
     if (!activity) {
         return res.status(StatusCodes.NOT_FOUND).json({
@@ -953,28 +967,40 @@ exports.getactivityData = async (req, res) => {
         });
     }
 
+    const activityData = {
+        activity: activity.activities,
+        _id: activity._id,
+    }
+
     res.status(StatusCodes.OK).json(activityData);
 };
 
-// Get Assessment Data
-exports.getAssessmentData = async (req, res) => {
-    const { week, id } = req.params;
+// Get Combined Activity and Assessment Data for Students (for Schools/Admins)
+exports.getStudentCourseData = async (req, res) => {
+    const { id, week } = req.params;
+    const userId = req.params.userId;
 
-    const existingAssessment = await Assesment.findOne({
-        courseEnrollmentId: id,
-        user: new mongoose.Types.ObjectId(req.params.userId),
-        week
-    });
+    const [assessment, activity] = await Promise.all([
+        Assesment.findOne({
+            $or: [{ courseEnrollmentId: id }, { courseEnrollment: id }],
+            user: new mongoose.Types.ObjectId(userId),
+            week
+        }),
+        Activity.findOne({
+            $or: [{ courseEnrollmentId: id }, { courseEnrollment: id }],
+            user: new mongoose.Types.ObjectId(userId),
+            week
+        })
+    ]);
 
-    if (existingAssessment) {
-        return res.status(StatusCodes.OK).json({ existingAssessment });
+    if (!assessment && !activity) {
+        return res.status(StatusCodes.NOT_FOUND).json({
+            status: "failed",
+            message: "No assessment or activity found for this student"
+        });
     }
 
-    // Return 404 if no assessment found
-    res.status(StatusCodes.NOT_FOUND).json({
-        status: "failed",
-        message: "No assessment found for the given criteria"
-    });
+    res.status(StatusCodes.OK).json({ assessment, activity });
 };
 
 exports.activityUpdateData = async (req, res) => {
