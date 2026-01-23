@@ -10,7 +10,7 @@ const generateId = require("./generateId");
 const school = require("../models/school");
 const sendSingleEmailQueue = require("../utils/sendSingleEmailQueue");
 
-module.exports = addStudentTocourse = async (stdClass,classTag, students, id, enrolledCourseId) => {
+module.exports = addStudentTocourse = async (stdClass, classTag, students, id, enrolledCourseId) => {
     const existingEnrollment = await SchoolCourses.findOne({
         _id: enrolledCourseId,
     })
@@ -96,7 +96,7 @@ module.exports = addStudentTocourse = async (stdClass,classTag, students, id, en
                     : stdClass.startsWith("Year")
                         ? "Secondary"
                         : "Educator";
-    
+
                 sendSingleEmailQueue.addSendEmailJob({
                     parentName: item?.guardianFullName,
                     childName: item?.fullName,
@@ -124,7 +124,7 @@ module.exports = addStudentTocourse = async (stdClass,classTag, students, id, en
                 };
 
                 const student = existingParent.students.find(
-                    (student) => student.email === item.email && normalizeName(student.fullName) === normalizeName(item.fullName)
+                    (student) => student.email === item.email
                 );
 
                 // Child does not exist create a new account and send the course invite.
@@ -173,7 +173,7 @@ module.exports = addStudentTocourse = async (stdClass,classTag, students, id, en
                             : "Educator";
 
                     sendSingleEmailQueue.addSendEmailJob({
-                        parentName:  existingParent?.fullName,
+                        parentName: existingParent?.fullName,
                         childName: item?.fullName,
                         status: "new",
                         grade: stdGrade,
