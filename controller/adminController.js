@@ -1026,6 +1026,28 @@ exports.activityUpdateData = async (req, res) => {
     });
 };
 
+exports.assessmentFeedbackUpdate = async (req, res) => {
+    const { id, week } = req.params;
+    const user = req.params.userId;
+
+    const assessment = await Assesment.findOne({ $or: [{ courseEnrollment: id }, { courseEnrollmentId: id }], week, user });
+
+    if (!assessment) {
+        return res.status(StatusCodes.NOT_FOUND).json({
+            status: "failed",
+            message: "No assessment found for the given criteria"
+        });
+    }
+
+    // Update the assessment's feedback field
+    await Assesment.updateOne({ _id: assessment._id }, req.body);
+
+    return res.status(StatusCodes.OK).json({
+        success: "true",
+        message: "Assessment feedback has been updated successfully."
+    });
+};
+
 // Admin invites a team member to a school
 exports.adminInviteSchoolTeamMember = async (req, res) => {
     const { id: schoolId } = req.params;

@@ -143,6 +143,7 @@ router.get("/course-enrollment/:id/:week", auth, userController.getUserCourseDat
 router.get("/course-enrollment/:id/percentile", auth, userController.getAssessmentPercentile);
 
 router.patch("/course-enrollment/:id/post-activity/:week/:userId", auth, adminController.activityUpdateData);
+router.patch("/course-enrollment/:id/post-assessment/:week/:userId", auth, adminController.assessmentFeedbackUpdate);
 
 // Deactivate a school course and all its confirmed enrollments
 router.patch('/school-course/:schoolCourseId/deactivate', auth, isAdmin, schoolsController.deactivateSchoolCourse);
