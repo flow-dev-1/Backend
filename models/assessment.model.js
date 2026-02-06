@@ -39,6 +39,7 @@ const assesmentSchema = new mongoose.Schema(
       required: false
     },
     text: { type: [String] },
+    feedback: { type: [String], default: [] },
     isDeleted: { type: Boolean, default: false },
     deletedAt: { type: Date, default: null }
   },
