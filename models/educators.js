@@ -156,11 +156,7 @@ function validateEducator(Educator) {
     fullName: Joi.string()
       .min(2)
       .max(300)
-      .required()
-      .pattern(/^[a-zA-Z]+(?: [a-zA-Z]+)+$/)
-      .message(
-        "Full name must contain at least two names separated by a space."
-      ),
+      .required(),
     phone: Joi.string()
       .pattern(new RegExp(/^\+[1-9]\d{1,14}$/))
       .message("Please enter a valid phone number in international format")
@@ -182,15 +178,7 @@ function validateInvitedEducator(Educator) {
     fullName: Joi.string()
       .min(2)
       .max(300)
-      .optional()
-      .pattern(/^[a-zA-Z]+(?: [a-zA-Z]+)+$/)
-      .messages({
-        "string.pattern.base":
-          "Full name must contain at least two names separated by a space.",
-        "string.min": "Full name must be at least 2 characters long.",
-        "string.max":
-          "Full name must be less than or equal to 300 characters long.",
-      }),
+      .optional(),
     phone: Joi.string()
       .pattern(/^\+[1-9]\d{1,14}$/)
       .message("Please enter a valid phone number in international format")
@@ -217,10 +205,6 @@ function validateEducatorUpdate(Educator) {
     fullName: Joi.string()
       .min(2)
       .max(300)
-      .pattern(/^[a-zA-Z]+(?: [a-zA-Z]+)+$/)
-      .message(
-        "Full name must contain at least two names separated by a space."
-      )
       .optional(),
     phone: Joi.string()
       .pattern(new RegExp(/^\+[1-9]\d{1,14}$/))

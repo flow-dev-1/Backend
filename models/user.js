@@ -146,15 +146,11 @@ const User = mongoose.model("User", userSchema);
 function validateUser(user) {
   const studentSchema = Joi.object({
     userId: Joi.string().optional(),
-    stdEmail:Joi.string().min(5).max(255).required().email(),
+    stdEmail: Joi.string().min(5).max(255).required().email(),
     fullName: Joi.string()
       .min(2)
       .max(300)
-      .required()
-      .pattern(/^[a-zA-Z]+(?: [a-zA-Z]+)+$/)
-      .message(
-        "Full name must contain at least two names separated by a space."
-      ),
+      .required(),
     grade: Joi.string().optional(),
     gender: Joi.string().valid("male", "female").required(),
     DOB: Joi.date().required(),
@@ -165,11 +161,7 @@ function validateUser(user) {
     guardianFullName: Joi.string()
       .min(2)
       .max(300)
-      .required()
-      .pattern(/^[a-zA-Z]+(?: [a-zA-Z]+)+$/)
-      .message(
-        "Guardian's full name must contain at least a first name and a last name separated by a space."
-      ),
+      .required(),
     phone: Joi.string()
       .pattern(/^\+[1-9]\d{1,14}$/)
       .message("Please enter a valid phone number in international format")
@@ -192,10 +184,6 @@ function validateInvitedUser(user) {
     fullName: Joi.string()
       .min(2)
       .max(300)
-      .pattern(/^[a-zA-ZÀ-ÖØ-öø-ÿ0-9_'`-]+(?: [a-zA-ZÀ-ÖØ-öø-ÿ0-9_'`-]+)+$/)
-      .message(
-        "Full name must contain at least two names separated by a space."
-      )
       .required(),
     grade: Joi.string().required(),
     gender: Joi.string().valid("male", "female").required(),
@@ -209,10 +197,6 @@ function validateInvitedUser(user) {
     guardianFullName: Joi.string()
       .min(2)
       .max(300)
-      .pattern(/^[a-zA-ZÀ-ÖØ-öø-ÿ0-9_'`-]+(?: [a-zA-ZÀ-ÖØ-öø-ÿ0-9_'`-]+)+$/)
-      .message(
-        "Guardian's full name must contain at least two names separated by a space."
-      )
       .required(),
     phone: Joi.string()
       .pattern(/^\+[1-9]\d{1,14}$/)
@@ -227,10 +211,10 @@ function validateInvitedUser(user) {
     .required()
     .unknown(true); // Allow data that is not defined in the schema
 
-    const {error} = schema.validate(user); 
-    if(error){
-      throw error
-    }
+  const { error } = schema.validate(user);
+  if (error) {
+    throw error
+  }
 
   return schema.validate(user);
 }
@@ -240,18 +224,10 @@ function validateUserUpdate(user) {
     fullName: Joi.string()
       .min(2)
       .max(300)
-      .pattern(/^[a-zA-Z]+(?: [a-zA-Z]+)+$/)
-      .message(
-        "Full name must contain at least a first name and a last name separated by a space."
-      )
       .optional(),
     guardianFullName: Joi.string()
       .min(2)
       .max(300)
-      .pattern(/^[a-zA-Z]+(?: [a-zA-Z]+)+$/)
-      .message(
-        "Full name must contain at least a first name and a last name separated by a space."
-      )
       .optional(),
     phone: Joi.string()
       .pattern(/^\+[1-9]\d{1,14}$/)
