@@ -708,7 +708,7 @@ exports.getUserCourseData = async (req, res) => {
 };
 
 exports.activityData = async (req, res) => {
-  const { id } = req.params;
+  const { id } = req.params; // This is the course ID (or enrollment ID depending on usage, but users.js says :id)
 
   const user = req.user._id;
   const email = req.user.email;
@@ -722,34 +722,39 @@ exports.activityData = async (req, res) => {
     : req.user.educatorType
       ? "Educator"
       : "User";
-  req.body.courseEnrollment = id;
-  const activities = req.body.activities;
 
-  const courseEnrollmentForActivity = await Course.findById(id);
-  if (!courseEnrollmentForActivity) {
-    return res
-      .status(StatusCodes.NOT_FOUND)
-      .json({ message: "Course not found" });
+  // Try to find the enrollment to update progress
+  // In the route, :id is passed, which points here
+  const enrollment = await CourseEnrollment.findOne({
+    $or: [{ course: id }, { _id: id }],
+    user,
+    status: "Confirmed"
+  });
+
+  if (enrollment && enrollment.progress === 0) {
+    enrollment.progress = 1; // Trigger "Ongoing" status for Admin-Client
+    await enrollment.save();
   }
 
-  // Look for the existing activity
-  const activity = await Activity.findOne({ courseEnrollment: id, week, user });
+  // Upsert Activity data
+  const updatedActivity = await Activity.findOneAndUpdate(
+    {
+      $or: [{ courseEnrollment: id }, { courseEnrollmentId: id }],
+      week,
+      user
+    },
+    {
+      ...req.body,
+      courseEnrollment: enrollment ? enrollment.course : id,
+      courseEnrollmentId: enrollment ? enrollment._id : id
+    },
+    { new: true, upsert: true }
+  );
 
-  // If no activity is found, create a new one
-  if (!activity) {
-    const newActivity = new Activity(req.body);
-    await newActivity.save();
-    return res.status(StatusCodes.OK).json({
-      success: true,
-      message: "Your progress has been successfully saved!",
-      newActivity
-    });
-  }
-
-  // If an activity is found, respond with a conflict
   return res.status(StatusCodes.OK).json({
     success: true,
-    message: "You have already taken the activity"
+    message: "Your progress has been successfully saved!",
+    newActivity: updatedActivity
   });
 };
 
