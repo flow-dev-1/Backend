@@ -19,6 +19,7 @@ const ActivitiesSchema = new mongoose.Schema(
       required: true
     },
     activities: { type: [Schema.Types.Mixed], default: [], required: true },
+    lastActivityIndex: { type: Number },
     // This is for self-awareness course alone
     courseEnrollment: {
       type: mongoose.Schema.Types.ObjectId,

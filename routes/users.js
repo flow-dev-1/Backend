@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 const express = require('express');
 const router = express.Router();
 const userController = require("../controller/userController");
-const { loginValidator,courseSubmissionValidator, validate, } = require("../middleware/validate");
+const { loginValidator, courseSubmissionValidator, validate, } = require("../middleware/validate");
 const { validateUser, validateUserUpdate, validateInvitedUser } = require('../models/user');
 const auth = require("../middleware/auth")
 // const upload = require("../utils/multer");
@@ -20,6 +20,7 @@ router.get('/parent', auth, userController.getParentWithNewCourseInvite);
 router.get('/courses', auth, userController.getCourses);
 
 router.get('/courses/:id/completed', auth, userController.getCompletedWeeks);
+router.get('/courses/enrollment/:id', auth, userController.getSingleEnrollment);
 
 router.get('/payments', auth, userController.getPayments);
 

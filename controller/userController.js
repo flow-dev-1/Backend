@@ -577,23 +577,51 @@ exports.getCompletedWeeks = async (req, res) => {
   res.status(StatusCodes.OK).json({ weeks });
 };
 
+exports.getSingleEnrollment = async (req, res) => {
+  const { id } = req.params;
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(StatusCodes.BAD_REQUEST).json({
+      success: false,
+      message: `Invalid enrollment ID: ${id}`
+    });
+  }
+
+  const enrollment = await CourseEnrollment.findOne({
+    _id: id,
+    user: req.user._id
+  }).populate("course")
+    .populate("schoolCourseEnrollment");
+
+  if (!enrollment) {
+    return res.status(StatusCodes.NOT_FOUND).json({
+      success: false,
+      message: "Enrollment not found or access denied"
+    });
+  }
+
+  res.status(StatusCodes.OK).json({ enrollment });
+};
+
 exports.submitUserCourseData = async (req, res) => {
   const user = req.user._id;
   const email = req.user.email;
-  const week = req.body.week;
+  const { courseEnrollmentId, week } = req.body;
+
+  // Validate courseEnrollmentId
+  if (!mongoose.Types.ObjectId.isValid(courseEnrollmentId)) {
+    return res.status(StatusCodes.BAD_REQUEST).json({
+      success: false,
+      message: `Invalid course enrollment ID: ${courseEnrollmentId}`,
+    });
+  }
 
   req.body.user = user;
   req.body.email = email;
-  req.body.checkModel = req.user.isEducator
-    ? "Educator"
-    : "User";
-
-  // const activities = req.body.activities;
-  // const assesment = req.body.assesment;
-
+  req.body.checkModel = req.user.isEducator ? "Educator" : "User";
 
   const courseEnrollmentForActivity = await CourseEnrollment.findOne({
-    _id: req.body.courseEnrollmentId,
+    _id: courseEnrollmentId,
     user,
   }).populate({
     path: "course",
@@ -608,14 +636,18 @@ exports.submitUserCourseData = async (req, res) => {
 
 
   // Check if Activity and Assessment for this course already exist
-  // Look for the existing activity
+  // Look for the existing activity and assessment using both potential field names
   const [existingActivity, existingAssessment] = await Promise.all([
-    Activity.findOne({ courseEnrollmentId: req.body.courseEnrollmentId, week, user }),
+    Activity.findOne({
+      user,
+      week,
+      $or: [{ courseEnrollmentId }, { courseEnrollment: courseEnrollmentId }]
+    }),
     Assesment.findOne({
       user,
       email,
-      week: req.body.week,
-      courseEnrollmentId: req.body.courseEnrollmentId
+      week,
+      $or: [{ courseEnrollmentId }, { courseEnrollment: courseEnrollmentId }]
     })
   ]);
 
@@ -638,6 +670,13 @@ exports.submitUserCourseData = async (req, res) => {
       .then(async () => {
         // Increase the progress
         courseEnrollmentForActivity.progress = Math.min(100, Math.ceil(courseEnrollmentForActivity.progress + (100 / courseEnrollmentForActivity?.course?.weeks)))
+
+        // Update lastWeekIndex to unlock next week, using Math.max to prevent regression
+        const currentWeekNum = parseInt(week);
+        if (!isNaN(currentWeekNum)) {
+          courseEnrollmentForActivity.lastWeekIndex = Math.max(courseEnrollmentForActivity.lastWeekIndex || 1, currentWeekNum + 1);
+        }
+
         await courseEnrollmentForActivity.save()
         return res.status(StatusCodes.OK).json({
           success: true,
@@ -662,6 +701,13 @@ exports.submitUserCourseData = async (req, res) => {
     await newAssessment.save();
     // Increase course progress
     courseEnrollmentForActivity.progress = Math.min(100, Math.ceil(courseEnrollmentForActivity.progress + (100 / courseEnrollmentForActivity?.course?.weeks)))
+
+    // Update lastWeekIndex to unlock next week, using Math.max to prevent regression
+    const currentWeekNum = parseInt(week);
+    if (!isNaN(currentWeekNum)) {
+      courseEnrollmentForActivity.lastWeekIndex = Math.max(courseEnrollmentForActivity.lastWeekIndex || 1, currentWeekNum + 1);
+    }
+
     await courseEnrollmentForActivity.save()
     return res.status(StatusCodes.OK).json({
       success: true,
@@ -684,14 +730,25 @@ exports.submitUserCourseData = async (req, res) => {
 
 exports.getUserCourseData = async (req, res) => {
   const { id, week } = req.params;
+  const user = req.user._id;
+
+  // Validate ID
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(StatusCodes.BAD_REQUEST).json({
+      status: "failed",
+      message: `Invalid ID: ${id}`
+    });
+  }
   // Find the assessment and activity for the user
   const [assessment, activity] = await Promise.all([
     Assesment.findOne({
+      user,
       week,
-      courseEnrollmentId: id,
+      $or: [{ courseEnrollmentId: id }, { courseEnrollment: id }],
     }),
     Activity.findOne({
-      courseEnrollmentId: id,
+      user,
+      $or: [{ courseEnrollmentId: id }, { courseEnrollment: id }],
       week
     })
   ]);
@@ -724,16 +781,29 @@ exports.activityData = async (req, res) => {
       : "User";
 
   // Try to find the enrollment to update progress
-  // In the route, :id is passed, which points here
   const enrollment = await CourseEnrollment.findOne({
     $or: [{ course: id }, { _id: id }],
     user,
     status: "Confirmed"
   });
 
-  if (enrollment && enrollment.progress === 0) {
-    enrollment.progress = 1; // Trigger "Ongoing" status for Admin-Client
-    await enrollment.save();
+  if (enrollment) {
+    let updateNeeded = false;
+    if (enrollment.progress === 0) {
+      enrollment.progress = 1; // Trigger "Ongoing" status for Admin-Client
+      updateNeeded = true;
+    }
+
+    // Update lastWeekIndex if the current week is higher
+    const weekNum = parseInt(week);
+    if (!isNaN(weekNum) && weekNum > (enrollment.lastWeekIndex || 0)) {
+      enrollment.lastWeekIndex = weekNum;
+      updateNeeded = true;
+    }
+
+    if (updateNeeded) {
+      await enrollment.save();
+    }
   }
 
   // Upsert Activity data
@@ -764,7 +834,7 @@ exports.getactivityData = async (req, res) => {
   const email = req.user.email;
 
   const activity = await Activity.findOne({
-    courseEnrollment: id,
+    $or: [{ courseEnrollment: id }, { courseEnrollmentId: id }],
     user,
     week,
     email
@@ -782,7 +852,23 @@ exports.getactivityData = async (req, res) => {
 
 exports.assessmentData = async (req, res) => {
   const { id } = req.params;
-  const { enrollmentId } = req.query
+  const { enrollmentId } = req.query;
+
+  // Validate ID
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(StatusCodes.BAD_REQUEST).json({
+      status: "failed",
+      message: `Invalid course ID: ${id}`
+    });
+  }
+
+  // Validate enrollmentId if provided
+  if (enrollmentId && !mongoose.Types.ObjectId.isValid(enrollmentId)) {
+    return res.status(StatusCodes.BAD_REQUEST).json({
+      status: "failed",
+      message: `Invalid enrollment ID: ${enrollmentId}`
+    });
+  }
   const user = req.user._id;
   const email = req.user.email;
   const checkModel = "User";
@@ -818,7 +904,11 @@ exports.assessmentData = async (req, res) => {
     });
 
 
-  course.progress += 100 / course?.course?.weeks
+  course.progress = Math.min(100, Math.ceil(course.progress + (100 / course?.course?.weeks)))
+  const currentWeekNum = parseInt(req.body.week);
+  if (!isNaN(currentWeekNum)) {
+    course.lastWeekIndex = Math.max(course.lastWeekIndex || 1, currentWeekNum + 1);
+  }
 
   // Save course progress and create assessment in parallel
   const [savedCourse, assessment] = await Promise.all([
@@ -836,6 +926,14 @@ exports.getAssessmentData = async (req, res) => {
   const { id, week } = req.params;
   const user = req.user._id;
   const email = req.user.email;
+
+  // Validate ID
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(StatusCodes.BAD_REQUEST).json({
+      status: "failed",
+      message: `Invalid course ID: ${id}`
+    });
+  }
 
   // Find the assessment for the user
   const existingAssessment = await Assesment.findOne({
