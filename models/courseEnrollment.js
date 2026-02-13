@@ -30,6 +30,10 @@ const courseEnrollmentSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    lastWeekIndex: {
+      type: Number,
+      default: 1,
+    },
     stdClass: {
       type: String
     },
