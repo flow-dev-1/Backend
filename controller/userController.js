@@ -604,126 +604,140 @@ exports.getSingleEnrollment = async (req, res) => {
 };
 
 exports.submitUserCourseData = async (req, res) => {
-  const user = req.user._id;
-  const email = req.user.email;
-  const { courseEnrollmentId, week } = req.body;
 
-  // Validate courseEnrollmentId
-  if (!mongoose.Types.ObjectId.isValid(courseEnrollmentId)) {
-    return res.status(StatusCodes.BAD_REQUEST).json({
-      success: false,
-      message: `Invalid course enrollment ID: ${courseEnrollmentId}`,
-    });
-  }
+  try {
+    const user = req.user._id;
+    const email = req.user.email;
+    const { courseEnrollmentId, week } = req.body;
 
-  req.body.user = user;
-  req.body.email = email;
-  req.body.checkModel = req.user.isEducator ? "Educator" : "User";
-
-  const courseEnrollmentForActivity = await CourseEnrollment.findOne({
-    _id: courseEnrollmentId,
-    user,
-  }).populate({
-    path: "course",
-    select: "weeks"
-  });
-
-  if (!courseEnrollmentForActivity) {
-    return res
-      .status(StatusCodes.BAD_REQUEST)
-      .json({ message: "Student not enrolled in course!" });
-  }
-
-
-  // Check if Activity and Assessment for this course already exist
-  // Look for the existing activity and assessment using both potential field names
-  const [existingActivity, existingAssessment] = await Promise.all([
-    Activity.findOne({
-      user,
-      week,
-      $or: [{ courseEnrollmentId }, { courseEnrollment: courseEnrollmentId }]
-    }),
-    Assesment.findOne({
-      user,
-      email,
-      week,
-      $or: [{ courseEnrollmentId }, { courseEnrollment: courseEnrollmentId }]
-    })
-  ]);
-
-  if (existingActivity && existingAssessment) {
-    return res.status(StatusCodes.OK).json({
-      success: false,
-      message: "You have already taken the activity and assessment"
-    });
-  }
-  // The current code does prevent the assessment from saving if the activity fails.
-  // This is because the `newActivity.save()` operation is awaited, and if it throws an error,
-  // the catch block will handle it and return a response with an error message.
-  // The code for saving the assessment (`newAssessment.save()`) is only reached if the activity is successfully saved.
-  // Therefore, if the activity fails to save, the assessment will not be attempted to be saved.
-  if (!existingActivity && !existingAssessment) {
-    const newActivity = new Activity(req.body);
-    await newActivity.save();
-    const newAssessment = new Assesment(req.body);
-    await newAssessment.save()
-      .then(async () => {
-        // Increase the progress
-        courseEnrollmentForActivity.progress = Math.min(100, Math.ceil(courseEnrollmentForActivity.progress + (100 / courseEnrollmentForActivity?.course?.weeks)))
-
-        // Update lastWeekIndex to unlock next week, using Math.max to prevent regression
-        const currentWeekNum = parseInt(week);
-        if (!isNaN(currentWeekNum)) {
-          courseEnrollmentForActivity.lastWeekIndex = Math.max(courseEnrollmentForActivity.lastWeekIndex || 1, currentWeekNum + 1);
-        }
-
-        await courseEnrollmentForActivity.save()
-        return res.status(StatusCodes.OK).json({
-          success: true,
-          message: "Activity and Assessment have been successfully saved!",
-          newAssessment,
-          newActivity
-        });
-      })
-      .catch((error) => {
-
-        console.log(error)
-        return res.status(StatusCodes.SERVER_ERROR).json({
-          success: false,
-          message: "Failed to save assessment after activity was saved",
-          error: error.message
-        });
+    // Validate courseEnrollmentId
+    if (!mongoose.Types.ObjectId.isValid(courseEnrollmentId)) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: `Invalid course enrollment ID: ${courseEnrollmentId}`,
       });
-  }
-
-  if (existingActivity) {
-    const newAssessment = new Assesment(req.body);
-    await newAssessment.save();
-    // Increase course progress
-    courseEnrollmentForActivity.progress = Math.min(100, Math.ceil(courseEnrollmentForActivity.progress + (100 / courseEnrollmentForActivity?.course?.weeks)))
-
-    // Update lastWeekIndex to unlock next week, using Math.max to prevent regression
-    const currentWeekNum = parseInt(week);
-    if (!isNaN(currentWeekNum)) {
-      courseEnrollmentForActivity.lastWeekIndex = Math.max(courseEnrollmentForActivity.lastWeekIndex || 1, currentWeekNum + 1);
     }
 
-    await courseEnrollmentForActivity.save()
-    return res.status(StatusCodes.OK).json({
-      success: true,
-      message: "Activity already exists. Assessment has been successfully saved!",
-      newAssessment
-    });
-  }
+    req.body.user = user;
+    req.body.email = email;
+    req.body.checkModel = req.user.isEducator ? "Educator" : "User";
 
-  if (existingAssessment) {
-    const newActivity = new Activity(req.body);
-    await newActivity.save();
-    return res.status(StatusCodes.OK).json({
-      success: true,
-      message: "Assessment already exists. Activity has been successfully saved!",
-      newActivity
+    const courseEnrollmentForActivity = await CourseEnrollment.findOne({
+      _id: courseEnrollmentId,
+      user,
+    }).populate({
+      path: "course",
+      select: "weeks"
     });
+
+    if (!courseEnrollmentForActivity) {
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ message: "Student not enrolled in course!" });
+    }
+
+
+    // Check if Activity and Assessment for this course already exist
+    // Look for the existing activity and assessment using both potential field names
+    const [existingActivity, existingAssessment] = await Promise.all([
+      Activity.findOne({
+        user,
+        week,
+        $or: [{ courseEnrollmentId }, { courseEnrollment: courseEnrollmentId }]
+      }),
+      Assesment.findOne({
+        user,
+        email,
+        week,
+        $or: [{ courseEnrollmentId }, { courseEnrollment: courseEnrollmentId }]
+      })
+    ]);
+
+    if (existingActivity && existingAssessment) {
+      return res.status(StatusCodes.OK).json({
+        success: false,
+        message: "You have already taken the activity and assessment"
+      });
+    }
+    // The current code does prevent the assessment from saving if the activity fails.
+    // This is because the `newActivity.save()` operation is awaited, and if it throws an error,
+    // the catch block will handle it and return a response with an error message.
+    // The code for saving the assessment (`newAssessment.save()`) is only reached if the activity is successfully saved.
+    // Therefore, if the activity fails to save, the assessment will not be attempted to be saved.
+    if (!existingActivity && !existingAssessment) {
+      const newActivity = new Activity(req.body);
+      await newActivity.save();
+      const newAssessment = new Assesment(req.body);
+      await newAssessment.save()
+        .then(async () => {
+          // Increase the progress
+          courseEnrollmentForActivity.progress = Math.min(100, Math.ceil(courseEnrollmentForActivity.progress + (100 / courseEnrollmentForActivity?.course?.weeks)))
+
+          // Update lastWeekIndex to unlock next week, using Math.max to prevent regression
+          const currentWeekNum = parseInt(week);
+          if (!isNaN(currentWeekNum)) {
+            courseEnrollmentForActivity.lastWeekIndex = Math.max(courseEnrollmentForActivity.lastWeekIndex || 1, currentWeekNum + 1);
+          }
+
+          await courseEnrollmentForActivity.save()
+          return res.status(StatusCodes.OK).json({
+            success: true,
+            message: "Activity and Assessment have been successfully saved!",
+            newAssessment,
+            newActivity
+          });
+        })
+        .catch((error) => {
+
+          console.log(error)
+          return res.status(StatusCodes.SERVER_ERROR).json({
+            success: false,
+            message: "Failed to save assessment after activity was saved",
+            error: error.message
+          });
+        });
+    }
+
+    if (existingActivity) {
+      // Update the existing activity with the complete data from the final submission
+      // This ensures the DB always has the full set of activities, even if the
+      // last fire-and-forget progressive save lost the race to the assessment creation
+      if (req.body.activities && req.body.activities.length > (existingActivity.activities?.length || 0)) {
+        existingActivity.activities = req.body.activities;
+        await existingActivity.save();
+      }
+
+      const newAssessment = new Assesment(req.body);
+      await newAssessment.save();
+      // Increase course progress
+      courseEnrollmentForActivity.progress = Math.min(100, Math.ceil(courseEnrollmentForActivity.progress + (100 / courseEnrollmentForActivity?.course?.weeks)))
+
+      // Update lastWeekIndex to unlock next week, using Math.max to prevent regression
+      const currentWeekNum = parseInt(week);
+      if (!isNaN(currentWeekNum)) {
+        courseEnrollmentForActivity.lastWeekIndex = Math.max(courseEnrollmentForActivity.lastWeekIndex || 1, currentWeekNum + 1);
+      }
+
+      await courseEnrollmentForActivity.save()
+      return res.status(StatusCodes.OK).json({
+        success: true,
+        message: "Activity and Assessment have been successfully saved!",
+        newAssessment
+      });
+    }
+
+    if (existingAssessment) {
+      const newActivity = new Activity(req.body);
+      await newActivity.save();
+      return res.status(StatusCodes.OK).json({
+        success: true,
+        message: "Assessment already exists. Activity has been successfully saved!",
+        newActivity
+      });
+    }
+
+  } catch (error) {
+    console.log(error)
   }
 
 };
@@ -804,6 +818,20 @@ exports.activityData = async (req, res) => {
     if (updateNeeded) {
       await enrollment.save();
     }
+  }
+
+  // Safety net: Do NOT overwrite activity data for a completed week
+  const existingAssessment = await Assesment.findOne({
+    user,
+    week,
+    $or: [{ courseEnrollment: id }, { courseEnrollmentId: id }]
+  });
+
+  if (existingAssessment) {
+    return res.status(StatusCodes.OK).json({
+      success: true,
+      message: "Week already completed. Activity not updated."
+    });
   }
 
   // Upsert Activity data
