@@ -1150,3 +1150,30 @@ exports.adminInviteSchoolTeamMember = async (req, res) => {
 
     res.status(StatusCodes.OK).json({ message: "Admin invite sent successfully!" });
 };
+
+// Proxy AI webhook call to avoid CORS preflight issues
+exports.generateAIFeedback = async (req, res) => {
+    try {
+        const axios = require("axios");
+        const webhookUrl = "https://n8n.srv895792.hstgr.cloud/webhook/a5597c60-cd68-437c-a54f-7ab34732681e";
+
+        console.log("Proxying AI webhook call...");
+        console.log("Request body being sent to n8n:", JSON.stringify(req.body, null, 2)?.substring(0, 2000));
+        const response = await axios.post(webhookUrl, req.body, {
+            headers: { "Content-Type": "application/json" },
+            timeout: 120000 // 2 minute timeout for AI processing
+        });
+
+        console.log("AI webhook response status:", response.status);
+        console.log("AI webhook response data type:", typeof response.data);
+        console.log("AI webhook response data:", JSON.stringify(response.data, null, 2)?.substring(0, 1000));
+        return res.status(StatusCodes.OK).json(response.data);
+    } catch (error) {
+        console.error("AI webhook proxy error:", error.message);
+        return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+            status: "failed",
+            message: "Failed to call AI webhook",
+            error: error.message
+        });
+    }
+};
