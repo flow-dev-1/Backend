@@ -744,7 +744,6 @@ exports.submitUserCourseData = async (req, res) => {
 
 exports.getUserCourseData = async (req, res) => {
   const { id, week } = req.params;
-  const user = req.user._id;
 
   // Validate ID
   if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -756,12 +755,10 @@ exports.getUserCourseData = async (req, res) => {
   // Find the assessment and activity for the user
   const [assessment, activity] = await Promise.all([
     Assesment.findOne({
-      user,
       week,
       $or: [{ courseEnrollmentId: id }, { courseEnrollment: id }],
     }),
     Activity.findOne({
-      user,
       $or: [{ courseEnrollmentId: id }, { courseEnrollment: id }],
       week
     })
