@@ -1160,20 +1160,44 @@ exports.generateAIFeedback = async (req, res) => {
         console.log("Proxying AI webhook call...");
         console.log("Request body being sent to n8n:", JSON.stringify(req.body, null, 2)?.substring(0, 2000));
         const response = await axios.post(webhookUrl, req.body, {
-            headers: { "Content-Type": "application/json" },
-            timeout: 120000 // 2 minute timeout for AI processing
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json, text/plain, */*",
+                "User-Agent": "Axios/1.6.2", // Sometimes helpful to be explicit
+            },
+            timeout: 180000, // Increase to 3 minutes
+            maxContentLength: Infinity,
+            maxBodyLength: Infinity
         });
 
-        console.log("AI webhook response status:", response.status);
-        console.log("AI webhook response data type:", typeof response.data);
-        console.log("AI webhook response data:", JSON.stringify(response.data, null, 2)?.substring(0, 1000));
+        console.log("---------------- AI WEBHOOK RESPONSE START (BACKEND) ----------------");
+        console.log("Status:", response.status);
+        console.log("Data Type:", typeof response.data);
+        console.log("Full Data:", JSON.stringify(response.data, null, 2));
+        console.log("---------------- AI WEBHOOK RESPONSE END (BACKEND) ------------------");
         return res.status(StatusCodes.OK).json(response.data);
     } catch (error) {
-        console.error("AI webhook proxy error:", error.message);
-        return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+        if (error.response) {
+            // The request was made and the server responded with a status code
+            console.error("AI webhook error response status:", error.response.status);
+            console.error("AI webhook error response data:", JSON.stringify(error.response.data, null, 2));
+        } else if (error.request) {
+            // The request was made but no response was received
+            console.error("AI webhook no response received.");
+            console.error("Error Code:", error.code);
+            console.error("Error Message:", error.message);
+            if (error.syscall) console.error("Syscall:", error.syscall);
+        } else {
+            // Something happened in setting up the request that triggered an Error
+            console.error("AI webhook proxy setup error:", error.message);
+        }
+
+        return res.status(StatusCodes.SERVER_ERROR).json({
             status: "failed",
             message: "Failed to call AI webhook",
-            error: error.message
+            error: error.message,
+            code: error.code,
+            details: error.response?.data || null
         });
     }
 };
