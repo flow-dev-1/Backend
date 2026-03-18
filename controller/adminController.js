@@ -133,15 +133,20 @@ exports.verifyAccount = async (req, res) => {
 }
 
 exports.loginFlowAdmin = async (req, res) => {
-    const { email, password } = req.body
+    let { email, password } = req.body;
+    if (email) email = email.trim();
 
     let admin = await Admin.findOne({ email, isVerified: true })
     if (!admin) {
+        console.log(`Admin login failure: Account not found or not verified for ${email}`);
         return res.status(StatusCodes.BAD_REQUEST).json({ message: "Admin Account not found! Please contact FLOW support." })
     }
 
     const validPassword = await bcrypt.compare(password, admin.password);
-    if (!validPassword) return res.status(400).send('Invalid email or password.');
+    if (!validPassword) {
+        console.log(`Admin login failure: Incorrect password for ${email}`);
+        return res.status(400).send('Invalid email or password.');
+    }
 
 
     const token = await admin.generateAuthToken();

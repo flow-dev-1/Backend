@@ -6,6 +6,7 @@ const users = require('../routes/users');
 const indexRouter = require("../routes/index")
 const paymentRouter = require("../routes/payment")
 const error = require("../middleware/error");
+const excelUpload = require("../routes/excelUpload");
 
 module.exports = function (app) {
     app.use(express.urlencoded({ extended: true }));
@@ -16,6 +17,7 @@ module.exports = function (app) {
     app.use('/api/users', users);
     app.use("/api", indexRouter)
     app.use("/", paymentRouter)
+    app.use("/api/excel-upload", excelUpload);
 
     app.use(error);
 }
