@@ -76,7 +76,8 @@ exports.fixing_selfawareness = async (req, res) => {
 
 // Login Route
 exports.login = async (req, res) => {
-  const { usernameOrEmail, password } = req.body;
+  let { usernameOrEmail, password } = req.body;
+  if (usernameOrEmail) usernameOrEmail = usernameOrEmail.trim();
   // Helper function to find a user in the specified model
   const findUser = async (Model, query) => {
     return await Model.findOne(query).select(
@@ -114,7 +115,7 @@ exports.login = async (req, res) => {
     // Assign the first found account
     if (user) {
       account = user;
-      accountType = "Individual";
+      accountType =  "Individual";
     } else if (school) {
       account = school;
       accountType = "School";
@@ -139,13 +140,16 @@ exports.login = async (req, res) => {
 
   // If no account is found, return an error response
   if (!account) {
+    console.log(`Login failure: Account not found for ${usernameOrEmail}`);
     return res
       .status(StatusCodes.BAD_REQUEST)
       .json({ message: "Invalid credentials." });
   }
   // Verify the password
   const validPassword = await bcrypt.compare(password, account.password);
+
   if (!validPassword) {
+    console.log(`Login failure: Incorrect password for ${usernameOrEmail}`);
     return res
       .status(StatusCodes.BAD_REQUEST)
       .json({ message: "Invalid credentials." });

@@ -20,16 +20,12 @@ const serverAdapter = new ExpressAdapter();
 serverAdapter.setBasePath("/admin/queues");
 
 // Specify all queues here
-const queues = [emailService.queue(),sendStudentEmailService.queue()];
+const allQueues = [emailService.queue(), sendStudentEmailService.queue()];
 
-const QUEUE_LIST = [
-    ...queues?.map((queue) => {
-        return new BullAdapter(queue);
-    }),
-];
+const QUEUE_LIST = allQueues.map((queue) => new BullAdapter(queue));
 
 const { addQueue, removeQueue, setQueues, replaceQueues } = createBullBoard({
-    queues:QUEUE_LIST,
+    queues: QUEUE_LIST,
     serverAdapter: serverAdapter,
 });
 

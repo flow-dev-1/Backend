@@ -376,19 +376,24 @@ exports.verifyAccount = async (req, res) => {
 };
 
 exports.loginFlowSchool = async (req, res) => {
-    const { email, password } = req.body;
+    let { email, password } = req.body;
+    if (email) email = email.trim();
 
     let school = await Schools.findOne({ email, isVerified: true }).select(
         "-isVerified -isDeleted -resetPassword"
     );
     if (!school) {
+        console.log(`School login failure: Account not found or not verified for ${email}`);
         return res.status(StatusCodes.BAD_REQUEST).json({
             message: "School Account not found! Please contact FLOW support.",
         });
     }
 
     const validPassword = await bcrypt.compare(password, school.password);
-    if (!validPassword) return res.status(400).send("Invalid email or password.");
+    if (!validPassword) {
+        console.log(`School login failure: Incorrect password for ${email}`);
+        return res.status(400).send("Invalid email or password.");
+    }
 
     const token = await school.generateAuthToken();
 
