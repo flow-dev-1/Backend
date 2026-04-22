@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const { Educator } = require("../models/educators");
 const { Admin } = require("../models/admin");
 const OTP = require("../models/OTP");
@@ -11,6 +12,7 @@ const Counter = require("../models/counter");
 const Schools = require("../models/school");
 const CourseEnrollment = require("../models/courseEnrollment");
 const Course = require("../models/course");
+const SchoolCourseEnrollment = require("../models/schoolCourseEnrollment");
 const { date } = require("joi");
 const Activity = require("../models/activity");
 const Assessment = require("../models/assessment.model");
@@ -115,7 +117,7 @@ exports.login = async (req, res) => {
     // Assign the first found account
     if (user) {
       account = user;
-      accountType =  "Individual";
+      accountType = "Individual";
     } else if (school) {
       account = school;
       accountType = "School";
@@ -511,4 +513,101 @@ exports.verifyAccount = async (req, res) => {
   await OTP.deleteMany({ email, type: otp.type }).exec();
 
   res.status(StatusCodes.OK).json({ message: "Your account is now verified" });
+};
+
+exports.assignCourseToSchool = async (req, res) => {
+  try {
+    const { courseId, schoolCourseEnrollmentId } = req.body;
+
+
+    if (!courseId || !schoolCourseEnrollmentId) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        message: "courseId and schoolCourseEnrollmentId are required.",
+      });
+    }
+
+    const [course, referenceEnrollment] = await Promise.all([
+      Course.findById(courseId),
+      SchoolCourseEnrollment.findById(schoolCourseEnrollmentId),
+    ]);
+
+    if (!course) {
+      return res.status(StatusCodes.NOT_FOUND).json({ message: "Course not found." });
+    }
+    if (!referenceEnrollment) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        message: "No existing enrollment found to copy schedule details from.",
+      });
+    }
+
+    const { classTag, dayOfWeek, startTime, endTime, school, stdClass } = referenceEnrollment;
+
+    const existing = await SchoolCourseEnrollment.findOne({
+      course: courseId,
+      school,
+      stdClass,
+      classTag,
+      status: "Active",
+    });
+
+    if (existing) {
+      return res.status(StatusCodes.UNPROCESSABLE_ENTITY).json({
+        message: `Course already assigned to ${stdClass} for this school.`,
+      });
+    }
+
+    const newSchoolCourseEnrollmentId = new mongoose.Types.ObjectId();
+
+    // Fetch all student CourseEnrollments from the reference enrollment
+    const referenceStudentEnrollments = await CourseEnrollment.find({
+      _id: { $in: referenceEnrollment.studentEnrollments,},
+      status:"Confirmed"
+    }).select("user checkModel stdClass classTag");
+
+
+    // Create new CourseEnrollment for each student
+    const newStudentEnrollments = referenceStudentEnrollments.map((studentEnrollment) => ({
+      _id: new mongoose.Types.ObjectId(),
+      course: courseId,
+      school,
+      schoolCourseEnrollment: newSchoolCourseEnrollmentId,
+      stdClass,
+      classTag,
+      user: studentEnrollment.user,
+      checkModel: studentEnrollment.checkModel,
+      status: "Confirmed",
+      progress: 0,
+    }));
+
+    const insertedEnrollments = await CourseEnrollment.insertMany(newStudentEnrollments);
+    const insertedIds = insertedEnrollments.map((e) => e._id);
+
+    const enrollment = new SchoolCourseEnrollment({
+      _id: newSchoolCourseEnrollmentId,
+      enrolledBy: req.user._id,
+      docModel: "Admin",
+      course: courseId,
+      school,
+      stdClass,
+      classTag,
+      dayOfWeek,
+      startTime,
+      endTime,
+      status: "Active",
+      studentEnrollments: insertedIds,
+    });
+
+    await enrollment.save();
+
+    return res.status(StatusCodes.OK).json({
+      message: `Course assigned to ${stdClass} - ${classTag} successfully! ${insertedIds.length} student(s) enrolled.`,
+      enrollment,
+    });
+  } catch (error) {
+    console.error("assignCourseToSchool error:", error);
+    return res.status(StatusCodes.SERVER_ERROR).json({
+      message: "An error occurred while assigning the course.",
+      error: error.message,
+    });
+  }
 };
