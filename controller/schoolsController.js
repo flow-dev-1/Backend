@@ -28,6 +28,23 @@ const winston = require("winston");
 const emailService = require("../utils/emailQueue.js");
 const addStudentToCourseHelper = require("../utils/addStudentToCourseHelper.js");
 
+const TEASER_COURSE_IDS = [
+    "6a4b61506661e58365e9ceb4",
+    "6a4b616d6661e58365e9ceb5",
+];
+const TEASER_ALLOWED_SCHOOL_ID = "673210c0f28242d1d71ba39f";
+
+const normalizeId = (value) => value?._id?.toString() || value?.toString();
+
+const getRequesterSchoolId = (req) => {
+    if (req.user?.isSchoolAdmin) return normalizeId(req.user.school);
+    if (req.user?.isSchool) return normalizeId(req.user._id);
+    return normalizeId(req.params.id);
+};
+
+const canViewTeaserCourses = (req) =>
+    getRequesterSchoolId(req) === TEASER_ALLOWED_SCHOOL_ID;
+
 // Configure Winston to log errors to the courseInviteError.log file
 const logger = new winston.Logger({
     level: "error",
@@ -84,6 +101,7 @@ exports.getSchoolEmailTeam = async (req, res) => {
 exports.getCourses = async (req, res) => {
     let { type } = req.query;
     let courses;
+    const showTeaserCourses = canViewTeaserCourses(req);
 
     if (type === "Enrolled") {
         let enrolledCourses = await SchoolCourses.find({
@@ -96,11 +114,19 @@ exports.getCourses = async (req, res) => {
         // Filter out duplicate or unwanted courses based on the populated `course`
         courses = enrolledCourses.filter(
             (course, index, self) =>
+                course.course &&
+                (showTeaserCourses || !TEASER_COURSE_IDS.includes(course.course._id.toString())) &&
                 index ===
-                self.findIndex((c) => c.course._id.toString() === course.course._id.toString())
+                self.findIndex((c) => c.course?._id?.toString() === course.course._id.toString())
         );
     } else {
-        courses = await Courses.find({ status: "published" }).lean();
+        const courseQuery = { status: "published" };
+
+        if (!showTeaserCourses) {
+            courseQuery._id = { $nin: TEASER_COURSE_IDS };
+        }
+
+        courses = await Courses.find(courseQuery).lean();
     }
 
     res.status(StatusCodes.OK).json({ courses });
