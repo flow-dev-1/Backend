@@ -163,6 +163,7 @@ exports.registerInvitedEducator = async (req, res) => {
 
     // Find the educator in the database
     let foundEducator = await Educator.findOne({ email });
+    const pendingInvite = foundEducator?.newCourseInvite;
 
     if (!foundEducator) {
       // Create a new educator if not present
@@ -181,7 +182,7 @@ exports.registerInvitedEducator = async (req, res) => {
         newCourseInvite: null,
       });
     } else {
-      if (!foundEducator.newCourseInvite) {
+      if (!pendingInvite) {
         results.push({ email, message: "Expired or invalid invite link!" });
         continue;
       }
@@ -197,7 +198,7 @@ exports.registerInvitedEducator = async (req, res) => {
       foundEducator.lga = lga;
       foundEducator.educatorType = "School";
       foundEducator.grade = grade;
-      foundEducator.school = foundEducator.newCourseInvite.school;
+      foundEducator.school = pendingInvite.school;
       foundEducator.newCourseInvite = null;
     }
 
@@ -242,7 +243,9 @@ exports.registerInvitedEducator = async (req, res) => {
       studentEnrollment = new StudentEnrollments({
         school: foundEducator.school,
         user: foundEducator._id,
-        course: foundEducator.newCourseInvite.course,
+        course: pendingInvite?.course,
+        schoolCourseEnrollment: pendingInvite?.schoolCourseEnrollment,
+        checkModel: "Educator",
         status: "Pending",
       });
     }
@@ -252,7 +255,7 @@ exports.registerInvitedEducator = async (req, res) => {
     await studentEnrollment.save();
 
     await Courses.findByIdAndUpdate(studentEnrollment.course, {
-      $push: {
+      $addToSet: {
         courseEnrollment: studentEnrollment._id,
       },
     });

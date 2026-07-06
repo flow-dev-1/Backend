@@ -227,50 +227,50 @@ exports.school_course_invite = async (
   email,
   token
 ) => {
- try {
-   let query = `t=${token}&s=${enrollment_id}&email=${email}&status=${status}&grade=${grade}&schoolName=${school_name}&coursName=${course_name}`;
-  let link;
-  // if (status === "new") {
-  //     // This is a new user
-  //     link = process.env.ENV === 'staging' ? `https://my-flow-dev/register?${query}` : `http://localhost:3000/register?${query}`
+  try {
+    let query = `t=${token}&s=${enrollment_id}&email=${email}&status=${status}&grade=${grade}&schoolName=${school_name}&coursName=${course_name}`;
+    let link;
+    // if (status === "new") {
+    //     // This is a new user
+    //     link = process.env.ENV === 'staging' ? `https://my-flow-dev/register?${query}` : `http://localhost:3000/register?${query}`
 
-  // } else {
-  // This is for users that are already registered.
-  // They just need to accept and confirm the invitation
-  link =
-    process.env.ENV === "production" ? `https://flowonline.app/invited-user?${query}` :
-      process.env.ENV === "staging"
-        ? `https://my-flow-dev.netlify.app/invited-user?${query}`
-        : `http://localhost:3000/invited-user?${query}`;
-  // }
-  const transporter = nodemailer.createTransport({
-    host: "live.smtp.mailtrap.io",
-    port: 587,
-    auth: {
-      user: "api",
-      pass: process.env.MAILTRAP_TOKEN
-    }
-  });
+    // } else {
+    // This is for users that are already registered.
+    // They just need to accept and confirm the invitation
+    link =
+      process.env.ENV === "production" ? `https://flowonline.app/invited-user?${query}` :
+        process.env.ENV === "staging"
+          ? `https://my-flow-dev.netlify.app/invited-user?${query}`
+          : `http://localhost:3000/invited-user?${query}`;
+    // }
+    const transporter = nodemailer.createTransport({
+      host: "live.smtp.mailtrap.io",
+      port: 587,
+      auth: {
+        user: "api",
+        pass: process.env.MAILTRAP_TOKEN
+      }
+    });
 
-  // const transporter = nodemailer.createTransport({
-  //   service: 'gmail',
-  //   port: 465,
-  //   secure: true, // true for 465, false for other ports
-  //   debug: true,
-  //   secureConnection: false,
-  //   auth: {
-  //     user: "dev@flow.ng",
-  //     pass: process.env.EMAIL_PASS,
-  //   },
-  //   tls: {
-  //     rejectUnAuthorized: true
-  //   }
-  // });
-  await transporter.sendMail({
-    from: EMAIL,
-    to: email,
-    subject: "FLOW For Schools Course Invitation",
-    html: ` <b> Hi!, </b></br>
+    // const transporter = nodemailer.createTransport({
+    //   service: 'gmail',
+    //   port: 465,
+    //   secure: true, // true for 465, false for other ports
+    //   debug: true,
+    //   secureConnection: false,
+    //   auth: {
+    //     user: "dev@flow.ng",
+    //     pass: process.env.EMAIL_PASS,
+    //   },
+    //   tls: {
+    //     rejectUnAuthorized: true
+    //   }
+    // });
+    await transporter.sendMail({
+      from: EMAIL,
+      to: email,
+      subject: "FLOW For Schools Course Invitation",
+      html: ` <b> Hi!, </b></br>
               <p><b>${childName}</b> has been invited to enroll in the <b style="color: #2a9d8f;">${course_name}</b> course on FLOW by <b style="color: #264653;">${school_name}</b>.</p><br>
             </br>
             <p>Please click or copy this link to complete your sign up.</p>
@@ -282,11 +282,11 @@ exports.school_course_invite = async (
             <p>Please do not forward this email to others in order to prevent anybody else from accessing your account.</p>   
             </br>
             <p>Kind Regards! </p>`,
-  });
-  console.log("Email sent successfully!")
- } catch (error) {
-  console.log(error)
- }
+    });
+    console.log("Email sent successfully!")
+  } catch (error) {
+    console.log(error)
+  }
 };
 
 exports.sendProcessingReport = async (
@@ -392,11 +392,19 @@ exports.school_course_invite_teacher = async (
   // } else {
   // This is for users that are already registered.
   // They just need to accept and confirm the invitation
-  link =
-    process.env.ENV === "production" ? `https://flowonline.app/invited-educator?${query}` :
-      process.env.ENV === "staging"
-        ? `https://my-flow-dev.netlify.app/invited-educator?${query}`
-        : `http://localhost:3000/invited-educator?${query}`;
+  if (status === "old") {
+    link =
+      process.env.ENV === "production" ? `https://flowonline.app/dashboard/my-courses` :
+        process.env.ENV === "staging"
+          ? `https://my-flow-dev.netlify.app/dashboard/my-courses`
+          : `http://localhost:3000/dashboard/my-courses`;
+  } else {
+    link =
+      process.env.ENV === "production" ? `https://flowonline.app/invited-educator?${query}` :
+        process.env.ENV === "staging"
+          ? `https://my-flow-dev.netlify.app/invited-educator?${query}`
+          : `http://localhost:3000/invited-educator?${query}`;
+  }
   // }
 
   try {
@@ -416,7 +424,7 @@ exports.school_course_invite_teacher = async (
       html: ` <b> Hello ${teacherName}, </b></br>
               <p>You have been invited to enroll in the <b style="color: #2a9d8f;">${course_name}</b> course on FLOW by <b style="color: #264653;">${school_name}</b>.</p><br>
             </br>
-            <p>Please click or copy this link to complete your sign up.</p>
+            <p>${status === "old" ? "This course has been added to your FLOW account. Please sign in to access it from My Courses." : "Please click or copy this link to complete your sign up."}</p>
             </br>
             </br>
             <b><a href="${link}">${link}</a></b>

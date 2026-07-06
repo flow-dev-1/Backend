@@ -25,6 +25,39 @@ const Assesment = require("../models/assessment.model");
 const { courseEnrollment } = require("./schoolsController");
 const course = require("../models/course");
 
+const TEASER_COURSE_IDS = [
+  "6a4b61506661e58365e9ceb4",
+  "6a4b616d6661e58365e9ceb5",
+];
+const TEASER_ALLOWED_SCHOOL_ID = "673210c0f28242d1d71ba39f";
+
+const normalizeId = (value) => {
+  if (!value) return "";
+  if (typeof value === "string") return value;
+  if (value._id && value._id !== value) return normalizeId(value._id);
+  return value.toString();
+};
+
+const isTeaserCourse = (courseData) => {
+  const courseId = normalizeId(courseData?._id || courseData?.course?._id);
+  return TEASER_COURSE_IDS.includes(courseId);
+};
+
+const getViewerSchoolId = async (viewer) => {
+  if (viewer?.school) return normalizeId(viewer.school);
+
+  const foundUser = await User.findById(viewer?._id).select("school");
+  if (foundUser?.school) return normalizeId(foundUser.school);
+
+  const foundEducator = await Educator.findById(viewer?._id).select("school");
+  return normalizeId(foundEducator?.school);
+};
+
+const filterTeaserCoursesForViewer = (courses, schoolId) => {
+  if (schoolId === TEASER_ALLOWED_SCHOOL_ID) return courses;
+  return courses.filter((courseData) => !isTeaserCourse(courseData));
+};
+
 
 exports.getLoggedUser = async (req, res) => {
   let userId = req.params.id ? req.params.id : req.user._id
@@ -535,6 +568,7 @@ exports.getParentWithNewCourseInvite = async (req, res) => {
 exports.getCourses = async (req, res) => {
   let { type } = req.query;
   let courses;
+  const viewerSchoolId = await getViewerSchoolId(req.user);
 
   if (type === "Enrolled") {
     courses = await CourseEnrollment.find({
@@ -550,6 +584,8 @@ exports.getCourses = async (req, res) => {
       (courseEnrollment) => !courseEnrollment.schoolCourseEnrollment || courseEnrollment.schoolCourseEnrollment.status === "Active"
     );
 
+    courses = filterTeaserCoursesForViewer(courses, viewerSchoolId);
+
     // for (let courseEnrollment of courses) {
     //   let courseId = courseEnrollment.course._id;
     //   let courseProgress = await Activity.find({
@@ -562,6 +598,7 @@ exports.getCourses = async (req, res) => {
     // }
   } else {
     courses = await Courses.find({ status: "published" });
+    courses = filterTeaserCoursesForViewer(courses, viewerSchoolId);
   }
 
   res.status(StatusCodes.OK).json({ courses });
