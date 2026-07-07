@@ -1178,6 +1178,7 @@ exports.addTeachersToEnrolledCourse = async (req, res) => {
     for (const educatorData of educators) {
         // Check if the educator already exists
         let educator = await Educator.findOne({ email: educatorData.email });
+        const isExistingVerifiedEducator = !!educator?.isVerified;
 
         if (!educator) {
             // If the educator doesn't exist, create a new one
@@ -1188,8 +1189,23 @@ exports.addTeachersToEnrolledCourse = async (req, res) => {
                 email: educatorData.email,
                 educatorType: "School",
                 grade: "Educator",
-                newCourseInvite: { school: id },
+                newCourseInvite: {
+                    school: id,
+                    course: existingEnrollment.course._id,
+                    schoolCourseEnrollment: existingEnrollment._id,
+                },
             });
+            await educator.save();
+        } else if (!educator.isVerified) {
+            educator.newCourseInvite = {
+                school: id,
+                course: existingEnrollment.course._id,
+                schoolCourseEnrollment: existingEnrollment._id,
+            };
+            await educator.save();
+        } else if (!educator.school) {
+            educator.school = id;
+            educator.educatorType = "School";
             await educator.save();
         }
 
@@ -1212,10 +1228,32 @@ exports.addTeachersToEnrolledCourse = async (req, res) => {
                 checkModel: "Educator",
                 schoolCourseEnrollment: existingEnrollment._id,
                 user: educator._id,
+                status: isExistingVerifiedEducator ? "Confirmed" : "Pending",
             });
 
             existingEnrollment.studentEnrollments.push(studentEnrollment._id);
-            await studentEnrollment.save();
+        }
+
+        const hasStudentEnrollment = existingEnrollment.studentEnrollments.some(
+            (enrollmentId) => enrollmentId.toString() === studentEnrollment._id.toString()
+        );
+
+        if (!hasStudentEnrollment) {
+            existingEnrollment.studentEnrollments.push(studentEnrollment._id);
+        }
+
+        if (isExistingVerifiedEducator && studentEnrollment.status !== "Confirmed") {
+            studentEnrollment.status = "Confirmed";
+        }
+
+        await studentEnrollment.save();
+
+        if (isExistingVerifiedEducator) {
+            await Courses.findByIdAndUpdate(existingEnrollment.course._id, {
+                $addToSet: {
+                    courseEnrollment: studentEnrollment._id,
+                },
+            });
         }
 
         const token = educator.generateAuthToken();
@@ -1230,7 +1268,7 @@ exports.addTeachersToEnrolledCourse = async (req, res) => {
         // Send invite to the educator
         await school_course_invite_teacher(
             educator.fullName,
-            "new",
+            isExistingVerifiedEducator ? "old" : "new",
             stdGrade,
             studentEnrollment._id,
             existingEnrollment.school.school_name,
