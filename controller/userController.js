@@ -690,10 +690,12 @@ exports.submitUserCourseData = async (req, res) => {
       })
     ]);
 
-    if (existingActivity && existingAssessment) {
+    // Once assessment exists, the week has been finally submitted.
+    // Do not update or backfill answers after final submission.
+    if (existingAssessment) {
       return res.status(StatusCodes.OK).json({
-        success: false,
-        message: "You have already taken the activity and assessment"
+        success: true,
+        message: "Week already completed. Answers were not updated."
       });
     }
     // The current code does prevent the assessment from saving if the activity fails.
@@ -760,16 +762,6 @@ exports.submitUserCourseData = async (req, res) => {
         success: true,
         message: "Activity and Assessment have been successfully saved!",
         newAssessment
-      });
-    }
-
-    if (existingAssessment) {
-      const newActivity = new Activity(req.body);
-      await newActivity.save();
-      return res.status(StatusCodes.OK).json({
-        success: true,
-        message: "Assessment already exists. Activity has been successfully saved!",
-        newActivity
       });
     }
 
@@ -869,6 +861,17 @@ exports.activityData = async (req, res) => {
     });
   }
 
+  const activityUpdate = {
+    ...req.body,
+    courseEnrollment: enrollment ? enrollment.course : id,
+    courseEnrollmentId: enrollment ? enrollment._id : id
+  };
+  const updateOperation = { $set: activityUpdate };
+
+  if (!Object.prototype.hasOwnProperty.call(activityUpdate, "activities")) {
+    updateOperation.$setOnInsert = { activities: [] };
+  }
+
   // Upsert Activity data
   const updatedActivity = await Activity.findOneAndUpdate(
     {
@@ -876,11 +879,7 @@ exports.activityData = async (req, res) => {
       week,
       user
     },
-    {
-      ...req.body,
-      courseEnrollment: enrollment ? enrollment.course : id,
-      courseEnrollmentId: enrollment ? enrollment._id : id
-    },
+    updateOperation,
     { new: true, upsert: true }
   );
 
