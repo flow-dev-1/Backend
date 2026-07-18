@@ -24,6 +24,9 @@ const Activity = require("../models/activity");
 const Assesment = require("../models/assessment.model");
 const { courseEnrollment } = require("./schoolsController");
 const course = require("../models/course");
+const {
+  enqueueFeedbackAfterSubmission
+} = require("../utils/aiFeedback/enqueueFeedbackAfterSubmission");
 
 const TEASER_COURSE_IDS = [
   "6a4b61506661e58365e9ceb4",
@@ -664,7 +667,7 @@ exports.submitUserCourseData = async (req, res) => {
       user,
     }).populate({
       path: "course",
-      select: "weeks"
+      select: "weeks title url"
     });
 
     if (!courseEnrollmentForActivity) {
@@ -707,34 +710,35 @@ exports.submitUserCourseData = async (req, res) => {
       const newActivity = new Activity(req.body);
       await newActivity.save();
       const newAssessment = new Assesment(req.body);
-      await newAssessment.save()
-        .then(async () => {
-          // Increase the progress
-          courseEnrollmentForActivity.progress = Math.min(100, Math.ceil(courseEnrollmentForActivity.progress + (100 / courseEnrollmentForActivity?.course?.weeks)))
+      await newAssessment.save();
 
-          // Update lastWeekIndex to unlock next week, using Math.max to prevent regression
-          const currentWeekNum = parseInt(week);
-          if (!isNaN(currentWeekNum)) {
-            courseEnrollmentForActivity.lastWeekIndex = Math.max(courseEnrollmentForActivity.lastWeekIndex || 1, currentWeekNum + 1);
-          }
+      // Increase the progress
+      courseEnrollmentForActivity.progress = Math.min(100, Math.ceil(courseEnrollmentForActivity.progress + (100 / courseEnrollmentForActivity?.course?.weeks)))
 
-          await courseEnrollmentForActivity.save()
-          return res.status(StatusCodes.OK).json({
-            success: true,
-            message: "Activity and Assessment have been successfully saved!",
-            newAssessment,
-            newActivity
-          });
-        })
-        .catch((error) => {
+      // Update lastWeekIndex to unlock next week, using Math.max to prevent regression
+      const currentWeekNum = parseInt(week);
+      if (!isNaN(currentWeekNum)) {
+        courseEnrollmentForActivity.lastWeekIndex = Math.max(courseEnrollmentForActivity.lastWeekIndex || 1, currentWeekNum + 1);
+      }
 
-          console.log(error)
-          return res.status(StatusCodes.SERVER_ERROR).json({
-            success: false,
-            message: "Failed to save assessment after activity was saved",
-            error: error.message
-          });
+      await courseEnrollmentForActivity.save();
+
+      try {
+        await enqueueFeedbackAfterSubmission({
+          activity: newActivity,
+          course: courseEnrollmentForActivity.course,
+          week
         });
+      } catch (error) {
+        console.error("Unable to enqueue AI activity feedback:", error.message);
+      }
+
+      return res.status(StatusCodes.OK).json({
+        success: true,
+        message: "Activity and Assessment have been successfully saved!",
+        newAssessment,
+        newActivity
+      });
     }
 
     if (existingActivity) {
@@ -758,6 +762,17 @@ exports.submitUserCourseData = async (req, res) => {
       }
 
       await courseEnrollmentForActivity.save()
+
+      try {
+        await enqueueFeedbackAfterSubmission({
+          activity: existingActivity,
+          course: courseEnrollmentForActivity.course,
+          week
+        });
+      } catch (error) {
+        console.error("Unable to enqueue AI activity feedback:", error.message);
+      }
+
       return res.status(StatusCodes.OK).json({
         success: true,
         message: "Activity and Assessment have been successfully saved!",
@@ -861,11 +876,39 @@ exports.activityData = async (req, res) => {
     });
   }
 
+  const incomingActivities = Array.isArray(req.body.activities)
+    ? req.body.activities
+    : null;
   const activityUpdate = {
     ...req.body,
     courseEnrollment: enrollment ? enrollment.course : id,
     courseEnrollmentId: enrollment ? enrollment._id : id
   };
+
+  if (incomingActivities) {
+    const savedActivity = await Activity.findOne({
+      $or: [{ courseEnrollment: id }, { courseEnrollmentId: id }],
+      week,
+      user
+    }).select("activities");
+    const activitiesByPage = new Map();
+
+    (savedActivity?.activities || []).forEach((activity) => {
+      if (activity?.page != null) {
+        activitiesByPage.set(String(activity.page), activity);
+      }
+    });
+    incomingActivities.forEach((activity) => {
+      if (activity?.page != null) {
+        activitiesByPage.set(String(activity.page), activity);
+      }
+    });
+
+    activityUpdate.activities = Array.from(activitiesByPage.values()).sort(
+      (firstActivity, secondActivity) =>
+        Number(firstActivity.page) - Number(secondActivity.page)
+    );
+  }
   const updateOperation = { $set: activityUpdate };
 
   if (!Object.prototype.hasOwnProperty.call(activityUpdate, "activities")) {

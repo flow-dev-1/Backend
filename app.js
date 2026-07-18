@@ -10,6 +10,10 @@ const { BullAdapter } = require("@bull-board/api/bullAdapter");
 const { ExpressAdapter } = require("@bull-board/express");
 const emailService = require("./utils/emailQueue.js");
 const sendStudentEmailService = require("./utils/sendSingleEmailQueue.js");
+const queueDashboardAuth = require("./middleware/queueDashboardAuth.js");
+const {
+    getActivityFeedbackQueueService
+} = require("./utils/aiFeedback/queue");
 
 
 require('dotenv').config();
@@ -20,7 +24,12 @@ const serverAdapter = new ExpressAdapter();
 serverAdapter.setBasePath("/admin/queues");
 
 // Specify all queues here
-const allQueues = [emailService.queue(), sendStudentEmailService.queue()];
+const activityFeedbackQueueService = getActivityFeedbackQueueService();
+const allQueues = [
+    emailService.queue(),
+    sendStudentEmailService.queue(),
+    activityFeedbackQueueService.queue
+];
 
 const QUEUE_LIST = allQueues.map((queue) => new BullAdapter(queue));
 
@@ -51,7 +60,7 @@ cron.schedule('0 12 * * *', () => {
 // });
 
 require("./startup/routes")(app);
-app.use("/admin/queues", serverAdapter.getRouter());
+app.use("/admin/queues", queueDashboardAuth, serverAdapter.getRouter());
 
 // require("./startup/validation")();
 
