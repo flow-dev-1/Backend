@@ -1,4 +1,5 @@
 const Activity = require("../../models/activity");
+const { randomUUID } = require("crypto");
 const {
   boundedErrorMessage,
   createActivityNotFoundError,
@@ -21,8 +22,18 @@ const processActivityFeedbackGeneration = async ({
   if (!activity) throw createActivityNotFoundError(activityId);
 
   const initialState = getGenerationState(activity);
+  let isRegeneration = false;
   if (initialState.status === "completed") {
-    return { status: "already_completed" };
+    const integration = getCourseIntegration(courseKey, Number(activity.week));
+    try {
+      isRegeneration = Boolean(integration?.buildRequest({
+        requestId: randomUUID(),
+        activities: activity.activities
+      }));
+    } catch {
+      isRegeneration = false;
+    }
+    if (!isRegeneration) return { status: "already_completed" };
   }
   const currentTime = now();
   if (initialState.status === "processing") {
@@ -58,7 +69,7 @@ const processActivityFeedbackGeneration = async ({
     if (!latestActivity) throw createActivityNotFoundError(activityId);
 
     const latestState = getGenerationState(latestActivity);
-    if (latestState.status === "completed") {
+    if (latestState.status === "completed" && !isRegeneration) {
       return { status: "already_completed" };
     }
 

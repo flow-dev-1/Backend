@@ -155,7 +155,12 @@ describe("persistent Activity feedback generation", () => {
     const provider = createSuccessfulProvider();
 
     for (const status of ["completed", "processing"]) {
-      const activity = createActivity({ feedbackGeneration: { status } });
+      const activity = createActivity({
+        feedbackGeneration: { status },
+        activities: status === "completed"
+          ? buildActivities().map((item) => ({ ...item, feedback: "Existing feedback" }))
+          : buildActivities()
+      });
       const ActivityModel = { findById: jest.fn().mockResolvedValue(activity) };
 
       const result = await processActivityFeedbackGeneration({

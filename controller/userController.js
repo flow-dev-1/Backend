@@ -27,6 +27,7 @@ const course = require("../models/course");
 const {
   enqueueFeedbackAfterSubmission
 } = require("../utils/aiFeedback/enqueueFeedbackAfterSubmission");
+const { mergeCourseActivities } = require("../utils/mergeCourseActivities");
 
 const TEASER_COURSE_IDS = [
   "6a4b61506661e58365e9ceb4",
@@ -696,9 +697,20 @@ exports.submitUserCourseData = async (req, res) => {
     // Once assessment exists, the week has been finally submitted.
     // Do not update or backfill answers after final submission.
     if (existingAssessment) {
+      if (existingActivity) {
+        try {
+          await enqueueFeedbackAfterSubmission({
+            activity: existingActivity,
+            course: courseEnrollmentForActivity.course,
+            week
+          });
+        } catch (error) {
+          console.error("Unable to enqueue missing AI activity feedback:", error.message);
+        }
+      }
       return res.status(StatusCodes.OK).json({
         success: true,
-        message: "Week already completed. Answers were not updated."
+        message: "Week already completed. Answers were not updated. Missing feedback was queued when applicable."
       });
     }
     // The current code does prevent the assessment from saving if the activity fails.
@@ -891,22 +903,9 @@ exports.activityData = async (req, res) => {
       week,
       user
     }).select("activities");
-    const activitiesByPage = new Map();
-
-    (savedActivity?.activities || []).forEach((activity) => {
-      if (activity?.page != null) {
-        activitiesByPage.set(String(activity.page), activity);
-      }
-    });
-    incomingActivities.forEach((activity) => {
-      if (activity?.page != null) {
-        activitiesByPage.set(String(activity.page), activity);
-      }
-    });
-
-    activityUpdate.activities = Array.from(activitiesByPage.values()).sort(
-      (firstActivity, secondActivity) =>
-        Number(firstActivity.page) - Number(secondActivity.page)
+    activityUpdate.activities = mergeCourseActivities(
+      savedActivity?.activities || [],
+      incomingActivities
     );
   }
   const updateOperation = { $set: activityUpdate };

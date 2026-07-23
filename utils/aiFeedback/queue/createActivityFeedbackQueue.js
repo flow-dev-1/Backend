@@ -1,5 +1,7 @@
 const Queue = require("bull");
+const { randomUUID } = require("crypto");
 const Activity = require("../../../models/activity");
+const { getCourseIntegration } = require("../courseIntegrations");
 const {
   boundedErrorMessage,
   createActivityNotFoundError,
@@ -66,11 +68,31 @@ const createActivityFeedbackQueue = ({
     if (!activity) throw createActivityNotFoundError(data.activityId);
 
     const state = getGenerationState(activity);
-    if (["queued", "processing", "completed"].includes(state.status)) {
+    if (["queued", "processing"].includes(state.status)) {
       return {
         status: `already_${state.status}`,
         jobId: getJobId(data.activityId)
       };
+    }
+
+    const jobId = getJobId(data.activityId);
+    if (state.status === "completed") {
+      const integration = getCourseIntegration(data.courseKey, activity.week);
+      let missingRequest = null;
+      try {
+        missingRequest = integration?.buildRequest({
+          requestId: randomUUID(),
+          activities: activity.activities
+        });
+      } catch {
+        // Preserve completed deduplication when the stored payload is unsupported.
+      }
+      if (!missingRequest) {
+        return { status: "already_completed", jobId };
+      }
+
+      const previousJob = await queue.getJob(jobId);
+      if (previousJob) await previousJob.remove();
     }
 
     activity.feedbackGeneration = {
@@ -82,8 +104,6 @@ const createActivityFeedbackQueue = ({
       completedAt: null
     };
     await activity.save();
-
-    const jobId = getJobId(data.activityId);
 
     try {
       const job = await queue.add(data, {

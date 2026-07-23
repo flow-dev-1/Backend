@@ -19,6 +19,33 @@ describe("enqueue feedback after course submission", () => {
     expect(resolveCourseKey({ url: "compassion-course" })).toBe("compassion");
   });
 
+  it.each([
+    "TOT 2",
+    "TOT Course 2",
+    "Leaving No Learner Behind",
+    "TOT Course 2: Leaving No Learner Behind"
+  ])("resolves the real TOT 2 course title: %s", (title) => {
+    expect(resolveCourseKey({ title })).toBe("tot-2");
+  });
+
+  it("enqueues TOT Course 2 submissions", async () => {
+    const queueService = {
+      enqueue: jest.fn().mockResolvedValue({ status: "queued", jobId: "tot2-job-1" })
+    };
+
+    await expect(enqueueFeedbackAfterSubmission({
+      activity: { _id: "tot2-activity-1" },
+      course: { title: "TOT Course 2" },
+      week: 1,
+      queueService
+    })).resolves.toEqual({ status: "queued", jobId: "tot2-job-1" });
+
+    expect(queueService.enqueue).toHaveBeenCalledWith({
+      activityId: "tot2-activity-1",
+      courseKey: "tot-2"
+    });
+  });
+
   it("enqueues the persisted Activity for a supported course week", async () => {
     const queueService = {
       enqueue: jest.fn().mockResolvedValue({ status: "queued", jobId: "job-1" })
@@ -162,6 +189,127 @@ describe("enqueue feedback after course submission", () => {
       activityId: "compassion-activity-1",
       courseKey: "compassion"
     });
+  });
+
+  it("enqueues Resilience and Grit Week 1 after its integration is registered", async () => {
+    const queueService = {
+      enqueue: jest.fn().mockResolvedValue({
+        status: "queued",
+        jobId: "resilience-grit-job-1"
+      })
+    };
+
+    await expect(enqueueFeedbackAfterSubmission({
+      activity: { _id: "resilience-grit-activity-1" },
+      course: { title: "Resilience and Grit" },
+      week: 1,
+      queueService
+    })).resolves.toEqual({
+      status: "queued",
+      jobId: "resilience-grit-job-1"
+    });
+
+    expect(queueService.enqueue).toHaveBeenCalledWith({
+      activityId: "resilience-grit-activity-1",
+      courseKey: "resilience-grit"
+    });
+  });
+
+  it.each([2, 3, 4, 5])(
+    "enqueues Resilience and Grit Week %s after its integration is registered",
+    async (week) => {
+      const queueService = {
+        enqueue: jest.fn().mockResolvedValue({ status: "queued", jobId: `rg-${week}` })
+      };
+      await expect(enqueueFeedbackAfterSubmission({
+        activity: { _id: `rg-activity-${week}` },
+        course: { title: "Resilience and Grit" },
+        week,
+        queueService
+      })).resolves.toEqual({ status: "queued", jobId: `rg-${week}` });
+      expect(queueService.enqueue).toHaveBeenCalledWith({
+        activityId: `rg-activity-${week}`,
+        courseKey: "resilience-grit"
+      });
+    }
+  );
+
+  it("enqueues Self-Awareness Week 1 after its integration is registered", async () => {
+    const queueService = {
+      enqueue: jest.fn().mockResolvedValue({
+        status: "queued",
+        jobId: "self-awareness-job-1"
+      })
+    };
+
+    await expect(enqueueFeedbackAfterSubmission({
+      activity: { _id: "self-awareness-activity-1" },
+      course: { title: "Self-Awareness" },
+      week: 1,
+      queueService
+    })).resolves.toEqual({
+      status: "queued",
+      jobId: "self-awareness-job-1"
+    });
+
+    expect(queueService.enqueue).toHaveBeenCalledWith({
+      activityId: "self-awareness-activity-1",
+      courseKey: "self-awareness"
+    });
+  });
+
+  it("enqueues Self-Awareness Week 2 after its integration is registered", async () => {
+    const queueService = {
+      enqueue: jest.fn().mockResolvedValue({
+        status: "queued",
+        jobId: "self-awareness-job-2"
+      })
+    };
+
+    await expect(enqueueFeedbackAfterSubmission({
+      activity: { _id: "self-awareness-activity-2" },
+      course: { title: "Self-Awareness" },
+      week: 2,
+      queueService
+    })).resolves.toEqual({
+      status: "queued",
+      jobId: "self-awareness-job-2"
+    });
+
+    expect(queueService.enqueue).toHaveBeenCalledWith({
+      activityId: "self-awareness-activity-2",
+      courseKey: "self-awareness"
+    });
+  });
+
+  it("enqueues Self-Awareness Week 3 after its integration is registered", async () => {
+    const queueService = {
+      enqueue: jest.fn().mockResolvedValue({ status: "queued", jobId: "self-awareness-job-3" })
+    };
+    await expect(enqueueFeedbackAfterSubmission({
+      activity: { _id: "self-awareness-activity-3" },
+      course: { title: "Self-Awareness" },
+      week: 3,
+      queueService
+    })).resolves.toEqual({ status: "queued", jobId: "self-awareness-job-3" });
+    expect(queueService.enqueue).toHaveBeenCalledWith({
+      activityId: "self-awareness-activity-3",
+      courseKey: "self-awareness"
+    });
+  });
+
+  it("enqueues Self-Awareness Week 4 after its integration is registered", async () => {
+    const queueService = { enqueue: jest.fn().mockResolvedValue({ status: "queued", jobId: "self-awareness-job-4" }) };
+    await expect(enqueueFeedbackAfterSubmission({ activity: { _id: "self-awareness-activity-4" }, course: { title: "Self-Awareness" }, week: 4, queueService }))
+      .resolves.toEqual({ status: "queued", jobId: "self-awareness-job-4" });
+    expect(queueService.enqueue).toHaveBeenCalledWith({ activityId: "self-awareness-activity-4", courseKey: "self-awareness" });
+  });
+
+  it("enqueues Self-Awareness Week 5 after its integration is registered", async () => {
+    const queueService = { enqueue: jest.fn().mockResolvedValue({ status: "queued", jobId: "self-awareness-job-5" }) };
+    await expect(enqueueFeedbackAfterSubmission({ activity: { _id: "self-awareness-activity-5" }, course: { title: "Self-Awareness" }, week: 5, queueService }))
+      .resolves.toEqual({ status: "queued", jobId: "self-awareness-job-5" });
+    expect(queueService.enqueue).toHaveBeenCalledWith({ activityId: "self-awareness-activity-5", courseKey: "self-awareness" });
   });
 
   it("requires a persisted Activity for a supported submission", async () => {
