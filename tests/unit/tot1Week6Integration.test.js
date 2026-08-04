@@ -1,0 +1,12 @@
+const { applyTot1Week6Feedback, buildTot1Week6Request } = require("../../utils/aiFeedback/courseIntegrations/tot-1/week6");
+const activities=[
+ {page:4,answer:["B","A","C","B","C","A"].map((value,index)=>({stepId:index+2,value}))},
+ {page:6,answer:["Rest","Talk with a friend","Exercise"]},{page:8,answer:"A learner thanked me for helping."},
+ {page:10,answer:[{stepId:2,value:{green:[0],orange:[6],red:[12]}}]},
+ {page:12,answer:{step_3:{mainInput:"SEL helps students feel safe."},step_4:{mainInput:"Empathy, regulation, gratitude"},step_5:{checkboxes:{"morning-check-ins":true},others_:"Reflection",my_integration_plan__brief_description__:"Use a daily check-in."},step_6:{mainInput:"Pause and model calm responses."},step_7:{mainInput:"A colleague and planning time."},step_8:{input1:"Start check-ins",input2:"Use effort praise",collaboration:"Share with my team."},step_9:{mainInput:"Start small and stay consistent."}}}
+];
+describe("TOT 1 Week 6 AI feedback integration",()=>{
+ test("builds all seventeen targets and preserves collaboration separately",()=>{const r=buildTot1Week6Request({requestId:"77777777-7777-4777-8777-777777777777",activities});expect(r.targets).toHaveLength(17);expect(r.targets.find(x=>x.targetId.endsWith("page:4:step:2")).answer).toBe("Occasionally");expect(r.targets.find(x=>x.targetId.endsWith("page:12:step:10")).answer).toBe("Share with my team.");});
+ test("applies page and step feedback without changing answers",()=>{const answers=activities.map(x=>JSON.parse(JSON.stringify(x.answer)));const u=applyTot1Week6Feedback({activities,response:{results:[{targetId:"tot-1:week:6:page:6",status:"ready",feedback:"Useful recharge options."},{targetId:"tot-1:week:6:page:12:step:10",status:"ready",feedback:"Collaboration can support consistency."}]}});expect(u.find(x=>x.page===6).feedback).toBe("Useful recharge options.");expect(u.find(x=>x.page===12).feedback).toContainEqual({stepId:10,value:"Collaboration can support consistency."});expect(u.map(x=>x.answer)).toEqual(answers);});
+ test("skips only an existing section",()=>{const input=activities.map(x=>x.page===12?{...x,feedback:[{stepId:8,value:"Existing"}]}:x);const r=buildTot1Week6Request({requestId:"88888888-8888-4888-8888-888888888888",activities:input});expect(r.targets.some(x=>x.targetId.endsWith("page:12:step:8"))).toBe(false);expect(r.targets.some(x=>x.targetId.endsWith("page:12:step:10"))).toBe(true);});
+});

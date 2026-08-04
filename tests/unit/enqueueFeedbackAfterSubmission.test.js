@@ -46,6 +46,32 @@ describe("enqueue feedback after course submission", () => {
     });
   });
 
+  it.each([
+    "TOT 1",
+    "TOT Course 1",
+    "Feel It. Teach It. Transform Lives."
+  ])("resolves the real TOT 1 course title: %s", (title) => {
+    expect(resolveCourseKey({ title })).toBe("tot-1");
+  });
+
+  it("enqueues TOT Course 1 Week 1 submissions", async () => {
+    const queueService = {
+      enqueue: jest.fn().mockResolvedValue({ status: "queued", jobId: "tot1-job-1" })
+    };
+
+    await expect(enqueueFeedbackAfterSubmission({
+      activity: { _id: "tot1-activity-1" },
+      course: { title: "TOT Course 1" },
+      week: 1,
+      queueService
+    })).resolves.toEqual({ status: "queued", jobId: "tot1-job-1" });
+
+    expect(queueService.enqueue).toHaveBeenCalledWith({
+      activityId: "tot1-activity-1",
+      courseKey: "tot-1"
+    });
+  });
+
   it("enqueues the persisted Activity for a supported course week", async () => {
     const queueService = {
       enqueue: jest.fn().mockResolvedValue({ status: "queued", jobId: "job-1" })

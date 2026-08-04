@@ -64,6 +64,12 @@ const { tot2Week2Integration } = require("./tot-2/week2");
 const { tot2Week3Integration } = require("./tot-2/week3");
 const { tot2Week4Integration } = require("./tot-2/week4");
 const { tot2Week5Integration } = require("./tot-2/week5");
+const { tot1Week1Integration } = require("./tot-1/week1");
+const { tot1Week2Integration } = require("./tot-1/week2");
+const { tot1Week3Integration } = require("./tot-1/week3");
+const { tot1Week4Integration } = require("./tot-1/week4");
+const { tot1Week5Integration } = require("./tot-1/week5");
+const { tot1Week6Integration } = require("./tot-1/week6");
 
 const courseIntegrationRegistry = new Map([
   ["transition-2:1", transition2Week1Integration],
@@ -95,7 +101,13 @@ const courseIntegrationRegistry = new Map([
   ["tot-2:2", tot2Week2Integration],
   ["tot-2:3", tot2Week3Integration],
   ["tot-2:4", tot2Week4Integration],
-  ["tot-2:5", tot2Week5Integration]
+  ["tot-2:5", tot2Week5Integration],
+  ["tot-1:1", tot1Week1Integration],
+  ["tot-1:2", tot1Week2Integration],
+  ["tot-1:3", tot1Week3Integration],
+  ["tot-1:4", tot1Week4Integration],
+  ["tot-1:5", tot1Week5Integration],
+  ["tot-1:6", tot1Week6Integration]
 ]);
 
 const getCourseIntegration = (courseKey, weekNumber) =>

@@ -20,7 +20,11 @@ const COURSE_KEYS = new Map([
   ["tot2", "tot-2"],
   ["tot-course-2", "tot-2"],
   ["leaving-no-learner-behind", "tot-2"],
-  ["training-of-trainers-2", "tot-2"]
+  ["training-of-trainers-2", "tot-2"],
+  ["tot-1", "tot-1"],
+  ["tot1", "tot-1"],
+  ["tot-course-1", "tot-1"],
+  ["training-of-trainers-1", "tot-1"]
 ]);
 
 const resolveCourseKey = (course) => {
@@ -30,6 +34,7 @@ const resolveCourseKey = (course) => {
     const normalized = normalizeCourseIdentifier(candidate);
     if (COURSE_KEYS.has(normalized)) return COURSE_KEYS.get(normalized);
     if (normalized.includes("leaving-no-learner-behind")) return "tot-2";
+    if (normalized.includes("feel-it-teach-it-transform-lives")) return "tot-1";
   }
 
   return null;
