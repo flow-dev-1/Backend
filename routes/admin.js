@@ -149,7 +149,4 @@ router.patch("/course-enrollment/:id/post-assessment/:week/:userId", auth, admin
 router.patch('/school-course/:schoolCourseId/deactivate', auth, isAdmin, schoolsController.deactivateSchoolCourse);
 
 
-// AI feedback proxy
-router.post('/generate-ai-feedback', auth, isAdmin, adminController.generateAIFeedback);
-
 module.exports = router;  
